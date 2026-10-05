@@ -38,7 +38,7 @@ import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 @Composable
 fun CoverPhoto(
     coverImageUrl: String?,
-    scrollOffset: Float = 0f,
+    scrollOffsetProvider: () -> Float = { 0f },
     isOwnProfile: Boolean = false,
     onCoverClick: () -> Unit = {},
     height: Dp = Sizes.HeightExtraLarge
@@ -50,9 +50,8 @@ fun CoverPhoto(
             .fillMaxWidth()
             .height(height)
             .graphicsLayer {
-
+                val scrollOffset = scrollOffsetProvider()
                 translationY = scrollOffset * height.toPx() * 0.5f
-
                 alpha = 1f - scrollOffset
             }
             .clickable(enabled = coverImageUrl != null) { onCoverClick() }
@@ -127,7 +126,7 @@ fun CoverPhotoWithProfile(
     coverImageUrl: String?,
     avatar: String?,
     status: UserStatus? = null,
-    scrollOffset: Float = 0f,
+    scrollOffsetProvider: () -> Float = { 0f },
     isOwnProfile: Boolean = false,
     hasStory: Boolean = false,
     displayName: String? = null,
@@ -144,7 +143,7 @@ fun CoverPhotoWithProfile(
     ) {
         CoverPhoto(
             coverImageUrl = coverImageUrl,
-            scrollOffset = scrollOffset,
+            scrollOffsetProvider = scrollOffsetProvider,
             isOwnProfile = isOwnProfile,
             onCoverClick = onCoverClick,
             height = coverHeight
@@ -248,7 +247,7 @@ fun ProfileImageWithRing(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(if (hasStory) ringWidth else 0.dp)
+                .padding(if (hasStory) ringWidth else Spacing.None)
                 .clip(shape)
                 .background(MaterialTheme.colorScheme.surface)
         )

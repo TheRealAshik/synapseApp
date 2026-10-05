@@ -12,6 +12,7 @@ import com.synapse.social.studioasinc.domain.model.ReactionType
 import com.synapse.social.studioasinc.domain.model.UserReaction
 import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
 import com.synapse.social.studioasinc.shared.data.local.database.PostDao
+import com.synapse.social.studioasinc.shared.domain.repository.MediaUploadRepository
 import com.synapse.social.studioasinc.shared.domain.repository.OfflineActionRepository
 import com.synapse.social.studioasinc.shared.domain.repository.PostActionsRepository
 import io.github.jan.supabase.SupabaseClient as JanSupabaseClient
@@ -27,11 +28,12 @@ import javax.inject.Singleton
 class PostRepositoryImpl @Inject constructor(
     private val postDao: PostDao,
     private val client: JanSupabaseClient,
-    private val offlineActionRepository: OfflineActionRepository
+    private val offlineActionRepository: OfflineActionRepository,
+    private val mediaUploadRepository: MediaUploadRepository? = null
 ) : PostActionsRepository, com.synapse.social.studioasinc.domain.repository.PostRepository {
 
     private val utils = PostRepositoryUtils(client)
-    private val crudHelper = PostCrudHelper(postDao, client, offlineActionRepository, utils)
+    private val crudHelper = PostCrudHelper(postDao, client, offlineActionRepository, utils, mediaUploadRepository)
     private val feedHelper = PostFeedHelper(postDao, client, offlineActionRepository, utils)
     private val reactionHelper = PostReactionHelper(postDao, client, offlineActionRepository)
     private val syncHelper = PostSyncHelper(postDao, client, offlineActionRepository)

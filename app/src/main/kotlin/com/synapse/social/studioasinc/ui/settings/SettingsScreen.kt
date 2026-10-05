@@ -30,6 +30,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
@@ -89,13 +90,13 @@ fun SettingsScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                     Text(
-                        text = "Account",
+                        text = stringResource(R.string.settings_account_short),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(start = Spacing.SmallMedium, bottom = Spacing.ExtraSmall)
                     )
-                    SettingsGroup {
+                    Column(verticalArrangement = Arrangement.spacedBy(SettingsSpacing.itemSpacing)) {
                         SettingRow(
                             icon = Icons.Filled.Person,
                             title = stringResource(R.string.settings_account),
@@ -104,7 +105,6 @@ fun SettingsScreen(
                             onClick = onAccountClick,
                             position = SettingsItemPosition.Top
                         )
-                        SettingsDivider()
                         SettingRow(
                             icon = Icons.Filled.Shield,
                             title = stringResource(R.string.settings_privacy),
@@ -112,7 +112,6 @@ fun SettingsScreen(
                             onClick = onPrivacyClick,
                             position = SettingsItemPosition.Middle
                         )
-                        SettingsDivider()
                         SettingRow(
                             icon = Icons.Filled.Notifications,
                             title = stringResource(R.string.settings_notifications),
@@ -127,17 +126,17 @@ fun SettingsScreen(
             item {
                 Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                     Text(
-                        text = "Security",
+                        text = stringResource(R.string.settings_security_short),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(start = Spacing.SmallMedium, bottom = Spacing.ExtraSmall)
                     )
-                    SettingsGroup {
+                    SettingsCard {
                         SettingRow(
                             icon = Icons.Filled.VpnKey,
-                            title = "Reset Encryption Keys",
-                            subtitle = if (isResettingE2EE) "Resetting..." else "Fix issues with encrypted messages",
+                            title = stringResource(R.string.settings_reset_encryption_keys_title),
+                            subtitle = if (isResettingE2EE) stringResource(R.string.settings_resetting) else stringResource(R.string.settings_reset_encryption_keys_subtitle),
                             showChevron = !isResettingE2EE,
                             onClick = { if (!isResettingE2EE) viewModel.resetE2EE() },
                             position = SettingsItemPosition.Single
@@ -231,16 +230,13 @@ private fun SettingRow(
                     model = imageUrl,
                     contentDescription = null,
                     modifier = Modifier
-                        .size(Sizes.IconLarge)
+                        .size(44.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
             } else {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(Sizes.IconLarge),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                SettingsIconBadge(
+                    imageVector = icon
                 )
             }
             Column(

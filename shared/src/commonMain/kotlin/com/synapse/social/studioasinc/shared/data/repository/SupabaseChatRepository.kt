@@ -123,23 +123,24 @@ class SupabaseChatRepository(
                 cachedConversationDao?.upsertAll(conversations)
                 Result.success(conversations)
             }
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             val cached = cachedConversationDao?.getAll() ?: emptyList()
             if (cached.isNotEmpty()) Result.success(cached)
             else {
-                Logger.e("Error getting conversations", throwable = e)
-                Result.failure(e)
+                Logger.e("Error getting conversations", throwable = t)
+                Result.failure(t)
             }
         }
     }
 
-    override suspend fun getMessages(chatId: String, limit: Int, before: String?, beforeId: String?): Result<List<Message>> = withContext(AppDispatchers.IO) {
+    override suspend fun getMessages(chatId: String, limit: Int, before: String?, beforeId: String?, forceNetwork: Boolean): Result<List<Message>> = withContext(AppDispatchers.IO) {
         try {
             val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
 
-            if (before == null) {
+            if (before == null && !forceNetwork) {
                 val cached = cachedMessageDao?.getMessages(chatId, limit) ?: emptyList()
-                if (cached.isNotEmpty()) {
+                val hasPlaceholders = cached.any { encryptionHelper.isPlaceholder(it.content) }
+                if (cached.isNotEmpty() && !hasPlaceholders) {
                     syncMessagesInBackground(chatId, limit, currentUserId, cached)
                     return@withContext Result.success(cached)
                 }
@@ -149,16 +150,19 @@ class SupabaseChatRepository(
             val decrypted = messageDtos.map { encryptionHelper.run { it.decryptIfNecessary(currentUserId).toDomain() } }
 
             if (before == null) {
-                cachedMessageDao?.upsertAll(decrypted)
+                val decryptableForCache = decrypted.filter { !encryptionHelper.isPlaceholder(it.content) }
+                if (decryptableForCache.isNotEmpty()) {
+                    cachedMessageDao?.upsertAll(decryptableForCache)
+                }
                 cachedMessageDao?.trimToLimit(chatId, limit)
             }
             Result.success(decrypted)
-        } catch (e: Exception) {
+        } catch (t: Throwable) {
             val cached = cachedMessageDao?.getMessages(chatId, limit) ?: emptyList()
             if (cached.isNotEmpty()) Result.success(cached)
             else {
-                Logger.e("Error getting messages", throwable = e)
-                Result.failure(e)
+                Logger.e("Error getting messages", throwable = t)
+                Result.failure(t)
             }
         }
     }
@@ -170,11 +174,14 @@ class SupabaseChatRepository(
                 val decrypted = fresh.map { encryptionHelper.run { it.decryptIfNecessary(currentUserId).toDomain() } }
 
                 val mergedMessages = decrypted.map { freshMsg ->
-                    if (freshMsg.content.startsWith("{")) {
-                        cached.find { it.id == freshMsg.id && !it.content.startsWith("{") } ?: freshMsg
+                    if (freshMsg.content.startsWith("{") || encryptionHelper.isPlaceholder(freshMsg.content)) {
+                        cached.find { it.id == freshMsg.id && !encryptionHelper.isPlaceholder(it.content) && !it.content.startsWith("{") } ?: freshMsg
                     } else freshMsg
                 }
-                cachedMessageDao?.upsertAll(mergedMessages)
+                val validToCache = mergedMessages.filter { !encryptionHelper.isPlaceholder(it.content) }
+                if (validToCache.isNotEmpty()) {
+                    cachedMessageDao?.upsertAll(validToCache)
+                }
                 cachedMessageDao?.trimToLimit(chatId, limit)
             } catch (e: Exception) {
                 Logger.e("Failed to sync fresh messages", throwable = e)
@@ -303,6 +310,11 @@ class SupabaseChatRepository(
             if (currentUserId != null) {
                 cachedMessageDao?.markRead(chatId, currentUserId)
             }
+            conversationMutex.withLock {
+                cachedConversationDao?.getAll()?.find { it.chatId == chatId }?.let { existing ->
+                    cachedConversationDao?.upsertAll(listOf(existing.copy(unreadCount = 0)))
+                }
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Logger.e("Error marking messages as read", throwable = e)
@@ -430,9 +442,9 @@ class SupabaseChatRepository(
             filePath = filePath,
             provider = provider ?: StorageProvider.SUPABASE,
             config = config ?: StorageConfig(),
-            bucketName = "chat_attachments",
+            bucketName = "chat-attachments",
             onProgress = { floatProgress -> onProgress?.invoke((floatProgress * 100).toInt()) }
-        ).onFailure { Logger.e("Error uploading media", throwable = it) }
+        ).map { it.url }.onFailure { Logger.e("Error uploading media", throwable = it) }
     }
 
     override suspend fun broadcastTypingStatus(chatId: String, isTyping: Boolean): Result<Unit> = withContext(AppDispatchers.IO) {
@@ -451,10 +463,16 @@ class SupabaseChatRepository(
             val domainMessage = if (userId.isNotBlank()) encryptionHelper.run { dto.decryptIfNecessary(userId).toDomain() } else dto.toDomain()
 
             externalScope.launch {
-                cachedMessageDao?.upsert(domainMessage)
+                if (!encryptionHelper.isPlaceholder(domainMessage.content)) {
+                    cachedMessageDao?.upsert(domainMessage)
+                }
                 conversationMutex.withLock {
                     cachedConversationDao?.getAll()?.find { it.chatId == domainMessage.chatId }?.let { existing ->
-                        cachedConversationDao?.upsertAll(listOf(existing.copy(lastMessage = domainMessage.content, lastMessageTime = domainMessage.createdAt)))
+                        cachedConversationDao?.upsertAll(listOf(existing.copy(
+                            lastMessage = domainMessage.content,
+                            lastMessageTime = domainMessage.createdAt,
+                            unreadCount = 0
+                        )))
                     }
                 }
             }
@@ -467,7 +485,9 @@ class SupabaseChatRepository(
             val domainMessage = if (userId.isNotBlank()) encryptionHelper.run { dto.decryptIfNecessary(userId).toDomain() } else dto.toDomain()
 
             externalScope.launch {
-                cachedMessageDao?.upsert(domainMessage)
+                if (!encryptionHelper.isPlaceholder(domainMessage.content)) {
+                    cachedMessageDao?.upsert(domainMessage)
+                }
                 val existing = cachedConversationDao?.getAll()?.find { it.chatId == domainMessage.chatId }
                 val chatInfo = if (existing == null) dataSource.getChatInfo(domainMessage.chatId) else null
 
@@ -573,13 +593,11 @@ class SupabaseChatRepository(
 
             messages.map { message ->
                 val messageReactions = allReactions.filter { it.messageId == message.id }
-                val summary = messageReactions.groupBy { it.reactionEmoji }
-                    .mapKeys { entry -> ReactionType.entries.find { it.emoji == entry.key } ?: ReactionType.LIKE }
-                    .mapValues { it.value.size }
-                val userReaction = messageReactions.find { it.userId == currentUserId }?.reactionEmoji?.let { emoji ->
-                    ReactionType.entries.find { it.emoji == emoji }
-                }
-                message.copy(reactions = summary, userReaction = userReaction)
+                val userReactionsMap = messageReactions.mapNotNull { reaction ->
+                    val type = ReactionType.entries.find { it.emoji == reaction.reactionEmoji }
+                    if (type != null) reaction.userId to type else null
+                }.toMap()
+                message.withUserReactions(userReactionsMap, currentUserId)
             }
         } catch (e: Exception) { messages }
     }

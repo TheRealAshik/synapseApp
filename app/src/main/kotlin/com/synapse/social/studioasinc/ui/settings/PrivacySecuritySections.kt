@@ -10,10 +10,10 @@ import com.synapse.social.studioasinc.R
 
 @Composable
 internal fun PrivacyCheckupSection(isLoading: Boolean) {
-    SettingsSection(title = "Privacy Checkup") {
+    SettingsSection(title = stringResource(R.string.settings_privacy_checkup_section)) {
         SettingsNavigationItem(
-            title = "Privacy Checkup",
-            subtitle = "Review your privacy settings",
+            title = stringResource(R.string.settings_privacy_checkup_section),
+            subtitle = stringResource(R.string.settings_privacy_settings_subtitle),
             imageVector = Icons.Filled.Security,
             onClick = { },
             enabled = !isLoading
@@ -27,68 +27,43 @@ internal fun PrivacyCheckupSection(isLoading: Boolean) {
 internal fun ProfilePrivacySection(
     privacySettings: PrivacySettings,
     isLoading: Boolean,
-    onProfileVisibilityChanged: (ProfileVisibility) -> Unit,
-    onContentVisibilityChanged: (ContentVisibility) -> Unit
+    onNavigateToLastSeen: () -> Unit,
+    onNavigateToProfilePhoto: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    onNavigateToStatus: () -> Unit
 ) {
-    SettingsSection(title = "Profile Privacy") {
-        SettingsSelectionItem(
-            title = "Last Seen",
-            subtitle = "Control who can see when you were last online",
-            icon = Icons.Filled.Visibility,
-            options = ProfileVisibility.values().map { it.displayName() },
-            selectedOption = privacySettings.profileVisibility.displayName(),
-            onSelect = { option ->
-                val visibility = ProfileVisibility.values().find { it.displayName() == option }
-                if (visibility != null) {
-                    onProfileVisibilityChanged(visibility)
-                }
-            },
-            enabled = !isLoading
+    SettingsSection(title = stringResource(R.string.settings_profile_privacy_section)) {
+        SettingsNavigationItem(
+            title = stringResource(R.string.settings_last_seen_title),
+            subtitle = stringResource(R.string.settings_last_seen_subtitle),
+            imageVector = Icons.Filled.Visibility,
+            onClick = onNavigateToLastSeen,
+            enabled = !isLoading,
+            position = SettingsItemPosition.Top
         )
-        SettingsDivider()
-        SettingsSelectionItem(
-            title = "Profile Photo",
-            subtitle = "Control who can see your profile photo",
-            icon = Icons.Filled.Person,
-            options = ProfileVisibility.values().map { it.displayName() },
-            selectedOption = privacySettings.profileVisibility.displayName(),
-            onSelect = { option ->
-                val visibility = ProfileVisibility.values().find { it.displayName() == option }
-                if (visibility != null) {
-                    onProfileVisibilityChanged(visibility)
-                }
-            },
-            enabled = !isLoading
+        SettingsNavigationItem(
+            title = stringResource(R.string.settings_profile_photo_title),
+            subtitle = stringResource(R.string.settings_profile_photo_subtitle),
+            imageVector = Icons.Filled.Person,
+            onClick = onNavigateToProfilePhoto,
+            enabled = !isLoading,
+            position = SettingsItemPosition.Middle
         )
-        SettingsDivider()
-        SettingsSelectionItem(
-            title = "About",
-            subtitle = "Control who can see your about info",
-            icon = Icons.Filled.Info,
-            options = ProfileVisibility.values().map { it.displayName() },
-            selectedOption = privacySettings.profileVisibility.displayName(),
-            onSelect = { option ->
-                 val visibility = ProfileVisibility.values().find { it.displayName() == option }
-                if (visibility != null) {
-                    onProfileVisibilityChanged(visibility)
-                }
-            },
-            enabled = !isLoading
+        SettingsNavigationItem(
+            title = stringResource(R.string.settings_about_privacy_title),
+            subtitle = stringResource(R.string.settings_about_subtitle),
+            imageVector = Icons.Filled.Info,
+            onClick = onNavigateToAbout,
+            enabled = !isLoading,
+            position = SettingsItemPosition.Middle
         )
-        SettingsDivider()
-        SettingsSelectionItem(
-            title = "Status",
-            subtitle = "Control who can see your status updates",
-            icon = Icons.Filled.Circle,
-            options = ContentVisibility.values().map { it.displayName() },
-            selectedOption = privacySettings.contentVisibility.displayName(),
-            onSelect = { option ->
-                val visibility = ContentVisibility.values().find { it.displayName() == option }
-                if (visibility != null) {
-                    onContentVisibilityChanged(visibility)
-                }
-            },
-            enabled = !isLoading
+        SettingsNavigationItem(
+            title = stringResource(R.string.settings_status_title),
+            subtitle = stringResource(R.string.settings_status_subtitle),
+            imageVector = Icons.Filled.Circle,
+            onClick = onNavigateToStatus,
+            enabled = !isLoading,
+            position = SettingsItemPosition.Bottom
         )
     }
 }
@@ -101,22 +76,23 @@ internal fun MessagePrivacySection(
     onReadReceiptsChanged: (Boolean) -> Unit,
     isLoading: Boolean
 ) {
-    SettingsSection(title = "Message Privacy") {
+    SettingsSection(title = stringResource(R.string.settings_message_privacy_section)) {
         SettingsToggleItem(
-            title = "Read Receipts",
-            subtitle = "Show when you've read messages",
+            title = stringResource(R.string.settings_read_receipts_title),
+            subtitle = stringResource(R.string.settings_read_receipts_subtitle),
             imageVector = Icons.Filled.DoneAll,
             checked = readReceiptsEnabled,
             onCheckedChange = onReadReceiptsChanged,
-            enabled = !isLoading
+            enabled = !isLoading,
+            position = SettingsItemPosition.Top
         )
-        SettingsDivider()
         SettingsNavigationItem(
-            title = "Disappearing Messages",
-            subtitle = "Set default timer for new chats",
+            title = stringResource(R.string.settings_disappearing_messages_title),
+            subtitle = stringResource(R.string.settings_disappearing_messages_subtitle),
             imageVector = Icons.Filled.Timer,
             onClick = { },
-            enabled = !isLoading
+            enabled = !isLoading,
+            position = SettingsItemPosition.Bottom
         )
     }
 }
@@ -129,10 +105,10 @@ internal fun GroupPrivacySection(
     isLoading: Boolean,
     onGroupPrivacyChanged: (GroupPrivacy) -> Unit
 ) {
-    SettingsSection(title = "Group Privacy") {
+    SettingsSection(title = stringResource(R.string.settings_group_privacy_section)) {
         SettingsSelectionItem(
-            title = "Groups",
-            subtitle = "Control who can add you to groups",
+            title = stringResource(R.string.settings_groups_title),
+            subtitle = stringResource(R.string.settings_groups_subtitle),
             icon = Icons.Filled.Group,
             options = GroupPrivacy.values().map { it.displayName() },
             selectedOption = privacySettings.groupPrivacy.displayName(),
@@ -152,28 +128,32 @@ internal fun GroupPrivacySection(
 @Composable
 internal fun SecuritySection(
     appLockEnabled: Boolean,
-    onAppLockChanged: (Boolean) -> Unit,
+    onNavigateToAppLock: () -> Unit,
     chatLockEnabled: Boolean,
     onChatLockChanged: (Boolean) -> Unit,
     isLoading: Boolean
 ) {
-    SettingsSection(title = "Security") {
-        SettingsToggleItem(
-            title = "App Lock",
-            subtitle = "Require authentication to open app",
+    SettingsSection(title = stringResource(R.string.settings_security_section)) {
+        SettingsNavigationItem(
+            title = stringResource(R.string.settings_app_lock_title),
+            subtitle = if (appLockEnabled) {
+                stringResource(R.string.settings_app_lock_enabled)
+            } else {
+                stringResource(R.string.settings_app_lock_disabled)
+            },
             imageVector = Icons.Filled.Lock,
-            checked = appLockEnabled,
-            onCheckedChange = onAppLockChanged,
-            enabled = !isLoading
+            onClick = onNavigateToAppLock,
+            enabled = !isLoading,
+            position = SettingsItemPosition.Top
         )
-        SettingsDivider()
         SettingsToggleItem(
-            title = "Chat Lock",
-            subtitle = "Lock individual chats with authentication",
+            title = stringResource(R.string.settings_chat_lock_title),
+            subtitle = stringResource(R.string.settings_chat_lock_subtitle),
             imageVector = Icons.Filled.Lock,
             checked = chatLockEnabled,
             onCheckedChange = onChatLockChanged,
-            enabled = !isLoading
+            enabled = !isLoading,
+            position = SettingsItemPosition.Bottom
         )
     }
 }
@@ -185,10 +165,10 @@ internal fun ActiveSessionsSection(
     onNavigateToActiveSessions: () -> Unit,
     isLoading: Boolean
 ) {
-    SettingsSection(title = "Active Sessions") {
+    SettingsSection(title = stringResource(R.string.settings_active_sessions_title)) {
         SettingsNavigationItem(
-            title = "Active Sessions",
-            subtitle = "Manage your active sessions",
+            title = stringResource(R.string.settings_active_sessions_title),
+            subtitle = stringResource(R.string.settings_active_sessions_subtitle),
             imageVector = Icons.Filled.Key,
             onClick = onNavigateToActiveSessions,
             enabled = !isLoading
@@ -210,15 +190,16 @@ internal fun ContactsSection(
             subtitle = stringResource(R.string.privacy_blocked_users_subtitle),
             imageVector = Icons.Filled.Block,
             onClick = onNavigateToBlockedUsers,
-            enabled = !isLoading
+            enabled = !isLoading,
+            position = SettingsItemPosition.Top
         )
-        SettingsDivider()
         SettingsNavigationItem(
             title = stringResource(R.string.privacy_muted_users),
             subtitle = stringResource(R.string.privacy_muted_users_subtitle),
             imageVector = Icons.Filled.Notifications,
             onClick = onNavigateToMutedUsers,
-            enabled = !isLoading
+            enabled = !isLoading,
+            position = SettingsItemPosition.Bottom
         )
     }
 }

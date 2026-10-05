@@ -14,6 +14,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 
 
 @Composable
@@ -22,7 +23,7 @@ private fun EmptyFavouritesCard() {
         modifier = Modifier.fillMaxWidth(),
         shape = SettingsShapes.cardShape,
         color = SettingsColors.cardBackgroundElevated,
-        tonalElevation = 2.dp
+        tonalElevation = Sizes.ElevationLow
     ) {
         Column(
             modifier = Modifier
@@ -33,7 +34,7 @@ private fun EmptyFavouritesCard() {
             Icon(
                 imageVector = Icons.Filled.Favorite,
                 contentDescription = null,
-                modifier = Modifier.size(64.dp),
+                modifier = Modifier.size(Sizes.AvatarSemiLarge),
                 tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
             )
             
@@ -102,7 +103,6 @@ fun FavouritesScreen(
                         position = SettingsItemPosition.Top,
                         onClick = { }
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
                         title = stringResource(R.string.reorder_favourites),
                         subtitle = stringResource(R.string.change_order_favourites),
@@ -110,7 +110,6 @@ fun FavouritesScreen(
                         position = SettingsItemPosition.Middle,
                         onClick = { }
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
                         title = stringResource(R.string.remove_from_favourites),
                         subtitle = stringResource(R.string.remove_contacts_favourites),
@@ -131,7 +130,6 @@ fun FavouritesScreen(
                         onCheckedChange = { },
                         position = SettingsItemPosition.Top
                     )
-                    SettingsDivider()
                     SettingsToggleItem(
                         title = stringResource(R.string.show_favourite_badge),
                         subtitle = stringResource(R.string.display_star_icon),

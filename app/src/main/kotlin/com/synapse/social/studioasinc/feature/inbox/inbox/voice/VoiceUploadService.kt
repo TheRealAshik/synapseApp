@@ -27,7 +27,7 @@ class VoiceUploadService @Inject constructor(
             val encodedBytes = VoiceEncoder.encode(audioBytes, carrierBytes)
 
             // Upload using ImgBBUploadService directly
-            val url = imgBBUploadService.upload(
+            val uploadResult = imgBBUploadService.upload(
                 fileProvider = { offset -> ByteReadChannel(encodedBytes, offset.toInt(), encodedBytes.size - offset.toInt()) },
                 fileSize = encodedBytes.size.toLong(),
                 fileName = "voice_${System.currentTimeMillis()}.png", // Treat it as PNG so ImgBB accepts it
@@ -36,7 +36,7 @@ class VoiceUploadService @Inject constructor(
                 onProgress = {}
             )
 
-            Result.success(url)
+            Result.success(uploadResult.url)
         } catch (e: Exception) {
             e.printStackTrace()
             Result.failure(e)

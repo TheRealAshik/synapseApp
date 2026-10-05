@@ -2,6 +2,7 @@ package com.synapse.social.studioasinc.shared.data.source.remote
 
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
 import com.synapse.social.studioasinc.shared.domain.model.UploadError
+import com.synapse.social.studioasinc.shared.domain.model.UploadResult
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.storage.storage
@@ -19,14 +20,15 @@ class SupabaseUploadService(private val supabase: SupabaseClient) : UploadServic
         config: StorageConfig,
         bucketName: String?,
         onProgress: (Float) -> Unit
-    ): String {
-        val targetBucket = bucketName ?: config.supabaseBucket
-        val bucketToUse = if (targetBucket.isBlank()) "public" else targetBucket
+    ): UploadResult {
+        val targetBucket = bucketName.orEmpty()
+            .ifBlank { config.supabaseBucket }
+            .ifBlank { com.synapse.social.studioasinc.shared.core.network.SupabaseClient.BUCKET_POST_MEDIA }
 
-        Napier.d("Uploading to Supabase bucket: $bucketToUse, file: $fileName", tag = "SupabaseUpload")
+        Napier.d("Uploading to Supabase bucket: $targetBucket, file: $fileName", tag = "SupabaseUpload")
 
         try {
-            val bucket = supabase.storage.from(bucketToUse)
+            val bucket = supabase.storage.from(targetBucket)
             val path = "${TimeProvider.nowMillis()}_$fileName"
 
             coroutineScope {
@@ -38,12 +40,16 @@ class SupabaseUploadService(private val supabase: SupabaseClient) : UploadServic
                 onProgress(1.0f)
             }
 
-            val publicUrl = bucket.publicUrl(path)
-            Napier.d("Supabase upload successful: $publicUrl", tag = "SupabaseUpload")
-            return publicUrl
+            val url = if (targetBucket == "chat-attachments") {
+                bucket.authenticatedUrl(path)
+            } else {
+                bucket.publicUrl(path)
+            }
+            Napier.d("Supabase upload successful: $url", tag = "SupabaseUpload")
+            return UploadResult(url = url, deleteUrl = null)
         } catch (e: Exception) {
-            Napier.e("Supabase upload failed to bucket: $bucketToUse", e, tag = "SupabaseUpload")
-            throw UploadError.SupabaseError("Supabase upload failed: ${e.message}")
+            Napier.e("Supabase upload failed to bucket: $targetBucket", e, tag = "SupabaseUpload")
+            throw UploadError.SupabaseError("Supabase upload failed: ${e.message ?: e.toString()}")
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.synapse.social.studioasinc.shared.data.source.remote
 
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
+import com.synapse.social.studioasinc.shared.domain.model.UploadResult
 import io.ktor.utils.io.ByteReadChannel
 
 interface UploadService {
@@ -11,5 +12,5 @@ interface UploadService {
         config: StorageConfig,
         bucketName: String? = null,
         onProgress: (Float) -> Unit
-    ): String
+    ): UploadResult
 }

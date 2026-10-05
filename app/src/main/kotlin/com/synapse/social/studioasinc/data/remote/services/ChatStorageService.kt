@@ -14,7 +14,7 @@ class ChatStorageService {
 
     companion object {
         internal const val TAG = "ChatStorageService"
-        internal const val CHAT_MEDIA_BUCKET = "chat-media"
+        internal const val CHAT_MEDIA_BUCKET = "chat-attachments"
         internal const val MAX_RETRY_ATTEMPTS = 3
         internal const val BASE_RETRY_DELAY_MS = 1000L
         internal const val PROGRESS_UPDATE_INTERVAL_MS = 100L
@@ -71,10 +71,10 @@ class ChatStorageService {
             android.util.Log.d(TAG, "Uploading file to chat-media (${file.length()} bytes)")
             onProgress(0.0f)
             storage.from(CHAT_MEDIA_BUCKET).upload(path, file) { upsert = true }
-            val publicUrl = storage.from(CHAT_MEDIA_BUCKET).publicUrl(path)
+            val mediaUrl = storage.from(CHAT_MEDIA_BUCKET).authenticatedUrl(path)
             onProgress(1.0f)
             android.util.Log.d(TAG, "Upload successful")
-            return Result.success(publicUrl)
+            return Result.success(mediaUrl)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Upload failed", e)
             return Result.failure(mapStorageException(e, "Upload failed"))
@@ -94,10 +94,10 @@ class ChatStorageService {
             onProgress(0.1f)
             storage.from(CHAT_MEDIA_BUCKET).upload(path, fileBytes) { upsert = true }
             onProgress(0.9f)
-            val publicUrl = storage.from(CHAT_MEDIA_BUCKET).publicUrl(path)
+            val mediaUrl = storage.from(CHAT_MEDIA_BUCKET).authenticatedUrl(path)
             onProgress(1.0f)
             android.util.Log.d(TAG, "Upload successful")
-            return Result.success(publicUrl)
+            return Result.success(mediaUrl)
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Upload failed", e)
             return Result.failure(mapStorageException(e, "Upload failed"))
@@ -164,7 +164,7 @@ class ChatStorageService {
     }
 
     fun getPublicUrl(path: String): String {
-        return storage.from(CHAT_MEDIA_BUCKET).publicUrl(path)
+        return storage.from(CHAT_MEDIA_BUCKET).authenticatedUrl(path)
     }
 
     fun generateStoragePath(chatId: String, fileName: String): String {

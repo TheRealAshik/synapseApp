@@ -60,7 +60,8 @@ class ChatViewModel @Inject constructor(
     private val observeUserActiveStatusUseCase: ObserveUserActiveStatusUseCase,
     private val setDisappearingModeUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SetDisappearingModeUseCase,
     private val getDisappearingModeUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.GetDisappearingModeUseCase,
-    private val voiceUploadService: VoiceUploadService
+    private val voiceUploadService: VoiceUploadService,
+    private val mediaCompressor: com.synapse.social.studioasinc.shared.domain.service.MediaCompressor? = null
 ) : ViewModel() {
 
     private val _inputText = MutableStateFlow("")
@@ -231,7 +232,8 @@ class ChatViewModel @Inject constructor(
             _error.value = errorMessage
             messagingDelegate._messages.update { current -> current.filter { it.id != tempId } }
         },
-        onError = { _error.value = it }
+        onError = { _error.value = it },
+        mediaCompressor = mediaCompressor
     )
 
     private val reactionDelegate = ChatReactionDelegate(
@@ -240,19 +242,15 @@ class ChatViewModel @Inject constructor(
         onOptimisticReactionChanged = { messageId, oldMessage, newUserReaction, oldUserReaction ->
             messagingDelegate._messages.update { current ->
                 with(messagingDelegate) {
-                    current.updateById(messageId) {
-                        val oldReactionCounts = oldMessage.reactions.toMutableMap()
-                        if (oldUserReaction != null) {
-                            oldReactionCounts[oldUserReaction] = (oldReactionCounts[oldUserReaction] ?: 0) - 1
-                            if (oldReactionCounts[oldUserReaction] == 0) oldReactionCounts.remove(oldUserReaction)
+                    current.updateById(messageId) { msg ->
+                        val userId = currentUserId ?: ""
+                        val newUserReactions = msg.userReactions.toMutableMap()
+                        if (newUserReaction != null && userId.isNotBlank()) {
+                            newUserReactions[userId] = newUserReaction
+                        } else if (userId.isNotBlank()) {
+                            newUserReactions.remove(userId)
                         }
-                        if (newUserReaction != null) {
-                            oldReactionCounts[newUserReaction] = (oldReactionCounts[newUserReaction] ?: 0) + 1
-                        }
-                        it.copy(
-                            userReaction = newUserReaction,
-                            reactions = oldReactionCounts
-                        )
+                        msg.withUserReactions(newUserReactions, currentUserId)
                     }
                 }
             }
@@ -354,7 +352,10 @@ class ChatViewModel @Inject constructor(
         val chatId = currentChatId ?: return
         _hasMoreMessages.value = true
         viewModelScope.launch {
-            getMessagesUseCase(chatId).onSuccess { messages ->
+            // Always force a network fetch here — this is called on screen re-entry (ON_RESUME)
+            // and must never return stale cache. Without this, missed messages only appear
+            // after a second exit/re-enter cycle (cache-first stale return then background sync).
+            getMessagesUseCase(chatId, forceNetwork = true).onSuccess { messages ->
                 messagingDelegate.setMessages(messages)
             }
         }
@@ -477,23 +478,15 @@ class ChatViewModel @Inject constructor(
         messagingDelegate._messages.update { current ->
             with(messagingDelegate) {
                 current.updateById(reaction.messageId) { msg ->
-                    val counts = msg.reactions.toMutableMap()
+                    val newUserReactions = msg.userReactions.toMutableMap()
                     if (reaction.isDelete) {
-                        val currentCount = counts[reactionType] ?: 0
-                        if (currentCount > 1) {
-                            counts[reactionType] = currentCount - 1
-                        } else {
-                            counts.remove(reactionType)
+                        if (newUserReactions[reaction.userId] == reactionType) {
+                            newUserReactions.remove(reaction.userId)
                         }
                     } else {
-                        counts[reactionType] = (counts[reactionType] ?: 0) + 1
+                        newUserReactions[reaction.userId] = reactionType
                     }
-                    val userReaction = if (reaction.userId == currentUserId) {
-                        if (reaction.isDelete) null else reactionType
-                    } else {
-                        msg.userReaction
-                    }
-                    msg.copy(reactions = counts, userReaction = userReaction)
+                    msg.withUserReactions(newUserReactions, currentUserId)
                 }
             }
         }
@@ -587,25 +580,16 @@ class ChatViewModel @Inject constructor(
         settingsDelegate.setDisappearingMode(mode)
     }
     fun uploadVoiceMessage(audioFile: File) {
-        viewModelScope.launch {
-            try {
-                val result = voiceUploadService.upload(audioFile, com.synapse.social.studioasinc.shared.domain.model.StorageConfig())
-                result.onSuccess { url ->
-                    sendMediaMessage(
-                        mediaUrl = url,
-                        fileName = "voice_message.m4a",
-                        contentType = "audio/mp4",
-                        messageType = "audio"
-                    )
-                    audioFile.delete()
-                }.onFailure {
-                    _error.value = "Failed to upload voice message"
-                    audioFile.delete()
-                }
-            } catch (e: Exception) {
-                _error.value = "Upload error: ${e.message}"
-                audioFile.delete()
-            }
+        try {
+            uploadAndSendMedia(
+                filePath = audioFile.absolutePath,
+                fileName = audioFile.name,
+                contentType = "audio/mp4",
+                messageType = "audio",
+                caption = null
+            )
+        } catch (e: Exception) {
+            _error.value = "Upload error: ${e.message}"
         }
     }
 
@@ -613,8 +597,23 @@ class ChatViewModel @Inject constructor(
         mediaDelegate.sendMediaMessage(mediaUrl, fileName, contentType, messageType, caption)
     }
 
-    fun uploadAndSendMedia(filePath: String, fileName: String, contentType: String, messageType: String, caption: String? = null) {
-        mediaDelegate.uploadAndSendMedia(filePath, fileName, contentType, messageType, caption)
+    fun uploadAndSendMedia(
+        filePath: String,
+        fileName: String,
+        contentType: String,
+        messageType: String,
+        caption: String? = null,
+        quality: com.synapse.social.studioasinc.shared.domain.model.settings.MediaUploadQuality = com.synapse.social.studioasinc.shared.domain.model.settings.MediaUploadQuality.STANDARD
+    ) {
+        mediaDelegate.uploadAndSendMedia(filePath, fileName, contentType, messageType, caption, quality)
+    }
+
+    fun uploadAndSendMultipleMedia(
+        files: List<Pair<String, com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile>>,
+        caption: String? = null,
+        quality: com.synapse.social.studioasinc.shared.domain.model.settings.MediaUploadQuality = com.synapse.social.studioasinc.shared.domain.model.settings.MediaUploadQuality.STANDARD
+    ) {
+        mediaDelegate.uploadAndSendMultipleMedia(files, caption, quality)
     }
 
     fun getFormattedTimestamp(timestamp: String?): String = TimestampFormatter.formatRelative(timestamp)

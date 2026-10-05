@@ -59,17 +59,16 @@ class MediaUploadHandler @Inject constructor(
                         )
 
                         // If upload succeeds, return the new MediaItem
-                        val uploadedUrl = result.getOrThrow()
+                        val uploadResult = result.getOrThrow()
 
                         // Set progress to 100%
                         progressMap[index] = 1.0f
                         updateTotalProgress(progressMap, totalItems, onProgress)
 
-                        android.util.Log.d("MediaUploadHandler", "Uploaded ${mediaItem.type}: $uploadedUrl")
-
                         mediaItem.copy(
                             id = UUID.randomUUID().toString(),
-                            url = uploadedUrl,
+                            url = uploadResult.url,
+                            deleteUrl = uploadResult.deleteUrl,
                             mimeType = application.contentResolver.getType(android.net.Uri.parse(filePath))
                         )
                     } catch (e: Exception) {

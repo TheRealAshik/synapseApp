@@ -47,6 +47,15 @@ class SettingsDataStore private constructor(
             preferences.remove(SettingsConstants.KEY_PROFILE_VISIBILITY)
             preferences.remove(SettingsConstants.KEY_CONTENT_VISIBILITY)
             preferences.remove(SettingsConstants.KEY_GROUP_PRIVACY)
+            preferences.remove(SettingsConstants.KEY_LAST_SEEN_VISIBILITY)
+            preferences.remove(SettingsConstants.KEY_PROFILE_PHOTO_VISIBILITY)
+            preferences.remove(SettingsConstants.KEY_ABOUT_VISIBILITY)
+            preferences.remove(SettingsConstants.KEY_STATUS_VISIBILITY)
+            preferences.remove(SettingsConstants.KEY_LAST_SEEN_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_PROFILE_PHOTO_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_ABOUT_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_STATUS_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_GROUP_EXCLUDED_USER_IDS)
             preferences.remove(SettingsConstants.KEY_BIOMETRIC_LOCK_ENABLED)
             preferences.remove(SettingsConstants.KEY_TWO_FACTOR_ENABLED)
 
@@ -70,6 +79,7 @@ class SettingsDataStore private constructor(
             preferences.remove(SettingsConstants.KEY_CHAT_SWIPE_GESTURE)
             preferences.remove(SettingsConstants.KEY_CHAT_FOLDERS)
             preferences.remove(SettingsConstants.KEY_CHAT_MAX_MESSAGE_CHUNK_SIZE)
+            preferences.remove(SettingsConstants.KEY_NAVIGATION_PLACEMENT)
             preferences.remove(SettingsConstants.KEY_MESSAGE_SUGGESTION_ENABLED)
             preferences.remove(SettingsConstants.KEY_CHAT_AVATAR_DISABLED)
 
@@ -85,6 +95,10 @@ class SettingsDataStore private constructor(
             preferences.remove(SettingsConstants.KEY_CHANNELS_REPORTS_AUTO_CREATE)
             preferences.remove(SettingsConstants.KEY_HIDE_PROFILE_PIC_SUGGESTION)
             preferences.remove(SettingsConstants.KEY_SELECTED_FONT_ID)
+            preferences.remove(SettingsConstants.KEY_INCREASE_CONTRAST_ENABLED)
+            preferences.remove(SettingsConstants.KEY_HIGH_CONTRAST_TEXT_ENABLED)
+            preferences.remove(SettingsConstants.KEY_REDUCE_ANIMATIONS_ENABLED)
+            preferences.remove(SettingsConstants.KEY_AUTOPLAY_ANIMATIONS_ENABLED)
         }
     }
 
@@ -105,6 +119,15 @@ class SettingsDataStore private constructor(
             preferences[SettingsConstants.KEY_PROFILE_VISIBILITY] = SettingsConstants.DEFAULT_PROFILE_VISIBILITY.name
             preferences[SettingsConstants.KEY_CONTENT_VISIBILITY] = SettingsConstants.DEFAULT_CONTENT_VISIBILITY.name
             preferences[SettingsConstants.KEY_GROUP_PRIVACY] = SettingsConstants.DEFAULT_GROUP_PRIVACY.name
+            preferences[SettingsConstants.KEY_LAST_SEEN_VISIBILITY] = SettingsConstants.DEFAULT_LAST_SEEN_VISIBILITY.name
+            preferences[SettingsConstants.KEY_PROFILE_PHOTO_VISIBILITY] = SettingsConstants.DEFAULT_PROFILE_PHOTO_VISIBILITY.name
+            preferences[SettingsConstants.KEY_ABOUT_VISIBILITY] = SettingsConstants.DEFAULT_ABOUT_VISIBILITY.name
+            preferences[SettingsConstants.KEY_STATUS_VISIBILITY] = SettingsConstants.DEFAULT_STATUS_VISIBILITY.name
+            preferences.remove(SettingsConstants.KEY_LAST_SEEN_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_PROFILE_PHOTO_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_ABOUT_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_STATUS_EXCLUDED_USER_IDS)
+            preferences.remove(SettingsConstants.KEY_GROUP_EXCLUDED_USER_IDS)
             preferences[SettingsConstants.KEY_BIOMETRIC_LOCK_ENABLED] = SettingsConstants.DEFAULT_BIOMETRIC_LOCK_ENABLED
             preferences[SettingsConstants.KEY_TWO_FACTOR_ENABLED] = SettingsConstants.DEFAULT_TWO_FACTOR_ENABLED
 
@@ -128,6 +151,7 @@ class SettingsDataStore private constructor(
             preferences[SettingsConstants.KEY_CHAT_SWIPE_GESTURE] = SettingsConstants.DEFAULT_CHAT_SWIPE_GESTURE.name
             preferences.remove(SettingsConstants.KEY_CHAT_FOLDERS)
             preferences[SettingsConstants.KEY_CHAT_MAX_MESSAGE_CHUNK_SIZE] = SettingsConstants.DEFAULT_CHAT_MAX_MESSAGE_CHUNK_SIZE
+            preferences[SettingsConstants.KEY_NAVIGATION_PLACEMENT] = SettingsConstants.DEFAULT_NAVIGATION_PLACEMENT.name
             preferences[SettingsConstants.KEY_MESSAGE_SUGGESTION_ENABLED] = SettingsConstants.DEFAULT_MESSAGE_SUGGESTION_ENABLED
             preferences[SettingsConstants.KEY_CHAT_AVATAR_DISABLED] = SettingsConstants.DEFAULT_CHAT_AVATAR_DISABLED
 
@@ -142,6 +166,10 @@ class SettingsDataStore private constructor(
             preferences[SettingsConstants.KEY_ACCOUNT_REPORTS_AUTO_CREATE] = SettingsConstants.DEFAULT_ACCOUNT_REPORTS_AUTO_CREATE
             preferences[SettingsConstants.KEY_CHANNELS_REPORTS_AUTO_CREATE] = SettingsConstants.DEFAULT_CHANNELS_REPORTS_AUTO_CREATE
             preferences[SettingsConstants.KEY_HIDE_PROFILE_PIC_SUGGESTION] = false
+            preferences[SettingsConstants.KEY_INCREASE_CONTRAST_ENABLED] = SettingsConstants.DEFAULT_INCREASE_CONTRAST_ENABLED
+            preferences[SettingsConstants.KEY_HIGH_CONTRAST_TEXT_ENABLED] = SettingsConstants.DEFAULT_HIGH_CONTRAST_TEXT_ENABLED
+            preferences[SettingsConstants.KEY_REDUCE_ANIMATIONS_ENABLED] = SettingsConstants.DEFAULT_REDUCE_ANIMATIONS_ENABLED
+            preferences[SettingsConstants.KEY_AUTOPLAY_ANIMATIONS_ENABLED] = SettingsConstants.DEFAULT_AUTOPLAY_ANIMATIONS_ENABLED
         }
     }
 }

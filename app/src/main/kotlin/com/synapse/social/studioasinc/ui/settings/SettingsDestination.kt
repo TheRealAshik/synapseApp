@@ -98,6 +98,20 @@ sealed class SettingsDestination(val route: String) {
 
     object Font : SettingsDestination(ROUTE_FONT)
 
+    object ScheduledPosts : SettingsDestination(ROUTE_SCHEDULED_POSTS)
+
+    object PrivacyLastSeen : SettingsDestination(ROUTE_PRIVACY_LAST_SEEN)
+
+    object PrivacyProfilePhoto : SettingsDestination(ROUTE_PRIVACY_PROFILE_PHOTO)
+
+    object PrivacyAbout : SettingsDestination(ROUTE_PRIVACY_ABOUT)
+
+    object PrivacyStatus : SettingsDestination(ROUTE_PRIVACY_STATUS)
+
+    object PrivacyExceptionSelector : SettingsDestination(ROUTE_PRIVACY_EXCEPTION_SELECTOR)
+
+    object AppLock : SettingsDestination(ROUTE_APP_LOCK)
+
     companion object {
 
         const val ROUTE_HUB = "settings_hub"
@@ -127,7 +141,16 @@ sealed class SettingsDestination(val route: String) {
         const val ROUTE_CHAT_FOLDERS = "settings_chat_folders"
         const val ROUTE_FLAGS = "settings_flags"
         const val ROUTE_FONT = "settings_font"
+        const val ROUTE_SCHEDULED_POSTS = "settings_scheduled_posts"
+        const val ROUTE_PRIVACY_LAST_SEEN = "settings_privacy_last_seen"
+        const val ROUTE_PRIVACY_PROFILE_PHOTO = "settings_privacy_profile_photo"
+        const val ROUTE_PRIVACY_ABOUT = "settings_privacy_about"
+        const val ROUTE_PRIVACY_STATUS = "settings_privacy_status"
+        const val ROUTE_PRIVACY_EXCEPTION_SELECTOR = "settings_privacy_exception_selector/{settingKey}"
+        const val ROUTE_APP_LOCK = "settings_app_lock"
 
+        fun createPrivacyExceptionSelectorRoute(settingKey: String): String =
+            "settings_privacy_exception_selector/$settingKey"
 
 
         fun allDestinations(): List<SettingsDestination> = listOf(
@@ -156,7 +179,14 @@ sealed class SettingsDestination(val route: String) {
             ChatSettings,
             ChatFolders,
             Flags,
-            Font
+            Font,
+            ScheduledPosts,
+            PrivacyLastSeen,
+            PrivacyProfilePhoto,
+            PrivacyAbout,
+            PrivacyStatus,
+            PrivacyExceptionSelector,
+            AppLock
         )
 
 
@@ -188,6 +218,12 @@ sealed class SettingsDestination(val route: String) {
             ROUTE_CHAT_FOLDERS -> ChatFolders
             ROUTE_FLAGS -> Flags
             ROUTE_FONT -> Font
+            ROUTE_SCHEDULED_POSTS -> ScheduledPosts
+            ROUTE_PRIVACY_LAST_SEEN -> PrivacyLastSeen
+            ROUTE_PRIVACY_PROFILE_PHOTO -> PrivacyProfilePhoto
+            ROUTE_PRIVACY_ABOUT -> PrivacyAbout
+            ROUTE_PRIVACY_STATUS -> PrivacyStatus
+            ROUTE_APP_LOCK -> AppLock
             else -> null
         }
     }

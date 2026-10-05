@@ -270,7 +270,7 @@ class StoryRepositoryImpl @Inject constructor(
                 mediaType = sharedMediaType,
                 onProgress = {}
             )
-            result.getOrNull()
+            result.getOrNull()?.url
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {

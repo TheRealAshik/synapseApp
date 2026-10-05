@@ -2,6 +2,7 @@ package com.synapse.social.studioasinc.shared.data.source.remote
 
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
 import com.synapse.social.studioasinc.shared.domain.model.UploadError
+import com.synapse.social.studioasinc.shared.domain.model.UploadResult
 import com.synapse.social.studioasinc.shared.util.DateFormatterUtil
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 import com.synapse.social.studioasinc.shared.data.PlatformUtils
@@ -30,7 +31,7 @@ class R2UploadService(private val client: HttpClient) : UploadService {
         config: StorageConfig,
         bucketName: String?,
         onProgress: (Float) -> Unit
-    ): String {
+    ): UploadResult {
         val accountId = config.r2AccountId
         val accessKeyId = config.r2AccessKeyId
         val secretAccessKey = config.r2SecretAccessKey
@@ -97,7 +98,7 @@ class R2UploadService(private val client: HttpClient) : UploadService {
                 throw UploadError.R2Error("R2 upload failed with status ${response.status}: $errorBody")
             }
 
-            return url
+            return UploadResult(url = url, deleteUrl = null)
         } catch (e: Exception) {
             if (e is UploadError) throw e
             throw UploadError.R2Error("R2 upload failed: ${e.message}")

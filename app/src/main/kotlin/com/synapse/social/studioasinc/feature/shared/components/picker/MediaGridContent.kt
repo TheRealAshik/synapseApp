@@ -150,10 +150,11 @@ fun MediaGridItem(
         modifier = Modifier
             .aspectRatio(1f)
             .padding(Sizes.BorderThin)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable { onClick() }
     ) {
         AsyncImage(
-            model = file.uri,
+            model = file.thumbnailUri ?: file.uri,
             contentDescription = file.fileName,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

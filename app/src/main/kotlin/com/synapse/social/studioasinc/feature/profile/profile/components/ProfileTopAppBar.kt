@@ -29,13 +29,20 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ProfileTopAppBar(
     displayName: String,
-    scrollProgress: Float,
+    scrollProgressProvider: () -> Float,
     onBackClick: () -> Unit,
     onMoreClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isScrolledHalf by androidx.compose.runtime.remember {
+        androidx.compose.runtime.derivedStateOf { scrollProgressProvider() > 0.5f }
+    }
+    val isScrolledTitle by androidx.compose.runtime.remember {
+        androidx.compose.runtime.derivedStateOf { scrollProgressProvider() > 0.7f }
+    }
+
     val containerColor by animateColorAsState(
-        targetValue = if (scrollProgress > 0.5f) {
+        targetValue = if (isScrolledHalf) {
             MaterialTheme.colorScheme.surface
         } else {
             MaterialTheme.colorScheme.surface.copy(alpha = 0f)
@@ -45,13 +52,13 @@ fun ProfileTopAppBar(
     )
 
     val titleAlpha by animateFloatAsState(
-        targetValue = if (scrollProgress > 0.7f) 1f else 0f,
+        targetValue = if (isScrolledTitle) 1f else 0f,
         animationSpec = tween(durationMillis = 200),
         label = "titleAlpha"
     )
 
     val iconTint by animateColorAsState(
-        targetValue = if (scrollProgress > 0.5f) {
+        targetValue = if (isScrolledHalf) {
             MaterialTheme.colorScheme.onSurface
         } else {
             MaterialTheme.colorScheme.onSecondaryContainer
@@ -143,7 +150,7 @@ private fun ProfileTopAppBarPreview() {
     MaterialTheme {
         ProfileTopAppBar(
             displayName = "John Doe",
-            scrollProgress = 0.7f,
+            scrollProgressProvider = { 0.7f },
             onBackClick = {},
             onMoreClick = {}
         )
@@ -156,7 +163,7 @@ private fun ProfileTopAppBarTransparentPreview() {
     MaterialTheme {
         ProfileTopAppBar(
             displayName = "John Doe",
-            scrollProgress = 0f,
+            scrollProgressProvider = { 0f },
             onBackClick = {},
             onMoreClick = {}
         )

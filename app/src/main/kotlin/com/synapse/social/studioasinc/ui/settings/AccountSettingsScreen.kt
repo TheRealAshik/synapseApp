@@ -85,62 +85,64 @@ fun AccountSettingsScreen(
         ) {
 
             item {
-                SettingsSection(title = "Security") {
+                SettingsSection(title = stringResource(R.string.settings_security_section)) {
                     SettingsToggleItem(
-                        title = "Security Notifications",
-                        subtitle = "Get notified about security events",
+                        title = stringResource(R.string.settings_security_notifications_title),
+                        subtitle = stringResource(R.string.settings_security_notifications_subtitle),
                         checked = securityNotificationsEnabled,
-                        onCheckedChange = { viewModel.toggleSecurityNotifications(it) }
+                        onCheckedChange = { viewModel.toggleSecurityNotifications(it) },
+                        position = SettingsItemPosition.Top
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
-                        title = "Passkeys",
-                        subtitle = "Manage your passkeys",
+                        title = stringResource(R.string.settings_passkeys_title),
+                        subtitle = stringResource(R.string.settings_passkeys_subtitle),
                         imageVector = Icons.Filled.Key,
-                        onClick = { }
+                        onClick = { },
+                        position = SettingsItemPosition.Middle
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
-                        title = "Two-Step Verification",
-                        subtitle = "Add extra security to your account",
+                        title = stringResource(R.string.settings_two_step_verification_title),
+                        subtitle = stringResource(R.string.settings_two_step_verification_subtitle),
                         imageVector = Icons.Filled.Security,
-                        onClick = { }
+                        onClick = { },
+                        position = SettingsItemPosition.Bottom
                     )
                 }
             }
 
 
             item {
-                SettingsSection(title = "Account Information") {
+                SettingsSection(title = stringResource(R.string.settings_account_information_section)) {
                     SettingsNavigationItem(
-                        title = "Email Address",
-                        subtitle = "Update your email address",
+                        title = stringResource(R.string.settings_email_address_title),
+                        subtitle = stringResource(R.string.settings_email_address_subtitle),
                         imageVector = Icons.Filled.Email,
-                        onClick = { viewModel.showChangeEmailDialog() }
+                        onClick = { viewModel.showChangeEmailDialog() },
+                        position = SettingsItemPosition.Top
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
-                        title = "Change Number",
-                        subtitle = "Update your phone number",
+                        title = stringResource(R.string.settings_change_number_title),
+                        subtitle = stringResource(R.string.settings_change_number_subtitle),
                         imageVector = Icons.Filled.Phone,
-                        onClick = onNavigateToChangeNumber
+                        onClick = onNavigateToChangeNumber,
+                        position = SettingsItemPosition.Middle
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
                         title = stringResource(R.string.request_account_info_title),
                         subtitle = stringResource(R.string.request_account_info_subtitle),
                         imageVector = Icons.Filled.Download,
-                        onClick = onNavigateToRequestAccountInfo
+                        onClick = onNavigateToRequestAccountInfo,
+                        position = SettingsItemPosition.Bottom
                     )
                 }
             }
 
 
             item {
-                SettingsSection(title = "Business") {
+                SettingsSection(title = stringResource(R.string.settings_business_section)) {
                     SettingsNavigationItem(
-                        title = "Business Platform",
-                        subtitle = "Manage business features",
+                        title = stringResource(R.string.settings_business_platform_title),
+                        subtitle = stringResource(R.string.settings_business_platform_subtitle),
                         imageVector = Icons.Filled.Business,
                         onClick = onNavigateToBusinessPlatform
                     )
@@ -149,41 +151,42 @@ fun AccountSettingsScreen(
 
 
             item {
-                SettingsSection(title = "Linked Accounts") {
+                SettingsSection(title = stringResource(R.string.settings_linked_accounts_section)) {
 
                     LinkedAccountItem(
                         provider = SocialProvider.GOOGLE,
                         isLinked = linkedAccounts.googleLinked,
                         onConnect = { viewModel.connectSocialAccount(SocialProvider.GOOGLE) },
                         onDisconnect = { viewModel.disconnectSocialAccount(SocialProvider.GOOGLE) },
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        position = SettingsItemPosition.Top
                     )
-                    SettingsDivider()
 
                     LinkedAccountItem(
                         provider = SocialProvider.FACEBOOK,
                         isLinked = linkedAccounts.facebookLinked,
                         onConnect = { viewModel.connectSocialAccount(SocialProvider.FACEBOOK) },
                         onDisconnect = { viewModel.disconnectSocialAccount(SocialProvider.FACEBOOK) },
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        position = SettingsItemPosition.Middle
                     )
-                    SettingsDivider()
 
                     LinkedAccountItem(
                         provider = SocialProvider.APPLE,
                         isLinked = linkedAccounts.appleLinked,
                         onConnect = { viewModel.connectSocialAccount(SocialProvider.APPLE) },
                         onDisconnect = { viewModel.disconnectSocialAccount(SocialProvider.APPLE) },
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        position = SettingsItemPosition.Bottom
                     )
                 }
             }
 
 
             item {
-                SettingsSection(title = "Session") {
+                SettingsSection(title = stringResource(R.string.settings_session_section)) {
                     SettingsButtonItem(
-                        title = "Logout",
+                        title = stringResource(R.string.settings_logout_title),
                         onClick = onLogout,
                         isDestructive = true,
                         enabled = !isLoading
@@ -193,9 +196,9 @@ fun AccountSettingsScreen(
 
 
             item {
-                SettingsSection(title = "Danger Zone") {
+                SettingsSection(title = stringResource(R.string.settings_danger_zone_section)) {
                     SettingsButtonItem(
-                        title = "Delete Account",
+                        title = stringResource(R.string.settings_delete_account_title),
                         onClick = { viewModel.showDeleteAccountDialog() },
                         isDestructive = true,
                         enabled = !isLoading
@@ -254,72 +257,79 @@ private fun LinkedAccountItem(
     isLinked: Boolean,
     onConnect: () -> Unit,
     onDisconnect: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    position: SettingsItemPosition = SettingsItemPosition.Single
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = SettingsSpacing.itemHorizontalPadding,
-                vertical = SettingsSpacing.itemVerticalPadding
-            ),
-        horizontalArrangement = Arrangement.SpaceBetween
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = position.getShape(),
+        color = SettingsColors.cardBackground
     ) {
         Row(
-            modifier = Modifier.weight(1f),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = SettingsSpacing.itemHorizontalPadding,
+                    vertical = SettingsSpacing.itemVerticalPadding
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            ) {
 
-            val brandIconRes = getProviderIcon(provider)
-            if (brandIconRes != null) {
-                Icon(
-                    painter = painterResource(brandIconRes),
-                    contentDescription = null,
-                    modifier = Modifier.size(SettingsSpacing.iconSize),
-                    tint = androidx.compose.ui.graphics.Color.Unspecified
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Filled.Info,
-                    contentDescription = null,
-                    modifier = Modifier.size(SettingsSpacing.iconSize)
-                )
+                val brandIconRes = getProviderIcon(provider)
+                if (brandIconRes != null) {
+                    Icon(
+                        painter = painterResource(brandIconRes),
+                        contentDescription = null,
+                        modifier = Modifier.size(SettingsSpacing.iconSize),
+                        tint = androidx.compose.ui.graphics.Color.Unspecified
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(SettingsSpacing.iconSize)
+                    )
+                }
+
+
+                Column {
+                    Text(
+                        text = provider.displayName,
+                        style = SettingsTypography.itemTitle,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface
+                               else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    )
+                    Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                    Text(
+                        text = if (isLinked) stringResource(R.string.settings_linked_accounts_connected) else stringResource(R.string.settings_linked_accounts_not_connected),
+                        style = SettingsTypography.itemSubtitle,
+                        color = if (isLinked) MaterialTheme.colorScheme.primary
+                               else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
 
 
-            Column {
-                Text(
-                    text = provider.displayName,
-                    style = SettingsTypography.itemTitle,
-                    color = if (enabled) MaterialTheme.colorScheme.onSurface
-                           else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+            FilledTonalButton(
+                onClick = if (isLinked) onDisconnect else onConnect,
+                enabled = enabled,
+                shape = SettingsShapes.itemShape,
+                colors = ButtonDefaults.filledTonalButtonColors(
+                    containerColor = if (isLinked) MaterialTheme.colorScheme.errorContainer
+                                   else MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = if (isLinked) MaterialTheme.colorScheme.onErrorContainer
+                                  else MaterialTheme.colorScheme.onPrimaryContainer
                 )
-                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+            ) {
                 Text(
-                    text = if (isLinked) "Connected" else "Not connected",
-                    style = SettingsTypography.itemSubtitle,
-                    color = if (isLinked) MaterialTheme.colorScheme.primary
-                           else MaterialTheme.colorScheme.onSurfaceVariant
+                    text = if (isLinked) stringResource(R.string.settings_linked_accounts_disconnect) else stringResource(R.string.settings_linked_accounts_connect),
+                    style = SettingsTypography.buttonText
                 )
             }
-        }
-
-
-        FilledTonalButton(
-            onClick = if (isLinked) onDisconnect else onConnect,
-            enabled = enabled,
-            shape = SettingsShapes.itemShape,
-            colors = ButtonDefaults.filledTonalButtonColors(
-                containerColor = if (isLinked) MaterialTheme.colorScheme.errorContainer
-                               else MaterialTheme.colorScheme.primaryContainer,
-                contentColor = if (isLinked) MaterialTheme.colorScheme.onErrorContainer
-                              else MaterialTheme.colorScheme.onPrimaryContainer
-            )
-        ) {
-            Text(
-                text = if (isLinked) "Disconnect" else "Connect",
-                style = SettingsTypography.buttonText
-            )
         }
     }
 }

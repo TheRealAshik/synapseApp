@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -50,6 +51,7 @@ import com.synapse.social.studioasinc.feature.shared.components.post.PostActions
 import com.synapse.social.studioasinc.feature.shared.components.post.PostOptionsBottomSheet
 import com.synapse.social.studioasinc.feature.shared.components.post.PostSummarySheet
 import com.synapse.social.studioasinc.feature.shared.components.post.SharedPostItem
+import com.synapse.social.studioasinc.feature.shared.utils.PostShareUtils
 import com.synapse.social.studioasinc.core.ui.animation.SkeletonMorphedContent
 import com.synapse.social.studioasinc.ui.components.ExpressiveLoadingIndicator
 import com.synapse.social.studioasinc.ui.components.ShimmerBox
@@ -187,6 +189,38 @@ fun SearchScreen(
                                 }
                             }
                     ) {
+                        if (uiState.trendingHashtags.isNotEmpty()) {
+                            Text(
+                                text = stringResource(R.string.trending),
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(
+                                    horizontal = Spacing.Medium,
+                                    vertical = Spacing.Small
+                                )
+                            )
+                            LazyRow(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = Spacing.Small),
+                                contentPadding = PaddingValues(horizontal = Spacing.Medium),
+                                horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                            ) {
+                                items(uiState.trendingHashtags, key = { it.id }) { hashtag ->
+                                    FilterChip(
+                                        selected = false,
+                                        onClick = { viewModel.onSearch("#${hashtag.tag}") },
+                                        label = { Text(stringResource(R.string.common_hashtag_format, hashtag.tag)) },
+                                        shape = RoundedCornerShape(Spacing.Medium),
+                                        colors = FilterChipDefaults.filterChipColors(
+                                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                                            labelColor = MaterialTheme.colorScheme.primary
+                                        ),
+                                        border = null
+                                    )
+                                }
+                            }
+                        }
+
                         val history = uiState.searchHistory
                         if (history.isNotEmpty()) {
                             Text(
@@ -288,7 +322,7 @@ fun SearchScreen(
                                                 ) {
                                                     HashtagCard(
                                                         hashtag = hashtag,
-                                                        onClick = { viewModel.onSearch(hashtag.tag) }
+                                                        onClick = { viewModel.onSearch("#${hashtag.tag}") }
                                                     )
                                                 }
                                             }
@@ -306,11 +340,11 @@ fun SearchScreen(
                                                 }
                                             }
                                             items(uiState.posts) { post ->
-                                                val actions = remember(viewModel) {
+                                                val actions = remember(viewModel, context) {
                                                     PostActions(
                                                         onLike = viewModel::likePost,
                                                         onComment = { p -> onNavigateToPost(p.id) },
-                                                        onShare = viewModel::sharePost,
+                                                        onShare = { p -> PostShareUtils.sharePost(context, p.id) },
                                                         onRepost = { },
                                                         onQuote = { },
                                                         onBookmark = viewModel::bookmarkPost,
@@ -378,7 +412,7 @@ fun SearchScreen(
                                                     itemsIndexed(uiState.hashtags, key = { index, it -> "${it.id}_${index}" }) { index, hashtag ->
                                                         HashtagCard(
                                                             hashtag = hashtag,
-                                                            onClick = { viewModel.onSearch(hashtag.tag) }
+                                                            onClick = { viewModel.onSearch("#${hashtag.tag}") }
                                                         )
                                                         HorizontalDivider(
                                                             color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
@@ -424,11 +458,11 @@ fun SearchScreen(
                                                     }
                                                 } else {
                                                     itemsIndexed(uiState.posts, key = { index, it -> "${it.id}_${index}" }) { index, post ->
-                                                        val actions = remember(viewModel) {
+                                                        val actions = remember(viewModel, context) {
                                                             PostActions(
                                                                 onLike = viewModel::likePost,
                                                                 onComment = { p -> onNavigateToPost(p.id) },
-                                                                onShare = viewModel::sharePost,
+                                                                onShare = { p -> PostShareUtils.sharePost(context, p.id) },
                                                                 onRepost = { },
                                                                 onQuote = { },
                                                                 onBookmark = viewModel::bookmarkPost,
@@ -479,11 +513,7 @@ fun SearchScreen(
                 selectedPost = null
             },
             onShare = {
-                val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_post_synapse_text, post.id))
-                }
-                context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.title_share_post)))
+                PostShareUtils.sharePost(context, post.id)
                 selectedPost = null
             },
             onCopyLink = {
@@ -551,7 +581,7 @@ fun SearchLoadingShimmer() {
                 Column {
                     ShimmerBox(modifier = Modifier.width(Sizes.ShimmerWidthLarge).height(Spacing.Medium))
                     Spacer(modifier = Modifier.height(Spacing.Small))
-                    ShimmerBox(modifier = Modifier.width(80.dp).height(Spacing.SmallMedium))
+                    ShimmerBox(modifier = Modifier.width(Sizes.WidthLarge).height(Spacing.SmallMedium))
                 }
             }
             HorizontalDivider(

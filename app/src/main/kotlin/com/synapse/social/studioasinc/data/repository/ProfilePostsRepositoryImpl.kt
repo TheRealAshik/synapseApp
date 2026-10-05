@@ -8,6 +8,7 @@ import com.synapse.social.studioasinc.domain.model.CommentWithUser
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
@@ -60,7 +61,7 @@ internal class ProfilePostsRepositoryImpl(
 
         // Fetch own posts
         val response = client.from("posts").select(
-            columns = Columns.raw("*, users!author_uid($KEY_UID, $KEY_USERNAME, $KEY_AVATAR, $KEY_VERIFY)")
+            columns = Columns.raw("*, users!author_uid($KEY_UID, $KEY_USERNAME, $KEY_AVATAR, $KEY_VERIFY), quoted_post:posts!quoted_post_id(*, users!author_uid($KEY_UID, $KEY_USERNAME, $KEY_AVATAR, $KEY_VERIFY))")
         ) {
             filter { eq(KEY_AUTHOR_UID, actualUserId) }
             limit(limit.toLong())
@@ -102,7 +103,7 @@ internal class ProfilePostsRepositoryImpl(
                 ?.get(KEY_USERNAME)?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.contentOrNull else null }
 
             client.from("posts").select(
-                columns = Columns.raw("*, users!author_uid($KEY_UID, $KEY_USERNAME, $KEY_AVATAR, $KEY_VERIFY)")
+                columns = Columns.raw("*, users!author_uid($KEY_UID, $KEY_USERNAME, $KEY_AVATAR, $KEY_VERIFY), quoted_post:posts!quoted_post_id(*, users!author_uid($KEY_UID, $KEY_USERNAME, $KEY_AVATAR, $KEY_VERIFY))")
             ) {
                 filter { isIn(KEY_ID, resharedPostIds) }
             }.decodeList<JsonObject>().mapNotNull { data ->
@@ -167,6 +168,13 @@ internal class ProfilePostsRepositoryImpl(
     }
 
     internal fun parsePost(data: JsonObject): Post? {
+        val quotedPostNode = data["quoted_post"]
+        val quotedPostObject = when (quotedPostNode) {
+            is JsonObject -> quotedPostNode
+            is JsonArray -> quotedPostNode.firstOrNull()?.takeIf { it is JsonObject }?.jsonObject
+            else -> null
+        }
+        val quotedPostObj = quotedPostObject?.let { parsePost(it) }
         val post = Post(
             id = data.getNullableString(KEY_ID) ?: return null,
             authorUid = data.getString(KEY_AUTHOR_UID),
@@ -184,7 +192,10 @@ internal class ProfilePostsRepositoryImpl(
                 val obj = it.jsonObject
                 val text = obj.getNullableString(KEY_TEXT) ?: return@mapNotNull null
                 PollOption(text, obj.getInt(KEY_VOTES))
-            }
+            },
+            quotedPostId = data.getNullableString("quoted_post_id"),
+            quotedPost = quotedPostObj,
+            isQuote = data.getBoolean("is_quote") ?: (quotedPostObj != null)
         )
 
         data[KEY_USERS]?.jsonObject?.let { userData ->
@@ -203,11 +214,13 @@ internal class ProfilePostsRepositoryImpl(
             post.mediaItems = mediaData.mapNotNull { item ->
                 val mediaMap = item.jsonObject
                 val url = mediaMap.getNullableString(KEY_URL) ?: return@mapNotNull null
+                val deleteUrl = mediaMap.getNullableString("delete_url") ?: mediaMap.getNullableString("deleteUrl")
                 MediaItem(
                     id = mediaMap.getString(KEY_ID),
                     url = constructMediaUrl(url),
                     type = if (mediaMap.getNullableString(KEY_TYPE).equals(MEDIA_TYPE_VIDEO, true)) MediaType.VIDEO else MediaType.IMAGE,
-                    thumbnailUrl = mediaMap.getNullableString(KEY_THUMBNAIL_URL)?.let { constructMediaUrl(it) }
+                    thumbnailUrl = mediaMap.getNullableString(KEY_THUMBNAIL_URL)?.let { constructMediaUrl(it) },
+                    deleteUrl = deleteUrl
                 )
             }.toMutableList()
         }

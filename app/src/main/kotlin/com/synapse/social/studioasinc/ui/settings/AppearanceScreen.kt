@@ -100,19 +100,20 @@ fun AppearanceScreen(
                             val mode = viewModel.getThemeModeFromDisplayName(selected)
                             viewModel.setThemeMode(mode)
                         },
-                        enabled = !isLoading
+                        enabled = !isLoading,
+                        position = if (viewModel.isDynamicColorSupported) SettingsItemPosition.Top else SettingsItemPosition.Single
                     )
 
 
                     if (viewModel.isDynamicColorSupported) {
-                        SettingsDivider()
                         SettingsToggleItem(
                             title = stringResource(R.string.appearance_dynamic_color),
                             subtitle = stringResource(R.string.appearance_dynamic_color_subtitle),
                             imageVector = Icons.Filled.Palette,
                             checked = appearanceSettings.dynamicColorEnabled,
                             onCheckedChange = { viewModel.setDynamicColorEnabled(it) },
-                            enabled = !isLoading
+                            enabled = !isLoading,
+                            position = SettingsItemPosition.Bottom
                         )
                     }
                 }

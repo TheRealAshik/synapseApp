@@ -57,12 +57,12 @@ import androidx.lifecycle.Lifecycle
 import com.synapse.social.studioasinc.shared.core.util.UiEventManager
 import com.synapse.social.studioasinc.shared.core.util.UiEvent
 import com.synapse.social.studioasinc.domain.usecase.update.UpdateState
-import androidx.fragment.app.FragmentActivity
+import androidx.appcompat.app.AppCompatActivity
 import com.synapse.social.studioasinc.core.util.ChatLockManager
 import kotlinx.coroutines.flow.first
 
 @AndroidEntryPoint
-class MainActivity : FragmentActivity() {
+class MainActivity : AppCompatActivity() {
 
     @Inject
     lateinit var authRepository: AuthRepository
@@ -303,7 +303,7 @@ fun MainScreen(
                 painter = painterResource(id = R.drawable.ic_launcher_foreground),
                 contentDescription = "App Logo",
                 modifier = Modifier
-                    .size(85.dp)
+                    .size(Sizes.LogoSize)
                     .clickable(
                         onClick = onFinish,
                         onClickLabel = "Long press to exit"

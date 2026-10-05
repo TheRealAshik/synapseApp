@@ -9,6 +9,7 @@ import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.domain.model.Post
 import com.synapse.social.studioasinc.feature.profile.profile.components.*
 import com.synapse.social.studioasinc.feature.shared.components.MediaViewer
+import com.synapse.social.studioasinc.feature.shared.utils.PostShareUtils
 import com.synapse.social.studioasinc.feature.shared.components.post.PostOptionsBottomSheet
 
 @Composable
@@ -215,11 +216,7 @@ internal fun PostOptionsSection(
                 viewModel.deletePost(post.id)
             },
             onShare = {
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_post_text, "${BuildConfig.APP_DOMAIN}/post/${post.id}"))
-                }
-                context.startActivity(Intent.createChooser(intent, context.getString(R.string.title_share_post)))
+                PostShareUtils.sharePost(context, post.id)
             },
             onCopyLink = {
                 val url = "${BuildConfig.APP_DOMAIN}/post/${post.id}"

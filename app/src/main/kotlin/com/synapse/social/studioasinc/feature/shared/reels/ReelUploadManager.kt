@@ -34,7 +34,7 @@ class ReelUploadManager @Inject constructor(
 
             try {
                 // Upload video
-                val videoUrl = uploadMediaUseCase(
+                val uploadResult = uploadMediaUseCase(
                     filePath = videoUri.toString(),
                     mediaType = com.synapse.social.studioasinc.shared.domain.model.MediaType.VIDEO,
                     bucketName = "reels",
@@ -45,7 +45,7 @@ class ReelUploadManager @Inject constructor(
 
                 // Register with database
                 reelRepository.createReel(
-                    videoUrl = videoUrl,
+                    videoUrl = uploadResult.url,
                     caption = caption,
                     musicTrack = musicTrack
                 ).onSuccess {
@@ -65,4 +65,3 @@ class ReelUploadManager @Inject constructor(
         _uploadError.value = null
     }
 }
-

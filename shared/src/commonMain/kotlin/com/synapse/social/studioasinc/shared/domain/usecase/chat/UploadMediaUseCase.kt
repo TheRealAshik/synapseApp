@@ -64,14 +64,14 @@ class UploadMediaUseCase(
                 filePath = filePath,
                 provider = providerToUse,
                 config = config,
-                bucketName = "chat_attachments",
+                bucketName = "chat-attachments",
                 onProgress = { progressFloat ->
                     onProgress?.invoke((progressFloat * 100).toInt())
                 }
             )
 
             if (result.isSuccess) {
-                return result
+                return result.map { it.url }
             } else {
                 failures.add("$providerToUse: " + (result.exceptionOrNull()?.message ?: "Unknown error"))
             }

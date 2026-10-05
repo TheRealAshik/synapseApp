@@ -8,6 +8,7 @@ import com.synapse.social.studioasinc.shared.data.source.remote.SupabaseUploadSe
 import com.synapse.social.studioasinc.shared.data.source.remote.UploadService
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
 import com.synapse.social.studioasinc.shared.domain.model.StorageProvider
+import com.synapse.social.studioasinc.shared.domain.model.UploadResult
 import com.synapse.social.studioasinc.shared.domain.repository.MediaUploadRepository
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 
@@ -25,13 +26,13 @@ class MediaUploadRepositoryImpl(
         config: StorageConfig,
         bucketName: String?,
         onProgress: (Float) -> Unit
-    ): Result<String> {
+    ): Result<UploadResult> {
         return try {
             val fileSize = fileUploader.getFileSize(filePath)
             val fileName = fileUploader.getFileName(filePath).ifBlank { "upload_${TimeProvider.nowMillis()}" }
 
             val service = getUploadService(provider)
-            val url = service.upload(
+            val uploadResult = service.upload(
                 fileProvider = { offset -> fileUploader.readFile(filePath, offset) },
                 fileSize = fileSize,
                 fileName = fileName,
@@ -39,7 +40,7 @@ class MediaUploadRepositoryImpl(
                 bucketName = bucketName,
                 onProgress = onProgress
             )
-            Result.success(url)
+            Result.success(uploadResult)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -47,6 +48,15 @@ class MediaUploadRepositoryImpl(
 
     override fun deleteFile(filePath: String) {
         fileUploader.deleteFile(filePath)
+    }
+
+    override suspend fun deleteImgBbImages(deleteUrls: List<String>) {
+        if (deleteUrls.isEmpty()) return
+        try {
+            imgBBUploadService.deleteImages(deleteUrls)
+        } catch (_: Exception) {
+            // Best effort cleanup
+        }
     }
 
     private fun getUploadService(provider: StorageProvider): UploadService {

@@ -34,6 +34,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
@@ -57,9 +58,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
-import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.core.util.IntentUtils
@@ -89,7 +88,7 @@ fun RepliesIndicatorRow(count: Int) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            text = "$count replies",
+            text = stringResource(R.string.chat_reply_count, count),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -117,7 +116,7 @@ fun SenderHeaderRow(
                 contentDescription = "Sender Avatar",
                 contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .size(36.dp)
+                    .size(Sizes.AvatarSmall)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
             )
@@ -173,8 +172,8 @@ fun DateDividerChip(label: String) {
 private fun WavyDivider(modifier: Modifier, color: Color) {
     Canvas(modifier = modifier) {
         val path = Path()
-        val waveLength = 24.dp.toPx()
-        val amplitude = 2.dp.toPx()
+        val waveLength = Spacing.Large.toPx()
+        val amplitude = Spacing.Tiny.toPx()
 
         // Use a true sine wave approach using cubic beziers for smoothness
         path.moveTo(0f, size.height / 2f)
@@ -192,7 +191,7 @@ private fun WavyDivider(modifier: Modifier, color: Color) {
             path = path,
             color = color,
             style = Stroke(
-                width = 1.5.dp.toPx(),
+                width = Sizes.BorderDefault.toPx(),
                 cap = StrokeCap.Round
             )
         )
@@ -207,14 +206,14 @@ fun UnreadDividerRow(count: Int) {
             .padding(vertical = Spacing.Small),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        WavyDivider(modifier = Modifier.weight(1f).height(6.dp), color = MaterialTheme.colorScheme.primary)
+        WavyDivider(modifier = Modifier.weight(1f).height(Spacing.ExtraSmallMedium), color = MaterialTheme.colorScheme.primary)
         Text(
             text = stringResource(if (count == 1) R.string.chat_divider_unread_one else R.string.chat_divider_unread_other, count),
             modifier = Modifier.padding(horizontal = Spacing.Medium),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.primary
         )
-        WavyDivider(modifier = Modifier.weight(1f).height(6.dp), color = MaterialTheme.colorScheme.primary)
+        WavyDivider(modifier = Modifier.weight(1f).height(Spacing.ExtraSmallMedium), color = MaterialTheme.colorScheme.primary)
     }
 }
 
@@ -227,7 +226,7 @@ fun isWithinTimeThreshold(timeStr1: String?, timeStr2: String?): Boolean {
     return try {
         val t1 = Instant.parse(timeStr1).epochSecond
         val t2 = Instant.parse(timeStr2).epochSecond
-        abs(t1 - t2) <= 5 * 60 // 5 minutes
+        abs(t1 - t2) <= 300 // 5 minutes
     } catch (e: Exception) {
         false
     }
@@ -240,11 +239,10 @@ fun MessageBubble(
     isFromMe: Boolean,
     position: GroupPosition = GroupPosition.SINGLE,
     isSelected: Boolean = false,
-    onToggleSelection: () -> Unit = {},
+    onClick: () -> Unit = {},
     onSwipeToReply: () -> Unit = {},
     replyToMessage: Message? = null,
     onLongClick: () -> Unit = {},
-    onShowReactionPicker: () -> Unit = {},
     onReactionSelected: (SharedReactionType) -> Unit = {},
     getLinkMetadataUseCase: GetLinkMetadataUseCase? = null,
     fontScale: Float = 1.0f,
@@ -261,28 +259,29 @@ fun MessageBubble(
 ) {
     val horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
 
-    val bubbleMaxWidth = (LocalConfiguration.current.screenWidthDp * 0.8f).dp
+    val configuration = LocalConfiguration.current
+    val bubbleMaxWidth = (configuration.screenWidthDp.dp * 0.78f).coerceIn(240.dp, 480.dp)
 
     val isDark = isSystemInDarkTheme()
 
     val containerColor = if (isFromMe) {
         when (themePreset) {
             ChatThemePreset.DEFAULT -> MaterialTheme.colorScheme.primaryContainer
-            ChatThemePreset.OCEAN -> if (isDark) DarkPrimaryContainer else LightPrimaryContainer
-            ChatThemePreset.FOREST -> if (isDark) ForestBubbleText else ForestBubbleBackground
-            ChatThemePreset.SUNSET -> if (isDark) SunsetBubbleText else SunsetBubbleBackground
+            ChatThemePreset.OCEAN -> if (isDark) OceanDarkContainer else OceanLightContainer
+            ChatThemePreset.FOREST -> if (isDark) ForestDarkContainer else ForestLightContainer
+            ChatThemePreset.SUNSET -> if (isDark) SunsetDarkContainer else SunsetLightContainer
             ChatThemePreset.MONOCHROME -> if (isDark) Gray700 else Gray200
         }
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHighest
+        MaterialTheme.colorScheme.surfaceContainerHigh
     }
 
     val contentColor = if (isFromMe) {
         when (themePreset) {
             ChatThemePreset.DEFAULT -> MaterialTheme.colorScheme.onPrimaryContainer
-            ChatThemePreset.OCEAN -> if (isDark) DarkOnPrimaryContainer else DarkPrimaryContainer
-            ChatThemePreset.FOREST -> if (isDark) ForestBubbleBackground else ForestBubbleText
-            ChatThemePreset.SUNSET -> if (isDark) SunsetBubbleBackground else SunsetBubbleText
+            ChatThemePreset.OCEAN -> if (isDark) OceanDarkOnContainer else OceanLightOnContainer
+            ChatThemePreset.FOREST -> if (isDark) ForestDarkOnContainer else ForestLightOnContainer
+            ChatThemePreset.SUNSET -> if (isDark) SunsetDarkOnContainer else SunsetLightOnContainer
             ChatThemePreset.MONOCHROME -> if (isDark) Gray200 else Gray900
         }
     } else {
@@ -331,7 +330,7 @@ fun MessageBubble(
             .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent)
             .combinedClickable(
                 onLongClick = onLongClick,
-                onClick = { onToggleSelection() },
+                onClick = onClick,
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             )
@@ -382,14 +381,10 @@ fun MessageBubble(
             // Avatar beside the bubble for received messages (bottom-aligned)
             if (!isFromMe && showAvatar) {
                 if (position == GroupPosition.LAST || position == GroupPosition.SINGLE) {
-                    AsyncImage(
-                        model = senderAvatarUrl,
-                        contentDescription = "Sender Avatar",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(Sizes.AvatarSmall)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                    com.synapse.social.studioasinc.feature.shared.components.UserAvatar(
+                        avatarUrl = senderAvatarUrl,
+                        displayName = senderName,
+                        size = Sizes.AvatarSmall
                     )
                 } else {
                     Spacer(modifier = Modifier.size(Sizes.AvatarSmall))
@@ -428,15 +423,15 @@ fun MessageBubble(
             )
         }
 
-        Box {
+        Column(
+            horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
+        ) {
         Surface(
             color = containerColor,
             contentColor = contentColor,
             shape = shape,
             tonalElevation = Sizes.BorderThin,
-            modifier = Modifier
-                .widthIn(max = bubbleMaxWidth)
-                .padding(bottom = if (reactions.isNotEmpty()) 12.dp else 0.dp)
+            modifier = Modifier.widthIn(max = bubbleMaxWidth)
         ) {
             Column(modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Small)) {
 
@@ -450,7 +445,7 @@ fun MessageBubble(
                         shape = RoundedCornerShape(Sizes.CornerMedium),
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 1.dp)
+                            .padding(bottom = Sizes.BorderThin)
                             .clickable { replyToMessage.id?.let { onQuoteClick(it) } }
                     ) {
                         val isOwnReply = replyToMessage.senderId == message.senderId
@@ -471,7 +466,7 @@ fun MessageBubble(
                                     placeholder = rememberVectorPainter(Icons.Filled.Person),
                                     error = rememberVectorPainter(Icons.Filled.Person),
                                     modifier = Modifier
-                                        .size(16.dp)
+                                        .size(Sizes.IconSemiMedium)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.surfaceVariant)
                                 )
@@ -486,7 +481,7 @@ fun MessageBubble(
                             Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
                             Text(
                                 text = replyToMessage.content ?: "",
-                                style = TextStyle(
+                                style = MaterialTheme.typography.bodySmall.copy(
                                     fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 ),
@@ -590,7 +585,7 @@ fun MessageBubble(
                             var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
                             Text(
                                 text = annotatedString,
-                                style = androidx.compose.ui.text.TextStyle(
+                                style = MaterialTheme.typography.bodyMedium.copy(
                                     color = contentColor,
                                     fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
                                 ),
@@ -601,12 +596,17 @@ fun MessageBubble(
                                             onLongClick()
                                         },
                                         onTap = { pos ->
+                                            var urlHandled = false
                                             layoutResult?.let { layoutResult ->
                                                 val offset = layoutResult.getOffsetForPosition(pos)
                                                 annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
                                                     .firstOrNull()?.let { annotation ->
                                                         IntentUtils.openUrl(context, annotation.item)
+                                                        urlHandled = true
                                                     }
+                                            }
+                                            if (!urlHandled) {
+                                                onClick()
                                             }
                                         }
                                     )
@@ -618,57 +618,44 @@ fun MessageBubble(
                 } // close Box
             }
         }
-        if (reactions.isNotEmpty()) {
-            @OptIn(ExperimentalLayoutApi::class)
-            FlowRow(
-                modifier = Modifier
-                    .offset(y = 12.dp)
-                    .padding(horizontal = Spacing.Small),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Tiny)
-            ) {
-                reactions.forEach { (emoji, count) ->
-                    val type = SharedReactionType.values().find { it.emoji == emoji } ?: SharedReactionType.LIKE
-                    Surface(
-                        shape = CircleShape,
-                        color = if (message.userReaction == type)
-                            MaterialTheme.colorScheme.primaryContainer
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant,
-                        tonalElevation = 2.dp,
-                        modifier = Modifier.clickable { onReactionSelected(type) }
+
+        @OptIn(ExperimentalLayoutApi::class)
+        FlowRow(
+            modifier = Modifier
+                .padding(top = Spacing.Tiny)
+                .padding(horizontal = Spacing.ExtraSmall),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny, if (isFromMe) Alignment.End else Alignment.Start),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+        ) {
+            reactions.forEach { (emoji, count) ->
+                val type = SharedReactionType.values().find { it.emoji == emoji } ?: SharedReactionType.LIKE
+                Surface(
+                    shape = CircleShape,
+                    color = if (message.userReaction == type)
+                        MaterialTheme.colorScheme.primaryContainer
+                    else
+                        MaterialTheme.colorScheme.surfaceVariant,
+                    tonalElevation = Spacing.Tiny,
+                    modifier = Modifier.clickable { onReactionSelected(type) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = Spacing.ExtraSmallMedium, vertical = Spacing.Tiny),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(2.dp)
-                        ) {
-                            Text(text = emoji, fontSize = 12.sp)
-                            if (count > 1) {
-                                Text(
-                                    text = count.toString(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontSize = 10.sp
-                                )
-                            }
+                        Text(text = emoji, fontSize = FontSizes.Small)
+                        if (count > 1) {
+                            Text(
+                                text = count.toString(),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontSize = FontSizes.Small
+                            )
                         }
                     }
                 }
-                IconButton(
-                    onClick = onShowReactionPicker,
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.AddReaction,
-                        contentDescription = "Add Reaction",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
         }
-        } // Box
-
-        if (reactions.isNotEmpty()) Spacer(modifier = Modifier.height(12.dp))
+        } // Column
 
         if (isFromMe && (position == GroupPosition.LAST || position == GroupPosition.SINGLE)
             && message.deliveryStatus == DeliveryStatus.READ) {

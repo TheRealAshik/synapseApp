@@ -156,7 +156,11 @@ object PostMapper {
             id = item.id,
             url = item.url,
             type = SharedMediaType.valueOf(item.type.name),
-            thumbnailUrl = item.thumbnailUrl
+            thumbnailUrl = item.thumbnailUrl,
+            duration = item.duration,
+            size = item.size,
+            mimeType = item.mimeType,
+            deleteUrl = item.deleteUrl
         )
     }
 
@@ -165,7 +169,11 @@ object PostMapper {
             id = item.id,
             url = item.url,
             type = AppMediaType.valueOf(item.type.name),
-            thumbnailUrl = item.thumbnailUrl
+            thumbnailUrl = item.thumbnailUrl,
+            duration = item.duration,
+            size = item.size,
+            mimeType = item.mimeType,
+            deleteUrl = item.deleteUrl
         )
     }
 

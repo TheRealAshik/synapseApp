@@ -33,6 +33,26 @@ enum class GroupPrivacy {
     fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
 }
 
+enum class LastSeenVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class ProfilePhotoVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class AboutVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class StatusVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
 enum class NotificationCategory {
     LIKES, COMMENTS, REPLIES, FOLLOWS, MESSAGES, MENTIONS, NEW_POSTS, SHARES, SYSTEM_UPDATES;
     fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
@@ -98,7 +118,16 @@ data class PrivacySettings(
     val groupPrivacy: GroupPrivacy = GroupPrivacy.EVERYONE,
     val readReceiptsEnabled: Boolean = true,
     val appLockEnabled: Boolean = false,
-    val chatLockEnabled: Boolean = false
+    val chatLockEnabled: Boolean = false,
+    val lastSeenVisibility: LastSeenVisibility = LastSeenVisibility.EVERYONE,
+    val profilePhotoVisibility: ProfilePhotoVisibility = ProfilePhotoVisibility.EVERYONE,
+    val aboutVisibility: AboutVisibility = AboutVisibility.EVERYONE,
+    val statusVisibility: StatusVisibility = StatusVisibility.EVERYONE,
+    val lastSeenExcludedUserIds: Set<String> = emptySet(),
+    val profilePhotoExcludedUserIds: Set<String> = emptySet(),
+    val aboutExcludedUserIds: Set<String> = emptySet(),
+    val statusExcludedUserIds: Set<String> = emptySet(),
+    val groupExcludedUserIds: Set<String> = emptySet()
 )
 
 data class NotificationPreferences(

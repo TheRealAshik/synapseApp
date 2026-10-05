@@ -50,6 +50,10 @@ import com.synapse.social.studioasinc.feature.profile.lockprofile.LockProfileVie
 import com.synapse.social.studioasinc.ui.settings.SettingsNavHost
 import kotlinx.serialization.Serializable
 import com.synapse.social.studioasinc.feature.inbox.inbox.screens.ChatScreen
+import androidx.compose.runtime.rememberCoroutineScope
+import com.synapse.social.studioasinc.BuildConfig
+import com.synapse.social.studioasinc.core.auth.GoogleAuthHelper
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
@@ -71,6 +75,7 @@ fun AppNavigation(
             postGraph(navController, this@SharedTransitionLayout)
             profileGraph(navController, this@SharedTransitionLayout)
             storyGraph(navController, this@SharedTransitionLayout)
+            hashtagGraph(navController, this@SharedTransitionLayout)
         }
     }
 }
@@ -81,11 +86,29 @@ fun NavGraphBuilder.authGraph(
     sharedTransitionScope: SharedTransitionScope
 ) {
     composable<AppDestination.Auth> {
-        val viewModel: com.synapse.social.studioasinc.feature.auth.presentation.viewmodel.SignInViewModel = hiltViewModel()
+        val context = LocalContext.current
+        val coroutineScope = rememberCoroutineScope()
+        val viewModel: com.synapse.social.studioasinc.feature.auth.presentation.viewmodel.AuthViewModel = hiltViewModel()
         AuthScreen(
-            signInViewModel = viewModel,
+            authViewModel = viewModel,
             onInitiateGoogleSignIn = {
-                // Usually handled by Activity; delegated to viewModel in production
+                val clientId = BuildConfig.GOOGLE_WEB_CLIENT_ID
+                if (clientId.isBlank() || clientId.contains("your-google-web-client-id-here")) {
+                    val errorMsg = "Google Web Client ID not configured. Please set GOOGLE_WEB_CLIENT_ID in gradle.properties."
+                    viewModel.handleGoogleSignInError(errorMsg)
+                } else {
+                    coroutineScope.launch {
+                        val googleAuthHelper = GoogleAuthHelper(context)
+                        googleAuthHelper.signIn(clientId).fold(
+                            onSuccess = { idToken ->
+                                viewModel.handleGoogleIdToken(idToken)
+                            },
+                            onFailure = { error ->
+                                viewModel.handleGoogleSignInError(error.message ?: "Google Sign-In failed")
+                            }
+                        )
+                    }
+                }
             },
             onNavigateToMain = {
                 navController.navigate(AppDestination.Home) {
@@ -413,6 +436,30 @@ fun NavGraphBuilder.postGraph(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
+}
+
+@OptIn(ExperimentalSharedTransitionApi::class)
+fun NavGraphBuilder.hashtagGraph(
+    navController: NavHostController,
+    sharedTransitionScope: SharedTransitionScope
+) {
+    composable<AppDestination.HashtagFeed>(
+        deepLinks = listOf(navDeepLink<AppDestination.HashtagFeed>(basePath = "synapse://hashtag"))
+    ) { backStackEntry ->
+        val args = backStackEntry.toRoute<AppDestination.HashtagFeed>()
+        val viewModel: com.synapse.social.studioasinc.feature.hashtag.HashtagFeedViewModel = hiltViewModel()
+        com.synapse.social.studioasinc.feature.hashtag.HashtagFeedScreen(
+            tag = args.tag,
+            viewModel = viewModel,
+            onBack = { navController.popBackStack() },
+            onNavigateToPost = { postId, commentId ->
+                navController.navigate(AppDestination.PostDetail(postId, commentId))
+            },
+            onNavigateToProfile = { userId ->
+                navController.navigate(AppDestination.Profile(userId))
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalSharedTransitionApi::class)

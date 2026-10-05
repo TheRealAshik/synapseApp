@@ -37,6 +37,7 @@ import com.synapse.social.studioasinc.feature.shared.components.post.PostUiMappe
 import com.synapse.social.studioasinc.feature.shared.components.post.PostCard
 import com.synapse.social.studioasinc.feature.shared.theme.LocalUiAtmosphere
 import com.synapse.social.studioasinc.feature.shared.components.post.PostSummarySheet
+import com.synapse.social.studioasinc.feature.shared.utils.PostShareUtils
 import com.synapse.social.studioasinc.ui.components.ExpressiveLoadingIndicator
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
@@ -135,7 +136,7 @@ fun PostDetailScreen(
                 viewModel.deletePost(postId)
                 onNavigateBack()
             },
-            onShare = { sharePost(context, postId) },
+            onShare = { PostShareUtils.sharePost(context, postId) },
             onCopyLink = { viewModel.copyLink(postId, context) },
             onBookmark = { viewModel.toggleBookmark() },
             onToggleComments = { viewModel.toggleComments() },
@@ -259,7 +260,7 @@ fun PostDetailScreen(
                     keyboardController?.show()
                 }
             },
-            onPostShare = { _ -> sharePost(context, postId) },
+            onPostShare = { _ -> PostShareUtils.sharePost(context, postId) },
             onPostRepost = { _ -> viewModel.createReshare(null) },
             onPostBookmark = { _ -> viewModel.toggleBookmark() },
             onPostOptionClick = { _ -> showPostOptions = true },
@@ -297,6 +298,7 @@ private fun PostDetailContent(
     onPostMediaClick: (Int) -> Unit,
     onPostReactionSelected: (com.synapse.social.studioasinc.domain.model.Post, ReactionType) -> Unit
 ) {
+    val context = LocalContext.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -345,7 +347,7 @@ private fun PostDetailContent(
                                     state = ancestorState,
                                     onLikeClick = { onLikeClick(ancestor.id) },
                                     onCommentClick = { onReplyClick(ancestor) },
-                                    onShareClick = { /* Implement share */ },
+                                    onShareClick = { PostShareUtils.shareComment(context, ancestor.content) },
                                     onRepostClick = { },
                                     onBookmarkClick = { },
                                     onUserClick = { ancestor.userId?.let { onUserClick(it) } },
@@ -372,7 +374,7 @@ private fun PostDetailContent(
                                 state = postCardState,
                                 onLikeClick = { onLikeClick(rootComment.id) },
                                 onCommentClick = { onReplyClick(rootComment) },
-                                onShareClick = { /* Implement share */ },
+                                onShareClick = { PostShareUtils.shareComment(context, rootComment.content) },
                                 onRepostClick = { },
                                 onBookmarkClick = { },
                                 onUserClick = { rootComment.userId?.let { onUserClick(it) } },
@@ -487,22 +489,6 @@ private fun PostDetailBottomBar(
     }
 }
 
-private fun sharePost(context: Context, postId: String) {
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_post_synapse_text, postId))
-    }
-    context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.title_share_post)))
-}
-
-private fun shareComment(context: Context, content: String) {
-    val shareIntent = Intent(Intent.ACTION_SEND).apply {
-        type = "text/plain"
-        putExtra(Intent.EXTRA_TEXT, content)
-    }
-    context.startActivity(Intent.createChooser(shareIntent, context.getString(R.string.title_share_comment)))
-}
-
 @OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 private fun handleCommentAction(
     action: CommentAction,
@@ -531,7 +517,7 @@ private fun handleCommentAction(
             clipboard.setPrimaryClip(clip)
             Toast.makeText(context, context.getString(R.string.toast_comment_copied), Toast.LENGTH_SHORT).show()
         }
-        is CommentAction.Share -> shareComment(context, action.content)
+        is CommentAction.Share -> PostShareUtils.shareComment(context, action.content)
         is CommentAction.Hide -> viewModel.hideComment(action.commentId)
         is CommentAction.Pin -> viewModel.pinComment(action.commentId)
     }

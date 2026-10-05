@@ -3,6 +3,7 @@ package com.synapse.social.studioasinc.shared.domain.usecase
 import com.synapse.social.studioasinc.shared.domain.model.MediaType
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
 import com.synapse.social.studioasinc.shared.domain.model.StorageProvider
+import com.synapse.social.studioasinc.shared.domain.model.UploadResult
 import com.synapse.social.studioasinc.shared.domain.repository.MediaUploadRepository
 import com.synapse.social.studioasinc.shared.domain.repository.StorageRepository
 import com.synapse.social.studioasinc.shared.domain.repository.SettingsRepository
@@ -20,7 +21,7 @@ class UploadMediaUseCase(
         mediaType: MediaType,
         bucketName: String? = null,
         onProgress: (Float) -> Unit
-    ): Result<String> {
+    ): Result<UploadResult> {
         return try {
             val config = repository.getStorageConfig().first()
 
@@ -82,11 +83,6 @@ class UploadMediaUseCase(
                     )
                 )
             } finally {
-                // Not deleting here anymore, file deletion of compressed file
-                // needs to be handled by FileUploader where we have access to it,
-                // however since MediaCompressor returns a new path, we should probably
-                // use MediaUploadRepository to delete the temporary compressed file.
-                // Let's add delete to MediaUploadRepository.
                 if (shouldDelete) {
                     mediaUploadRepository.deleteFile(uploadPath)
                 }

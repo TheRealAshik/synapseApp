@@ -64,7 +64,7 @@ fun ProfileHeader(
     onFollowClick: () -> Unit = {},
     onMessageClick: () -> Unit = {},
     onCoverPhotoClick: () -> Unit = {},
-    scrollOffset: Float = 0f,
+    scrollOffsetProvider: () -> Float = { 0f },
     bioExpanded: Boolean = false,
     onToggleBio: () -> Unit = {}
 ) {
@@ -81,7 +81,7 @@ fun ProfileHeader(
     ) {
         CoverPhoto(
             coverImageUrl = coverImageUrl,
-            scrollOffset = scrollOffset,
+            scrollOffsetProvider = scrollOffsetProvider,
             isOwnProfile = isOwnProfile,
             onCoverClick = onCoverPhotoClick,
             height = coverHeight
@@ -124,7 +124,7 @@ fun ProfileHeader(
                     }
 
                     Text(
-                        text = "@$username",
+                        text = stringResource(R.string.common_at_username, username),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -466,7 +466,7 @@ private fun InlineStatsText(
         }
 
         Text(
-            text = "  ·  ",
+            text = stringResource(R.string.common_bullet_separator),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -493,7 +493,7 @@ private fun InlineStatsText(
         }
 
         Text(
-            text = "  ·  ",
+            text = stringResource(R.string.common_bullet_separator),
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurfaceVariant

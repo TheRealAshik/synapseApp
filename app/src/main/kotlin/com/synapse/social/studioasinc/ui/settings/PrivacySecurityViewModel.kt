@@ -52,6 +52,93 @@ class PrivacySecurityViewModel(
         }
     }
 
+    fun toggleAppLock(activity: androidx.fragment.app.FragmentActivity, enabled: Boolean) {
+        _error.value = null
+        if (!canAuthenticateBiometrics()) {
+            return
+        }
+        val chatLockManager = com.synapse.social.studioasinc.core.util.ChatLockManager(
+            getApplication(),
+            com.synapse.social.studioasinc.data.preferences.SettingsPreferences(getApplication())
+        )
+        chatLockManager.authenticate(
+            activity = activity,
+            onSuccess = {
+                setAppLockEnabled(enabled)
+            },
+            onError = { errorMsg ->
+                android.util.Log.d("PrivacySecurityViewModel", "App lock authentication result: $errorMsg")
+                if (!errorMsg.contains("cancel", ignoreCase = true)) {
+                    _error.value = errorMsg
+                }
+            }
+        )
+    }
+
+    fun setLastSeenVisibility(visibility: LastSeenVisibility) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                settingsRepository.setLastSeenVisibility(visibility)
+                android.util.Log.d("PrivacySecurityViewModel", "Last seen visibility set to: $visibility")
+            } catch (e: Exception) {
+                android.util.Log.e("PrivacySecurityViewModel", "Failed to set last seen visibility", e)
+                _error.value = "Failed to update last seen visibility"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun setProfilePhotoVisibility(visibility: ProfilePhotoVisibility) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                settingsRepository.setProfilePhotoVisibility(visibility)
+                android.util.Log.d("PrivacySecurityViewModel", "Profile photo visibility set to: $visibility")
+            } catch (e: Exception) {
+                android.util.Log.e("PrivacySecurityViewModel", "Failed to set profile photo visibility", e)
+                _error.value = "Failed to update profile photo visibility"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun setAboutVisibility(visibility: AboutVisibility) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                settingsRepository.setAboutVisibility(visibility)
+                android.util.Log.d("PrivacySecurityViewModel", "About visibility set to: $visibility")
+            } catch (e: Exception) {
+                android.util.Log.e("PrivacySecurityViewModel", "Failed to set about visibility", e)
+                _error.value = "Failed to update about visibility"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun setStatusVisibility(visibility: StatusVisibility) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            _error.value = null
+            try {
+                settingsRepository.setStatusVisibility(visibility)
+                android.util.Log.d("PrivacySecurityViewModel", "Status visibility set to: $visibility")
+            } catch (e: Exception) {
+                android.util.Log.e("PrivacySecurityViewModel", "Failed to set status visibility", e)
+                _error.value = "Failed to update status visibility"
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun setProfileVisibility(visibility: ProfileVisibility) {
         viewModelScope.launch {
             _isLoading.value = true

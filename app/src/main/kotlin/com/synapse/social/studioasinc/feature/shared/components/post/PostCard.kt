@@ -117,7 +117,7 @@ fun PostCard(
                 Icon(
                     imageVector = androidx.compose.material.icons.Icons.Outlined.Repeat,
                     contentDescription = null,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(Spacing.Medium),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.width(Spacing.Small))
@@ -140,7 +140,7 @@ fun PostCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
-                    val strokeWidth = 2.dp.toPx()
+                    val strokeWidth = Sizes.BorderDefault.toPx()
                     val paddingX = Spacing.SmallMedium.toPx()
                     val paddingY = Spacing.Small.toPx()
                     val avatarRadius = (avatarSize / 2).toPx()
@@ -254,7 +254,11 @@ fun PostCard(
                         text = state.formattedTimestamp,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = Spacing.ExtraSmall)
+                        modifier = Modifier.padding(
+                            start = avatarSize + Spacing.SmallMedium,
+                            top = Spacing.ExtraSmall,
+                            bottom = Spacing.ExtraSmall
+                        )
                     )
                 }
 
@@ -274,7 +278,7 @@ fun PostCard(
                         imageVector = Icons.Outlined.BarChart,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        modifier = Modifier.size(Sizes.IconMedium)
                     )
                     Spacer(modifier = Modifier.width(Spacing.Small))
                     Text(

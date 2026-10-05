@@ -45,7 +45,10 @@ fun SettingsSection(
             color = SettingsColors.sectionTitle,
             modifier = Modifier.padding(start = Spacing.Small)
         )
-        SettingsCard {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(SettingsSpacing.itemSpacing)
+        ) {
             content()
         }
     }
@@ -58,17 +61,11 @@ fun SettingsGroup(
     modifier: Modifier = Modifier,
     items: @Composable ColumnScope.() -> Unit
 ) {
-    Surface(
+    Column(
         modifier = modifier.fillMaxWidth(),
-        shape = SettingsShapes.sectionShape,
-        color = SettingsColors.cardBackground,
-        tonalElevation = 0.dp
+        verticalArrangement = Arrangement.spacedBy(SettingsSpacing.itemSpacing)
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            items()
-        }
+        items()
     }
 }
 

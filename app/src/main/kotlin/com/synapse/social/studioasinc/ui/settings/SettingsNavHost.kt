@@ -1,4 +1,6 @@
 package com.synapse.social.studioasinc.ui.settings
+import androidx.compose.ui.res.stringResource
+import com.synapse.social.studioasinc.R
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
@@ -6,10 +8,11 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -118,6 +121,9 @@ fun SettingsNavHost(
                 onNavigateBack = {
                     navController.popBackStack()
                 },
+                onNavigateToAppLock = {
+                    navController.navigate(SettingsDestination.ROUTE_APP_LOCK)
+                },
                 onNavigateToBlockedUsers = {
                     navController.navigate(SettingsDestination.ROUTE_BLOCKED_CONTACTS)
                 },
@@ -126,7 +132,159 @@ fun SettingsNavHost(
                 },
                 onNavigateToActiveSessions = {
 
+                },
+                onNavigateToLastSeen = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_LAST_SEEN)
+                },
+                onNavigateToProfilePhoto = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_PROFILE_PHOTO)
+                },
+                onNavigateToAbout = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_ABOUT)
+                },
+                onNavigateToStatus = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_STATUS)
                 }
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_APP_LOCK) {
+            val parentEntry = androidx.compose.runtime.remember(it) {
+                navController.getBackStackEntry(SettingsDestination.ROUTE_PRIVACY)
+            }
+            val viewModel: PrivacySecurityViewModel = viewModel(parentEntry)
+            AppLockScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_LAST_SEEN) {
+            val parentEntry = androidx.compose.runtime.remember(it) {
+                navController.getBackStackEntry(SettingsDestination.ROUTE_PRIVACY)
+            }
+            val viewModel: PrivacySecurityViewModel = viewModel(parentEntry)
+            val privacySettings by viewModel.privacySettings.collectAsState()
+            val isLoading by viewModel.isLoading.collectAsState()
+
+            PrivacySelectionScreen(
+                title = stringResource(R.string.settings_last_seen_title),
+                subtitle = stringResource(R.string.settings_last_seen_subtitle),
+                options = getStandardPrivacyOptions(excludedCount = privacySettings.lastSeenExcludedUserIds.size) { LastSeenVisibility.valueOf(it) },
+                selectedOption = privacySettings.lastSeenVisibility,
+                onOptionSelected = { viewModel.setLastSeenVisibility(it) },
+                onNavigateToExceptionSelector = {
+                    navController.navigate(SettingsDestination.createPrivacyExceptionSelectorRoute("last_seen"))
+                },
+                onNavigateBack = { navController.popBackStack() },
+                isLoading = isLoading
+            )
+        }
+
+        composable(
+            route = SettingsDestination.ROUTE_PRIVACY_EXCEPTION_SELECTOR,
+            arguments = listOf(
+                androidx.navigation.navArgument("settingKey") {
+                    type = androidx.navigation.NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val settingKey = backStackEntry.arguments?.getString("settingKey") ?: ""
+            val viewModel: PrivacyExceptionSelectorViewModel = hiltViewModel()
+            val uiState by viewModel.uiState.collectAsState()
+
+            LaunchedEffect(settingKey) {
+                viewModel.initialize(settingKey)
+            }
+
+            val screenTitle = when (settingKey) {
+                "last_seen" -> stringResource(R.string.settings_last_seen_title)
+                "profile_photo" -> stringResource(R.string.settings_profile_photo_title)
+                "about" -> stringResource(R.string.settings_about_privacy_title)
+                "status" -> stringResource(R.string.settings_status_title)
+                "group" -> stringResource(R.string.settings_groups_title)
+                else -> stringResource(R.string.settings_privacy_t)
+            }
+
+            PrivacyExceptionSelectorScreen(
+                title = screenTitle,
+                uiState = uiState,
+                onSearchQueryChanged = { viewModel.onSearchQueryChanged(it) },
+                onToggleUserSelection = { viewModel.toggleUserSelection(it) },
+                onSaveClicked = {
+                    viewModel.saveSelection {
+                        navController.popBackStack()
+                    }
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_PROFILE_PHOTO) {
+            val parentEntry = androidx.compose.runtime.remember(it) {
+                navController.getBackStackEntry(SettingsDestination.ROUTE_PRIVACY)
+            }
+            val viewModel: PrivacySecurityViewModel = viewModel(parentEntry)
+            val privacySettings by viewModel.privacySettings.collectAsState()
+            val isLoading by viewModel.isLoading.collectAsState()
+
+            PrivacySelectionScreen(
+                title = stringResource(R.string.settings_profile_photo_title),
+                subtitle = stringResource(R.string.settings_profile_photo_subtitle),
+                options = getStandardPrivacyOptions(excludedCount = privacySettings.profilePhotoExcludedUserIds.size) { ProfilePhotoVisibility.valueOf(it) },
+                selectedOption = privacySettings.profilePhotoVisibility,
+                onOptionSelected = { viewModel.setProfilePhotoVisibility(it) },
+                onNavigateToExceptionSelector = {
+                    navController.navigate(SettingsDestination.createPrivacyExceptionSelectorRoute("profile_photo"))
+                },
+                onNavigateBack = { navController.popBackStack() },
+                isLoading = isLoading
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_ABOUT) {
+            val parentEntry = androidx.compose.runtime.remember(it) {
+                navController.getBackStackEntry(SettingsDestination.ROUTE_PRIVACY)
+            }
+            val viewModel: PrivacySecurityViewModel = viewModel(parentEntry)
+            val privacySettings by viewModel.privacySettings.collectAsState()
+            val isLoading by viewModel.isLoading.collectAsState()
+
+            PrivacySelectionScreen(
+                title = stringResource(R.string.settings_about_privacy_title),
+                subtitle = stringResource(R.string.settings_about_subtitle),
+                options = getStandardPrivacyOptions(excludedCount = privacySettings.aboutExcludedUserIds.size) { AboutVisibility.valueOf(it) },
+                selectedOption = privacySettings.aboutVisibility,
+                onOptionSelected = { viewModel.setAboutVisibility(it) },
+                onNavigateToExceptionSelector = {
+                    navController.navigate(SettingsDestination.createPrivacyExceptionSelectorRoute("about"))
+                },
+                onNavigateBack = { navController.popBackStack() },
+                isLoading = isLoading
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_STATUS) {
+            val parentEntry = androidx.compose.runtime.remember(it) {
+                navController.getBackStackEntry(SettingsDestination.ROUTE_PRIVACY)
+            }
+            val viewModel: PrivacySecurityViewModel = viewModel(parentEntry)
+            val privacySettings by viewModel.privacySettings.collectAsState()
+            val isLoading by viewModel.isLoading.collectAsState()
+
+            PrivacySelectionScreen(
+                title = stringResource(R.string.settings_status_title),
+                subtitle = stringResource(R.string.settings_status_subtitle),
+                options = getStandardPrivacyOptions(excludedCount = privacySettings.statusExcludedUserIds.size) { StatusVisibility.valueOf(it) },
+                selectedOption = privacySettings.statusVisibility,
+                onOptionSelected = { viewModel.setStatusVisibility(it) },
+                onNavigateToExceptionSelector = {
+                    navController.navigate(SettingsDestination.createPrivacyExceptionSelectorRoute("status"))
+                },
+                onNavigateBack = { navController.popBackStack() },
+                isLoading = isLoading
             )
         }
 
@@ -216,13 +374,23 @@ fun SettingsNavHost(
                     navController.popBackStack()
                 },
                 onNavigateToScheduledPosts = {
-                    android.widget.Toast.makeText(currentContext, "Scheduled Posts coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                    navController.navigate(SettingsDestination.ROUTE_SCHEDULED_POSTS)
                 },
                 onNavigateToContentCalendar = {
                     android.widget.Toast.makeText(currentContext, "Content Calendar coming soon", android.widget.Toast.LENGTH_SHORT).show()
                 },
                 onNavigateToBrandPartnerships = {
                     android.widget.Toast.makeText(currentContext, "Brand Partnerships coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_SCHEDULED_POSTS) {
+            val viewModel: ScheduledPostsViewModel = hiltViewModel()
+            ScheduledPostsScreen(
+                viewModel = viewModel,
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -333,7 +501,9 @@ fun SettingsNavHost(
 
 
         composable(route = SettingsDestination.ROUTE_ACCESSIBILITY) {
+            val viewModel: AccessibilityViewModel = hiltViewModel()
             AccessibilityScreen(
+                viewModel = viewModel,
                 onBackClick = {
                     navController.popBackStack()
                 }
@@ -391,7 +561,7 @@ private fun ChatPlaceholderScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Chat feature not implemented",
+                text = stringResource(R.string.settings_chat_not_implemented),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

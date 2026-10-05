@@ -21,9 +21,20 @@ data class Message(
     val encryptionFailureReason: String? = null,
     val reactions: Map<ReactionType, Int> = emptyMap(),
     val userReaction: ReactionType? = null,
+    val userReactions: Map<String, ReactionType> = emptyMap(),
     val linkPreview: LinkPreview? = null
 ) {
     fun isFromMe(currentUserId: String): Boolean = senderId == currentUserId
+
+    fun withUserReactions(newUserReactions: Map<String, ReactionType>, currentUserId: String?): Message {
+        val derivedCounts = newUserReactions.values.groupBy { it }.mapValues { it.value.size }
+        val currentUserReaction = if (currentUserId != null) newUserReactions[currentUserId] else null
+        return copy(
+            reactions = derivedCounts,
+            userReaction = currentUserReaction,
+            userReactions = newUserReactions
+        )
+    }
 }
 
 enum class DeliveryStatus {

@@ -59,7 +59,7 @@ object SynapseSizes {
     const val Height120 = 120f
     const val HeightPreview = 300f
     const val HeightStoryTray = 180f
-    const val HeightMediaSingle = 600f
+    const val HeightMediaSingle = 400f
     const val HeightMediaGrid2 = 400f
     const val HeightMediaGrid3Top = 350f
     const val HeightMediaGridSmall = 150f

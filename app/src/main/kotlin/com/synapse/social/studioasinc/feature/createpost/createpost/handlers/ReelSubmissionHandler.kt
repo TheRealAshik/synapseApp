@@ -25,7 +25,7 @@ class ReelSubmissionHandler @Inject constructor(
 
         return withContext(Dispatchers.IO) {
             try {
-                val videoUrl = uploadMediaUseCase(
+                val uploadResult = uploadMediaUseCase(
                     filePath = videoItem.url,
                     mediaType = com.synapse.social.studioasinc.shared.domain.model.MediaType.VIDEO,
                     bucketName = "reels",
@@ -33,7 +33,7 @@ class ReelSubmissionHandler @Inject constructor(
                 ).getOrThrow()
 
                 reelRepository.createReel(
-                    videoUrl = videoUrl,
+                    videoUrl = uploadResult.url,
                     caption = request.postText,
                     musicTrack = "Original Audio",
                     locationName = request.location?.name,
@@ -53,4 +53,3 @@ class ReelSubmissionHandler @Inject constructor(
         private const val DEFAULT_LAYOUT_TYPE = "COLUMNS"
     }
 }
-

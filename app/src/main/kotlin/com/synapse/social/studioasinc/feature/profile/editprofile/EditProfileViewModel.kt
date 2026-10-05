@@ -21,6 +21,7 @@ import java.io.File
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import com.synapse.social.studioasinc.data.repository.EditProfileRepositoryImpl
+import com.synapse.social.studioasinc.shared.core.util.EducationSanitizer
 
 import com.synapse.social.studioasinc.shared.domain.repository.SettingsRepository
 import com.synapse.social.studioasinc.shared.domain.service.MediaCompressor
@@ -75,7 +76,7 @@ class EditProfileViewModel @Inject constructor(
                                 hometown = profile.hometown ?: "",
                                 occupation = profile.occupation ?: "",
                                 workplace = profile.workplace ?: "",
-                                education = profile.educationDisplay ?: "",
+                                education = EducationSanitizer.sanitizeEducationString(profile.educationDisplay) ?: "",
                                 pronouns = profile.pronouns ?: "",
                                 birthday = profile.birthday ?: "",
                                 relationshipStatus = profile.relationshipStatus ?: "",
@@ -122,6 +123,9 @@ class EditProfileViewModel @Inject constructor(
             }
             is EditProfileEvent.CoverSelected -> {
                 handleCoverSelection(event.uri)
+            }
+            is EditProfileEvent.CoverCropped -> {
+                handleCoverCropped(event.uri)
             }
             EditProfileEvent.RetryAvatarUpload -> {
                 retryAvatarUpload()
@@ -315,10 +319,9 @@ class EditProfileViewModel @Inject constructor(
                         }
 
                         viewModelScope.launch {
-                            try {
-                                repository.addToProfileHistory(userId, url)
-                            } catch (e: Exception) {
-                                android.util.Log.w("EditProfile", "Failed to add to profile history", e)
+                            val historyResult = repository.addToProfileHistory(userId, url)
+                            historyResult.onFailure { e ->
+                                android.util.Log.e("EditProfile", "Failed to add to profile history", e)
                             }
                         }
                     },
@@ -340,12 +343,16 @@ class EditProfileViewModel @Inject constructor(
 
     private fun handleCoverSelection(uri: Uri) {
         lastCoverUri = uri
-        _uiState.update { it.copy(coverUploadState = UploadState.Uploading()) }
+    }
+
+    private fun handleCoverCropped(uri: Uri) {
+        lastCoverUri = uri
+        _uiState.update { it.copy(pendingCoverUri = uri, coverUploadState = UploadState.Uploading()) }
 
         viewModelScope.launch {
             try {
                 val context = getApplication<Application>()
-                android.util.Log.d("EditProfile", "Processing cover URI: $uri")
+                android.util.Log.d("EditProfile", "Processing cropped cover URI: $uri")
 
 
                 var realFilePath = UriUtils.getPathFromUri(context, uri)
@@ -431,10 +438,9 @@ class EditProfileViewModel @Inject constructor(
                         }
 
                         viewModelScope.launch {
-                            try {
-                                repository.addToCoverHistory(userId, url)
-                            } catch (e: Exception) {
-                                android.util.Log.w("EditProfile", "Failed to add to cover history", e)
+                            val historyResult = repository.addToCoverHistory(userId, url)
+                            historyResult.onFailure { e ->
+                                android.util.Log.e("EditProfile", "Failed to add to cover history", e)
                             }
                         }
                     },
@@ -462,7 +468,7 @@ class EditProfileViewModel @Inject constructor(
 
     private fun retryCoverUpload() {
         lastCoverUri?.let { uri ->
-            handleCoverSelection(uri)
+            handleCoverCropped(uri)
         }
     }
 
@@ -499,10 +505,9 @@ class EditProfileViewModel @Inject constructor(
                                 )
                             }
                             finalState = _uiState.value
-                            try {
-                                repository.addToProfileHistory(userId, url)
-                            } catch (e: Exception) {
-                                android.util.Log.w("EditProfile", "Failed to add to profile history", e)
+                            val historyResult = repository.addToProfileHistory(userId, url)
+                            historyResult.onFailure { e ->
+                                android.util.Log.e("EditProfile", "Failed to add to profile history", e)
                             }
                         },
                         onFailure = { error ->
@@ -597,7 +602,8 @@ class EditProfileViewModel @Inject constructor(
         }
 
         // Education - convert to list only if not empty
-        val educationList = state.education.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        val rawEducationList = state.education.split(",").map { it.trim() }.filter { it.isNotBlank() }
+        val educationList = EducationSanitizer.sanitizeEducationList(rawEducationList)
         if (educationList.isNotEmpty()) {
             updateData["education"] = educationList
         } else {

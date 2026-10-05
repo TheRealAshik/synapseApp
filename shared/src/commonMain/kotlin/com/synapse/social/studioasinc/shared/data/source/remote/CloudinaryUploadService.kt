@@ -1,8 +1,10 @@
 package com.synapse.social.studioasinc.shared.data.source.remote
 
+import com.synapse.social.studioasinc.shared.core.config.SynapseConfig
 import com.synapse.social.studioasinc.shared.data.PlatformUtils
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
 import com.synapse.social.studioasinc.shared.domain.model.UploadError
+import com.synapse.social.studioasinc.shared.domain.model.UploadResult
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -39,7 +41,7 @@ class CloudinaryUploadService(private val client: HttpClient) : UploadService {
         config: StorageConfig,
         bucketName: String?,
         onProgress: (Float) -> Unit
-    ): String {
+    ): UploadResult {
         val cloudName = config.cloudinaryCloudName
         val apiKey = config.cloudinaryApiKey.trim()
         val apiSecret = config.cloudinaryApiSecret.trim()
@@ -66,8 +68,9 @@ class CloudinaryUploadService(private val client: HttpClient) : UploadService {
         val bytes = fileChannel.toByteArray()
 
         return try {
+            val baseEndpoint = SynapseConfig.CLOUDINARY_API_BASE_URL
             val response: JsonObject = client.submitFormWithBinaryData(
-                url = "https://api.cloudinary.com/v1_1/$cloudName/$resourceType/upload",
+                url = "$baseEndpoint$cloudName/$resourceType/upload",
                 formData = formData {
                     append("file", bytes, Headers.build {
                         append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
@@ -86,8 +89,10 @@ class CloudinaryUploadService(private val client: HttpClient) : UploadService {
 
             onProgress(1.0f)
 
-            response["secure_url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.content
+            val url = response["secure_url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.content
                 ?: throw Exception(extractCloudinaryError(response))
+
+            UploadResult(url = url, deleteUrl = null)
         } catch (e: Exception) {
             val errorMsg = e.message ?: e.toString()
             println("CloudinaryUploadService error: $errorMsg")

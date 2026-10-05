@@ -3,8 +3,10 @@ package com.synapse.social.studioasinc.ui.settings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.synapse.social.studioasinc.core.util.UiText
 import com.synapse.social.studioasinc.shared.domain.model.settings.ChatThemePreset
 import com.synapse.social.studioasinc.shared.domain.model.settings.ChatWallpaper
+import com.synapse.social.studioasinc.shared.core.config.SynapseConfig
 
 
 
@@ -12,6 +14,11 @@ import com.synapse.social.studioasinc.shared.domain.model.settings.ChatWallpaper
 
 
 
+
+enum class NavigationPlacement {
+    TOP, BOTTOM;
+    fun displayName(): String = name.lowercase().replaceFirstChar { it.uppercase() }
+}
 
 enum class ThemeMode { LIGHT, DARK, SYSTEM }
 
@@ -41,6 +48,26 @@ enum class ContentVisibility {
 }
 
 enum class GroupPrivacy {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class LastSeenVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class ProfilePhotoVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class AboutVisibility {
+    EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
+    fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
+}
+
+enum class StatusVisibility {
     EVERYONE, MY_CONTACTS, MY_CONTACTS_EXCEPT, NOBODY;
     fun displayName(): String = name.lowercase().replace("_", " ").replaceFirstChar { it.uppercase() }
 }
@@ -139,7 +166,16 @@ data class PrivacySettings(
     val groupPrivacy: GroupPrivacy = GroupPrivacy.EVERYONE,
     val readReceiptsEnabled: Boolean = true,
     val appLockEnabled: Boolean = false,
-    val chatLockEnabled: Boolean = false
+    val chatLockEnabled: Boolean = false,
+    val lastSeenVisibility: LastSeenVisibility = LastSeenVisibility.EVERYONE,
+    val profilePhotoVisibility: ProfilePhotoVisibility = ProfilePhotoVisibility.EVERYONE,
+    val aboutVisibility: AboutVisibility = AboutVisibility.EVERYONE,
+    val statusVisibility: StatusVisibility = StatusVisibility.EVERYONE,
+    val lastSeenExcludedUserIds: Set<String> = emptySet(),
+    val profilePhotoExcludedUserIds: Set<String> = emptySet(),
+    val aboutExcludedUserIds: Set<String> = emptySet(),
+    val statusExcludedUserIds: Set<String> = emptySet(),
+    val groupExcludedUserIds: Set<String> = emptySet()
 )
 
 data class NotificationPreferences(
@@ -176,8 +212,8 @@ data class NotificationPreferences(
         const val DEFAULT_SECURITY_ENABLED = true
         const val DEFAULT_UPDATES_ENABLED = true
         const val DEFAULT_QUIET_HOURS_ENABLED = false
-        const val DEFAULT_QUIET_HOURS_START = "22:00"
-        const val DEFAULT_QUIET_HOURS_END = "08:00"
+        val DEFAULT_QUIET_HOURS_START = SynapseConfig.DEFAULT_QUIET_HOURS_START
+        val DEFAULT_QUIET_HOURS_END = SynapseConfig.DEFAULT_QUIET_HOURS_END
         const val DEFAULT_DO_NOT_DISTURB = false
         const val DEFAULT_IN_APP_ENABLED = true
         const val DEFAULT_REMINDERS_ENABLED = false
@@ -215,8 +251,8 @@ data class NotificationPreferences(
 
 data class SettingsCategory(
     val id: String,
-    val title: String,
-    val subtitle: String,
+    val title: UiText,
+    val subtitle: UiText,
     val icon: ImageVector,
     val destination: SettingsDestination,
     val keywords: List<String> = emptyList()
@@ -224,7 +260,7 @@ data class SettingsCategory(
 
 data class SettingsGroup(
     val id: String,
-    val title: String? = null,
+    val title: UiText? = null,
     val categories: List<SettingsCategory>
 )
 

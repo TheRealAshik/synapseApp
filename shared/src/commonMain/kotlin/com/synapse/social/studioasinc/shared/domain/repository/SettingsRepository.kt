@@ -35,11 +35,29 @@ interface SettingsRepository {
     suspend fun setLanguage(languageCode: String)
     val profileVisibility: Flow<ProfileVisibility>
     val contentVisibility: Flow<ContentVisibility>
+    val lastSeenVisibility: Flow<com.synapse.social.studioasinc.shared.domain.model.settings.LastSeenVisibility>
+    val profilePhotoVisibility: Flow<com.synapse.social.studioasinc.shared.domain.model.settings.ProfilePhotoVisibility>
+    val aboutVisibility: Flow<com.synapse.social.studioasinc.shared.domain.model.settings.AboutVisibility>
+    val statusVisibility: Flow<com.synapse.social.studioasinc.shared.domain.model.settings.StatusVisibility>
+    val lastSeenExcludedUserIds: Flow<Set<String>>
+    val profilePhotoExcludedUserIds: Flow<Set<String>>
+    val aboutExcludedUserIds: Flow<Set<String>>
+    val statusExcludedUserIds: Flow<Set<String>>
+    val groupExcludedUserIds: Flow<Set<String>>
     val biometricLockEnabled: Flow<Boolean>
     val twoFactorEnabled: Flow<Boolean>
     val privacySettings: Flow<PrivacySettings>
     suspend fun setProfileVisibility(visibility: ProfileVisibility)
     suspend fun setContentVisibility(visibility: ContentVisibility)
+    suspend fun setLastSeenVisibility(visibility: com.synapse.social.studioasinc.shared.domain.model.settings.LastSeenVisibility)
+    suspend fun setProfilePhotoVisibility(visibility: com.synapse.social.studioasinc.shared.domain.model.settings.ProfilePhotoVisibility)
+    suspend fun setAboutVisibility(visibility: com.synapse.social.studioasinc.shared.domain.model.settings.AboutVisibility)
+    suspend fun setStatusVisibility(visibility: com.synapse.social.studioasinc.shared.domain.model.settings.StatusVisibility)
+    suspend fun setLastSeenExcludedUserIds(user: Set<String>)
+    suspend fun setProfilePhotoExcludedUserIds(user: Set<String>)
+    suspend fun setAboutExcludedUserIds(user: Set<String>)
+    suspend fun setStatusExcludedUserIds(user: Set<String>)
+    suspend fun setGroupExcludedUserIds(user: Set<String>)
     suspend fun setGroupPrivacy(privacy: GroupPrivacy)
     suspend fun setBiometricLockEnabled(enabled: Boolean)
     suspend fun setTwoFactorEnabled(enabled: Boolean)
@@ -108,4 +126,13 @@ interface SettingsRepository {
     suspend fun checkForUpdates(): Result<AppUpdateInfo?>
     val hideProfilePicSuggestion: Flow<Boolean>
     suspend fun setHideProfilePicSuggestion(hide: Boolean)
+
+    val increaseContrastEnabled: Flow<Boolean>
+    suspend fun setIncreaseContrastEnabled(enabled: Boolean)
+    val highContrastTextEnabled: Flow<Boolean>
+    suspend fun setHighContrastTextEnabled(enabled: Boolean)
+    val reduceAnimationsEnabled: Flow<Boolean>
+    suspend fun setReduceAnimationsEnabled(enabled: Boolean)
+    val autoplayAnimationsEnabled: Flow<Boolean>
+    suspend fun setAutoplayAnimationsEnabled(enabled: Boolean)
 }

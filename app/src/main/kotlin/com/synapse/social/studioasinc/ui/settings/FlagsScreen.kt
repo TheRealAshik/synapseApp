@@ -18,6 +18,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -25,6 +27,7 @@ fun FlagsScreen(
     viewModel: FlagsViewModel,
     onBackClick: () -> Unit
 ) {
+    val navigationPlacement by viewModel.navigationPlacement.collectAsState()
     val messageSuggestionEnabled by viewModel.messageSuggestionEnabled.collectAsState()
     val chatAvatarDisabled by viewModel.chatAvatarDisabled.collectAsState()
     val chatMessagePaginationLimit by viewModel.chatMessagePaginationLimit.collectAsState()
@@ -37,12 +40,12 @@ fun FlagsScreen(
         containerColor = SettingsColors.screenBackground,
         topBar = {
             TopAppBar(
-                title = { Text("Flags") },
+                title = { Text(stringResource(R.string.settings_flags_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = stringResource(R.string.settings_back_button)
                         )
                     }
                 },
@@ -59,27 +62,71 @@ fun FlagsScreen(
                 .padding(paddingValues)
                 .padding(horizontal = SettingsSpacing.screenPadding),
             verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing),
-            contentPadding = PaddingValues(vertical = 8.dp)
+            contentPadding = PaddingValues(vertical = Spacing.Small)
         ) {
             item {
                 Column(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    SettingsHeaderItem(title = "Experimental Features")
+                    SettingsHeaderItem(title = stringResource(R.string.settings_experimental_features_title))
 
-                    SettingsCard {
+                    Column(verticalArrangement = Arrangement.spacedBy(SettingsSpacing.itemSpacing)) {
+                        Surface(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = SettingsItemPosition.Top.getShape(),
+                            color = SettingsColors.cardBackground
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(
+                                        horizontal = SettingsSpacing.itemHorizontalPadding,
+                                        vertical = SettingsSpacing.itemVerticalPadding
+                                    )
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.settings_navigation_placement_title),
+                                    style = SettingsTypography.itemTitle,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                                Text(
+                                    text = stringResource(R.string.settings_navigation_placement_subtitle),
+                                    style = SettingsTypography.itemSubtitle,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Spacer(modifier = Modifier.height(Spacing.Medium))
+
+                                val options = NavigationPlacement.entries
+                                SingleChoiceSegmentedButtonRow(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    options.forEachIndexed { index, option ->
+                                        val label = when (option) {
+                                            NavigationPlacement.TOP -> stringResource(R.string.settings_navigation_placement_top)
+                                            NavigationPlacement.BOTTOM -> stringResource(R.string.settings_navigation_placement_bottom)
+                                        }
+                                        SegmentedButton(
+                                            shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+                                            onClick = { viewModel.setNavigationPlacement(option) },
+                                            selected = option == navigationPlacement,
+                                            label = { Text(label) }
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         SettingsToggleItem(
-                            title = "Message Suggestions",
-                            subtitle = "Enable smart replies in chat",
+                            title = stringResource(R.string.settings_message_suggestions_title),
+                            subtitle = stringResource(R.string.settings_message_suggestions_subtitle),
                             imageVector = Icons.Filled.Build,
                             checked = messageSuggestionEnabled,
                             onCheckedChange = { viewModel.setMessageSuggestionEnabled(it) },
-                            position = SettingsItemPosition.Top
+                            position = SettingsItemPosition.Middle
                         )
-                        SettingsDivider()
                         SettingsToggleItem(
-                            title = "Disable Chat Avatars",
-                            subtitle = "Hide sender avatars in chat",
+                            title = stringResource(R.string.settings_disable_chat_avatars_title),
+                            subtitle = stringResource(R.string.settings_disable_chat_avatars_subtitle),
                             imageVector = Icons.Filled.Person,
                             checked = chatAvatarDisabled,
                             onCheckedChange = { viewModel.setChatAvatarDisabled(it) },
@@ -91,7 +138,7 @@ fun FlagsScreen(
 
             item {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    SettingsHeaderItem(title = "Performance")
+                    SettingsHeaderItem(title = stringResource(R.string.settings_performance_section))
 
                     SettingsCard {
                         Surface(
@@ -111,12 +158,12 @@ fun FlagsScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "Message Pagination Limit",
+                                        text = stringResource(R.string.settings_message_pagination_limit_title),
                                         style = SettingsTypography.itemTitle,
                                         color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
-                                        text = "Messages loaded per page (default 50)",
+                                        text = stringResource(R.string.settings_message_pagination_limit_subtitle),
                                         style = SettingsTypography.itemSubtitle,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -124,7 +171,7 @@ fun FlagsScreen(
                                 OutlinedTextField(
                                     value = paginationLimitInput,
                                     onValueChange = { paginationLimitInput = it.filter { c -> c.isDigit() } },
-                                    modifier = Modifier.width(80.dp),
+                                    modifier = Modifier.width(Sizes.WidthLarge),
                                     singleLine = true,
                                     keyboardOptions = KeyboardOptions(
                                         keyboardType = KeyboardType.Number,

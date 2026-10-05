@@ -14,6 +14,7 @@ import com.synapse.social.studioasinc.ui.settings.NotificationCategory
 import com.synapse.social.studioasinc.ui.settings.NotificationPreferences
 import com.synapse.social.studioasinc.ui.settings.PrivacySettings
 import com.synapse.social.studioasinc.ui.settings.ProfileVisibility
+import com.synapse.social.studioasinc.ui.settings.NavigationPlacement
 import com.synapse.social.studioasinc.ui.settings.ThemeMode
 import com.synapse.social.studioasinc.shared.domain.model.settings.ChatThemePreset
 import com.synapse.social.studioasinc.shared.domain.model.settings.WallpaperType
@@ -32,6 +33,15 @@ object SettingsConstants {
     val KEY_PROFILE_VISIBILITY = stringPreferencesKey("profile_visibility")
     val KEY_CONTENT_VISIBILITY = stringPreferencesKey("content_visibility")
     val KEY_GROUP_PRIVACY = stringPreferencesKey("group_privacy")
+    val KEY_LAST_SEEN_VISIBILITY = stringPreferencesKey("last_seen_visibility")
+    val KEY_PROFILE_PHOTO_VISIBILITY = stringPreferencesKey("profile_photo_visibility")
+    val KEY_ABOUT_VISIBILITY = stringPreferencesKey("about_visibility")
+    val KEY_STATUS_VISIBILITY = stringPreferencesKey("status_visibility")
+    val KEY_LAST_SEEN_EXCLUDED_USER_IDS = stringSetPreferencesKey("last_seen_excluded_user_ids")
+    val KEY_PROFILE_PHOTO_EXCLUDED_USER_IDS = stringSetPreferencesKey("profile_photo_excluded_user_ids")
+    val KEY_ABOUT_EXCLUDED_USER_IDS = stringSetPreferencesKey("about_excluded_user_ids")
+    val KEY_STATUS_EXCLUDED_USER_IDS = stringSetPreferencesKey("status_excluded_user_ids")
+    val KEY_GROUP_EXCLUDED_USER_IDS = stringSetPreferencesKey("group_excluded_user_ids")
     val KEY_KEEP_MEDIA_DAYS = intPreferencesKey("keep_media_days")
     val KEY_MAX_CACHE_SIZE_GB = intPreferencesKey("max_cache_size_gb")
     val KEY_BIOMETRIC_LOCK_ENABLED = booleanPreferencesKey("biometric_lock_enabled")
@@ -61,6 +71,7 @@ object SettingsConstants {
     val KEY_AI_PREFERRED_PROVIDER = stringPreferencesKey("ai_preferred_provider")
     val KEY_AI_FALLBACK_TO_PLATFORM = booleanPreferencesKey("ai_fallback_to_platform")
     val KEY_AI_CUSTOM_MODEL = stringPreferencesKey("ai_custom_model")
+    val KEY_NAVIGATION_PLACEMENT = stringPreferencesKey("navigation_placement")
     val KEY_MESSAGE_SUGGESTION_ENABLED = booleanPreferencesKey("message_suggestion_enabled")
     val KEY_CHAT_AVATAR_DISABLED = booleanPreferencesKey("chat_avatar_disabled")
     val KEY_CHAT_MESSAGE_PAGINATION_LIMIT = intPreferencesKey("chat_message_pagination_limit")
@@ -90,6 +101,11 @@ object SettingsConstants {
     val KEY_HIDE_PROFILE_PIC_SUGGESTION = booleanPreferencesKey("hide_profile_pic_suggestion")
     val KEY_SEARCH_HISTORY = stringPreferencesKey("search_history")
 
+    val KEY_INCREASE_CONTRAST_ENABLED = booleanPreferencesKey("increase_contrast_enabled")
+    val KEY_HIGH_CONTRAST_TEXT_ENABLED = booleanPreferencesKey("high_contrast_text_enabled")
+    val KEY_REDUCE_ANIMATIONS_ENABLED = booleanPreferencesKey("reduce_animations_enabled")
+    val KEY_AUTOPLAY_ANIMATIONS_ENABLED = booleanPreferencesKey("autoplay_animations_enabled")
+
 
     val DEFAULT_THEME_MODE = ThemeMode.SYSTEM
     val DEFAULT_DYNAMIC_COLOR_ENABLED = true
@@ -99,6 +115,10 @@ object SettingsConstants {
     val DEFAULT_PROFILE_VISIBILITY = ProfileVisibility.PUBLIC
     val DEFAULT_CONTENT_VISIBILITY = ContentVisibility.EVERYONE
     val DEFAULT_GROUP_PRIVACY = GroupPrivacy.EVERYONE
+    val DEFAULT_LAST_SEEN_VISIBILITY = com.synapse.social.studioasinc.ui.settings.LastSeenVisibility.EVERYONE
+    val DEFAULT_PROFILE_PHOTO_VISIBILITY = com.synapse.social.studioasinc.ui.settings.ProfilePhotoVisibility.EVERYONE
+    val DEFAULT_ABOUT_VISIBILITY = com.synapse.social.studioasinc.ui.settings.AboutVisibility.EVERYONE
+    val DEFAULT_STATUS_VISIBILITY = com.synapse.social.studioasinc.ui.settings.StatusVisibility.EVERYONE
     val DEFAULT_BIOMETRIC_LOCK_ENABLED = false
     val DEFAULT_TWO_FACTOR_ENABLED = false
     val DEFAULT_NOTIFICATIONS_ENABLED = true
@@ -113,6 +133,7 @@ object SettingsConstants {
     val DEFAULT_CHAT_LIST_LAYOUT = com.synapse.social.studioasinc.shared.domain.model.settings.ChatListLayout.DOUBLE_LINE
     val DEFAULT_CHAT_SWIPE_GESTURE = com.synapse.social.studioasinc.shared.domain.model.settings.ChatSwipeGesture.ARCHIVE
     val DEFAULT_CHAT_MAX_MESSAGE_CHUNK_SIZE = 1024
+    val DEFAULT_NAVIGATION_PLACEMENT = NavigationPlacement.TOP
     val DEFAULT_MESSAGE_SUGGESTION_ENABLED = false
     val DEFAULT_CHAT_AVATAR_DISABLED = false
     const val DEFAULT_CHAT_MESSAGE_PAGINATION_LIMIT = 50
@@ -128,6 +149,11 @@ object SettingsConstants {
     val DEFAULT_CHAT_LOCK_ENABLED = false
     val DEFAULT_ACCOUNT_REPORTS_AUTO_CREATE = false
     val DEFAULT_CHANNELS_REPORTS_AUTO_CREATE = false
+
+    val DEFAULT_INCREASE_CONTRAST_ENABLED = false
+    val DEFAULT_HIGH_CONTRAST_TEXT_ENABLED = false
+    val DEFAULT_REDUCE_ANIMATIONS_ENABLED = false
+    val DEFAULT_AUTOPLAY_ANIMATIONS_ENABLED = true
 
     val DEFAULT_AUTO_DOWNLOAD_WIFI_STRINGS = com.synapse.social.studioasinc.ui.settings.MediaType.values().map { it.name }.toSet()
     val DEFAULT_AUTO_DOWNLOAD_WIFI_TYPES = com.synapse.social.studioasinc.ui.settings.MediaType.values().toSet()

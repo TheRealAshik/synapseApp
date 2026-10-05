@@ -73,6 +73,24 @@ interface SettingsRepository {
 
     val contentVisibility: Flow<ContentVisibility>
 
+    val lastSeenVisibility: Flow<com.synapse.social.studioasinc.ui.settings.LastSeenVisibility>
+
+    val profilePhotoVisibility: Flow<com.synapse.social.studioasinc.ui.settings.ProfilePhotoVisibility>
+
+    val aboutVisibility: Flow<com.synapse.social.studioasinc.ui.settings.AboutVisibility>
+
+    val statusVisibility: Flow<com.synapse.social.studioasinc.ui.settings.StatusVisibility>
+
+    val lastSeenExcludedUserIds: Flow<Set<String>>
+
+    val profilePhotoExcludedUserIds: Flow<Set<String>>
+
+    val aboutExcludedUserIds: Flow<Set<String>>
+
+    val statusExcludedUserIds: Flow<Set<String>>
+
+    val groupExcludedUserIds: Flow<Set<String>>
+
 
 
     val biometricLockEnabled: Flow<Boolean>
@@ -92,6 +110,24 @@ interface SettingsRepository {
 
 
     suspend fun setContentVisibility(visibility: ContentVisibility)
+
+    suspend fun setLastSeenVisibility(visibility: com.synapse.social.studioasinc.ui.settings.LastSeenVisibility)
+
+    suspend fun setProfilePhotoVisibility(visibility: com.synapse.social.studioasinc.ui.settings.ProfilePhotoVisibility)
+
+    suspend fun setAboutVisibility(visibility: com.synapse.social.studioasinc.ui.settings.AboutVisibility)
+
+    suspend fun setStatusVisibility(visibility: com.synapse.social.studioasinc.ui.settings.StatusVisibility)
+
+    suspend fun setLastSeenExcludedUserIds(user: Set<String>)
+
+    suspend fun setProfilePhotoExcludedUserIds(user: Set<String>)
+
+    suspend fun setAboutExcludedUserIds(user: Set<String>)
+
+    suspend fun setStatusExcludedUserIds(user: Set<String>)
+
+    suspend fun setGroupExcludedUserIds(user: Set<String>)
 
 
 
@@ -153,6 +189,9 @@ interface SettingsRepository {
     val chatSwipeGesture: Flow<com.synapse.social.studioasinc.shared.domain.model.settings.ChatSwipeGesture>
     suspend fun setChatSwipeGesture(gesture: com.synapse.social.studioasinc.shared.domain.model.settings.ChatSwipeGesture)
 
+
+    val navigationPlacement: Flow<com.synapse.social.studioasinc.ui.settings.NavigationPlacement>
+    suspend fun setNavigationPlacement(placement: com.synapse.social.studioasinc.ui.settings.NavigationPlacement)
 
     val messageSuggestionEnabled: Flow<Boolean>
     suspend fun setMessageSuggestionEnabled(enabled: Boolean)
@@ -276,4 +315,13 @@ interface SettingsRepository {
 
     val hideProfilePicSuggestion: Flow<Boolean>
     suspend fun setHideProfilePicSuggestion(hide: Boolean)
+
+    val increaseContrastEnabled: Flow<Boolean>
+    suspend fun setIncreaseContrastEnabled(enabled: Boolean)
+    val highContrastTextEnabled: Flow<Boolean>
+    suspend fun setHighContrastTextEnabled(enabled: Boolean)
+    val reduceAnimationsEnabled: Flow<Boolean>
+    suspend fun setReduceAnimationsEnabled(enabled: Boolean)
+    val autoplayAnimationsEnabled: Flow<Boolean>
+    suspend fun setAutoplayAnimationsEnabled(enabled: Boolean)
 }

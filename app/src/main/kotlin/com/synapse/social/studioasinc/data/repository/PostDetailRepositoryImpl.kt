@@ -4,6 +4,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import android.util.Log
 import com.synapse.social.studioasinc.domain.model.*
 import com.synapse.social.studioasinc.domain.model.UserStatus
+import com.synapse.social.studioasinc.shared.domain.repository.MediaUploadRepository
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
@@ -18,11 +19,10 @@ import kotlinx.serialization.json.*
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
 
-
-
 class PostDetailRepositoryImpl @Inject constructor(
     private val client: SupabaseClient,
-    private val reactionRepository: ReactionRepositoryImpl
+    private val reactionRepository: ReactionRepositoryImpl,
+    private val mediaUploadRepository: MediaUploadRepository? = null
 ) {
 
     companion object {
@@ -37,7 +37,8 @@ class PostDetailRepositoryImpl @Inject constructor(
                 .select(
                     columns = Columns.raw("""
                         *,
-                        users!author_uid(uid, username, display_name, email, bio, avatar, followers_count, following_count, posts_count, status, account_type, verify, banned)
+                        users!author_uid(uid, username, display_name, email, bio, avatar, followers_count, following_count, posts_count, status, account_type, verify, banned),
+                        quoted_post:posts!quoted_post_id(*, users!author_uid(uid, username, display_name, avatar, verify))
                     """.trimIndent())
                 ) {
                     filter {
@@ -141,6 +142,27 @@ class PostDetailRepositoryImpl @Inject constructor(
             val currentUser = client.auth.currentUserOrNull()
                 ?: return@withContext Result.failure(Exception("User must be authenticated"))
 
+            try {
+                val dto = client.from("posts").select(Columns.list("media_items")) {
+                    filter {
+                        eq("id", postId)
+                        eq("author_uid", currentUser.id)
+                    }
+                }.decodeSingleOrNull<JsonObject>()
+                val deleteUrls = dto?.get("media_items")?.takeIf { it !is JsonNull }?.jsonArray?.mapNotNull { item ->
+                    val obj = item.jsonObject
+                    val deleteUrl = obj["delete_url"]?.let { if (it is JsonPrimitive) it else null }?.contentOrNull
+                        ?: obj["deleteUrl"]?.let { if (it is JsonPrimitive) it else null }?.contentOrNull
+                    deleteUrl?.takeIf { it.isNotBlank() }
+                } ?: emptyList()
+
+                if (deleteUrls.isNotEmpty()) {
+                    mediaUploadRepository?.deleteImgBbImages(deleteUrls)
+                }
+            } catch (_: Exception) {
+                // Best-effort remote image cleanup
+            }
+
             client.from("posts")
                 .update({ set("is_deleted", true) }) {
                     filter {
@@ -159,9 +181,15 @@ class PostDetailRepositoryImpl @Inject constructor(
         }
     }
 
+    internal fun parsePostFromJson(data: JsonObject): Post {
+        val quotedPostNode = data["quoted_post"]
+        val quotedPostObject = when (quotedPostNode) {
+            is JsonObject -> quotedPostNode
+            is JsonArray -> quotedPostNode.firstOrNull()?.takeIf { it is JsonObject }?.jsonObject
+            else -> null
+        }
+        val quotedPostObj = quotedPostObject?.let { parsePostFromJson(it) }
 
-
-    private fun parsePostFromJson(data: JsonObject): Post {
         val post = Post(
             id = data["id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: "",
             key = data["key"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull,
@@ -205,7 +233,10 @@ class PostDetailRepositoryImpl @Inject constructor(
             locationPlaceId = data["location_place_id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull,
             youtubeUrl = data["youtube_url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull,
             inReplyToPostId = data["in_reply_to_post_id"]?.jsonPrimitive?.contentOrNull,
-            rootPostId = data["root_post_id"]?.jsonPrimitive?.contentOrNull
+            rootPostId = data["root_post_id"]?.jsonPrimitive?.contentOrNull,
+            quotedPostId = data["quoted_post_id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull,
+            quotedPost = quotedPostObj,
+            isQuote = data["is_quote"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.booleanOrNull ?: false
         )
 
         val userData = data["users"]?.takeIf { it !is JsonNull }?.jsonObject
@@ -230,6 +261,8 @@ class PostDetailRepositoryImpl @Inject constructor(
                 val mediaMap = item.jsonObject
                 val url = mediaMap["url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: return@mapNotNull null
                 val typeStr = mediaMap["type"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: "IMAGE"
+                val deleteUrl = mediaMap["delete_url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull
+                    ?: mediaMap["deleteUrl"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull
                 MediaItem(
                     id = mediaMap["id"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: "",
                     url = url,
@@ -237,7 +270,8 @@ class PostDetailRepositoryImpl @Inject constructor(
                     thumbnailUrl = mediaMap["thumbnailUrl"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull,
                     duration = mediaMap["duration"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.longOrNull,
                     size = mediaMap["size"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.longOrNull,
-                    mimeType = mediaMap["mimeType"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull
+                    mimeType = mediaMap["mimeType"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull,
+                    deleteUrl = deleteUrl
                 )
             } catch (e: CancellationException) {
             throw e
@@ -274,8 +308,6 @@ class PostDetailRepositoryImpl @Inject constructor(
             null
         }
     }
-
-
 
     private suspend fun checkBookmarkStatus(postId: String, userId: String): Boolean {
         return try {

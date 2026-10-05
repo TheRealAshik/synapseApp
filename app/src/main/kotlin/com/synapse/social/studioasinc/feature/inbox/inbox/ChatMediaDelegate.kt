@@ -1,10 +1,13 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox
 
 import com.synapse.social.studioasinc.core.util.UploadProgressManager
+import com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
+import com.synapse.social.studioasinc.shared.domain.model.settings.MediaUploadQuality
 import com.synapse.social.studioasinc.shared.domain.repository.FileUploader
+import com.synapse.social.studioasinc.shared.domain.service.MediaCompressor
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.UploadMediaUseCase
 import kotlinx.coroutines.CoroutineScope
@@ -24,7 +27,8 @@ class ChatMediaDelegate(
     private val onOptimisticMessageUpdated: (String, String) -> Unit,
     private val onOptimisticMessageSuccess: (String, Message) -> Unit,
     private val onOptimisticMessageFailed: (String, String?) -> Unit,
-    private val onError: (String?) -> Unit
+    private val onError: (String?) -> Unit,
+    private val mediaCompressor: MediaCompressor? = null
 ) {
 
     fun sendMediaMessage(
@@ -71,12 +75,20 @@ class ChatMediaDelegate(
         fileName: String,
         contentType: String,
         messageType: String,
-        caption: String? = null
+        caption: String? = null,
+        quality: MediaUploadQuality = MediaUploadQuality.STANDARD
     ) {
         val chatId = chatIdProvider() ?: return
 
         viewModelScope.launch {
-            val fileSize = fileUploader.getFileSize(filePath)
+            var uploadPath = filePath
+            if (messageType == "image" && mediaCompressor != null) {
+                mediaCompressor.compress(filePath, quality).onSuccess { compressedPath ->
+                    uploadPath = compressedPath
+                }
+            }
+
+            val fileSize = fileUploader.getFileSize(uploadPath)
             val maxVideoSize = 50 * 1024 * 1024L // 50MB
             val maxImageSize = 10 * 1024 * 1024L // 10MB
 
@@ -111,7 +123,7 @@ class ChatMediaDelegate(
 
             uploadMediaUseCase(
                 chatId = chatId,
-                filePath = filePath,
+                filePath = uploadPath,
                 fileName = fileName,
                 contentType = contentType,
                 onProgress = { progress ->
@@ -136,6 +148,30 @@ class ChatMediaDelegate(
                 uploadProgressManager.finishProgress(chatId, fileName, false, "Upload Failed")
                 onOptimisticMessageFailed(tempId, "Upload failed: ${e.message}")
             }
+        }
+    }
+
+    fun uploadAndSendMultipleMedia(
+        files: List<Pair<String, PickedFile>>,
+        caption: String? = null,
+        quality: MediaUploadQuality = MediaUploadQuality.STANDARD
+    ) {
+        files.forEachIndexed { index, (filePath, pickedFile) ->
+            val type = when {
+                pickedFile.mimeType.startsWith("image/") -> "image"
+                pickedFile.mimeType.startsWith("video/") -> "video"
+                pickedFile.mimeType.startsWith("audio/") -> "audio"
+                else -> "file"
+            }
+            val itemCaption = if (index == 0) caption else null
+            uploadAndSendMedia(
+                filePath = filePath,
+                fileName = pickedFile.fileName,
+                contentType = pickedFile.mimeType,
+                messageType = type,
+                caption = itemCaption,
+                quality = quality
+            )
         }
     }
 }

@@ -94,27 +94,39 @@ fun PostContent(
                     },
                     update = { textView ->
                         if (textView.tag != text) {
-                            if (isExpanded) {
-                                MarkdownRenderer.get(context).render(textView, text ?: "")
-                            } else {
-                                textView.text = text ?: ""
-                            }
+                            MarkdownRenderer.get(context).render(textView, text ?: "")
                             textView.tag = text
                         }
                         textView.setTextColor(colorOnSurfaceArgb)
-                        textView.maxLines = if (showFullText) Int.MAX_VALUE else 10
-                        textView.ellipsize = if (showFullText) null else TextUtils.TruncateAt.END
+                        val maxLines = if (showFullText) Int.MAX_VALUE else 10
+                        if (textView.maxLines != maxLines) {
+                            textView.maxLines = maxLines
+                        }
+                        val ellipsize = if (showFullText) null else TextUtils.TruncateAt.END
+                        if (textView.ellipsize != ellipsize) {
+                            textView.ellipsize = ellipsize
+                        }
 
                         if (lastProcessedText != text || lastProcessedShowFullText != showFullText) {
                             lastProcessedText = text
                             lastProcessedShowFullText = showFullText
-                            textView.post {
-                                val layout = textView.layout ?: return@post
+                            val layout = textView.layout
+                            if (layout != null) {
                                 val fullLineCount = layout.lineCount
                                 isTruncated = if (showFullText) {
                                     false
                                 } else {
                                     fullLineCount >= 10 && layout.getEllipsisCount(fullLineCount - 1) > 0
+                                }
+                            } else {
+                                textView.post {
+                                    val postLayout = textView.layout ?: return@post
+                                    val fullLineCount = postLayout.lineCount
+                                    isTruncated = if (showFullText) {
+                                        false
+                                    } else {
+                                        fullLineCount >= 10 && postLayout.getEllipsisCount(fullLineCount - 1) > 0
+                                    }
                                 }
                             }
                         }
@@ -203,7 +215,7 @@ fun PostContent(
         if (quotedPost != null) {
             Spacer(modifier = Modifier.height(Spacing.Small))
             QuotedPostCard(
-                post = quotedPost,
+                quotedPost = quotedPost,
                 onPostClick = { /* Handled by parent or specific click */ }
             )
         }
@@ -212,8 +224,8 @@ fun PostContent(
  
 @Composable
 fun QuotedPostCard(
-    post: Post,
-    onPostClick: () -> Unit,
+    quotedPost: Post,
+    onPostClick: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(MaterialTheme.shapes.medium.topStart)
@@ -230,60 +242,67 @@ fun QuotedPostCard(
             .clickable(onClick = onPostClick)
             .padding(Spacing.Medium)
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(
-                model = post.avatarUrl,
-                contentDescription = null,
-                modifier = Modifier
-                    .size(Spacing.Large)
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            )
-            Spacer(modifier = Modifier.width(Spacing.Small))
+        if (quotedPost.isDeleted == true) {
             Text(
-                text = post.displayName ?: post.username ?: "Unknown",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            if (post.isVerified) {
-                Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
-                // Add verification icon if available, or just skip for now
-            }
-            Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
-            Text(
-                text = "@${post.username}",
-                style = MaterialTheme.typography.labelMedium,
+                text = stringResource(R.string.error_post_not_found),
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-        }
- 
-        if (!post.postText.isNullOrBlank()) {
-            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-            Text(
-                text = post.postText ?: "",
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 3,
-                overflow = TextOverflow.Ellipsis,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
- 
-        if (!post.mediaItems.isNullOrEmpty()) {
-            Spacer(modifier = Modifier.height(Spacing.Small))
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .clip(MaterialTheme.shapes.small)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            ) {
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 AsyncImage(
-                    model = post.mediaItems?.firstOrNull()?.url ?: "",
+                    model = quotedPost.avatarUrl,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .size(Spacing.Large)
+                        .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
+                Spacer(modifier = Modifier.width(Spacing.Small))
+                Text(
+                    text = quotedPost.displayName ?: quotedPost.username ?: "Unknown",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (quotedPost.isVerified) {
+                    Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                }
+                Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                Text(
+                    text = stringResource(R.string.post_username_format, quotedPost.username ?: ""),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            if (!quotedPost.postText.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                Text(
+                    text = quotedPost.postText ?: "",
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+
+            if (!quotedPost.mediaItems.isNullOrEmpty()) {
+                Spacer(modifier = Modifier.height(Spacing.Small))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                        .clip(MaterialTheme.shapes.small)
+                        .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                ) {
+                    AsyncImage(
+                        model = quotedPost.mediaItems?.firstOrNull()?.url ?: "",
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxWidth(),
+                        contentScale = ContentScale.Crop
+                    )
+                }
             }
         }
     }

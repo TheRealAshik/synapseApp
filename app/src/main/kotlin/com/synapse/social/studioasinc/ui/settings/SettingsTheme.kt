@@ -4,6 +4,15 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.graphics.shapes.CornerRounding
+import androidx.graphics.shapes.RoundedPolygon
+import androidx.graphics.shapes.toPath
+import androidx.compose.ui.graphics.Matrix
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Density
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
@@ -41,15 +50,14 @@ object SettingsColors {
     val sectionTitle: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.onSurfaceVariant
+        get() = MaterialTheme.colorScheme.primary
 
 
 
     val cardBackground: Color
         @Composable
         @ReadOnlyComposable
-        get() = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.85f)
-                else MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.85f)
+        get() = MaterialTheme.colorScheme.surfaceContainerLow
 
 
 
@@ -63,8 +71,7 @@ object SettingsColors {
     val cardBackgroundElevated: Color
         @Composable
         @ReadOnlyComposable
-        get() = if (isSystemInDarkTheme()) MaterialTheme.colorScheme.surfaceContainerHighest
-                else MaterialTheme.colorScheme.surfaceContainerHigh
+        get() = MaterialTheme.colorScheme.surfaceContainerHigh
 
 
 
@@ -99,21 +106,26 @@ object SettingsColors {
     val chevronIcon: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+        get() = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
 
 
 
     val divider: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+        get() = MaterialTheme.colorScheme.outlineVariant
 
 
 
     val itemIcon: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.onSurfaceVariant
+        get() = MaterialTheme.colorScheme.primary
+
+    val iconContainerBackground: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.surfaceContainerHigh
 }
 
 
@@ -121,23 +133,66 @@ object SettingsColors {
 object SettingsShapes {
 
 
-    val cardShape: Shape = RoundedCornerShape(32.dp)
+    val cardShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.large
 
 
 
-    val sectionShape: Shape = RoundedCornerShape(24.dp)
+    val sectionShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.large
 
 
 
-    val itemShape: Shape = RoundedCornerShape(20.dp)
+    val itemShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.large
+
+    val iconBadgeShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.medium
 
 
 
-    val inputShape: Shape = RoundedCornerShape(Sizes.CornerDefault)
+    val inputShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.medium
 
 
 
-    val chipShape: Shape = RoundedCornerShape(Sizes.CornerMedium)
+    val chipShape: Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.small
+
+    private val scallopedPolygon = RoundedPolygon(
+        numVertices = 8,
+        radius = 0.5f,
+        centerX = 0.5f,
+        centerY = 0.5f,
+        rounding = CornerRounding(0.5f)
+    )
+
+    val scallopedShape: Shape = object : Shape {
+        override fun createOutline(
+            size: Size,
+            layoutDirection: LayoutDirection,
+            density: Density
+        ): Outline {
+            val path = scallopedPolygon.toPath().asComposePath()
+            val matrix = Matrix().apply {
+                scale(size.width, size.height)
+            }
+            path.transform(matrix)
+            return Outline.Generic(path)
+        }
+    }
 }
 
 
@@ -153,7 +208,7 @@ object SettingsSpacing {
 
 
 
-    val itemSpacing: Dp = 0.dp
+    val itemSpacing: Dp = Spacing.ExtraSmall
 
 
 
@@ -173,7 +228,7 @@ object SettingsSpacing {
 
 
 
-    val avatarSize: Dp = 64.dp
+    val avatarSize: Dp = Sizes.AvatarSemiLarge
 
 
 
@@ -255,20 +310,21 @@ enum class SettingsItemPosition {
 
 
 
+    @Composable
     fun getShape(): Shape = when (this) {
         Single -> SettingsShapes.itemShape
         Top -> RoundedCornerShape(
-            topStart = Sizes.CornerLarge,
-            topEnd = Sizes.CornerLarge,
-            bottomStart = 0.dp,
-            bottomEnd = 0.dp
+            topStart = Sizes.CornerExtraLarge,
+            topEnd = Sizes.CornerExtraLarge,
+            bottomStart = Sizes.CornerSmall,
+            bottomEnd = Sizes.CornerSmall
         )
-        Middle -> RoundedCornerShape(0.dp)
+        Middle -> RoundedCornerShape(Sizes.CornerSmall)
         Bottom -> RoundedCornerShape(
-            topStart = 0.dp,
-            topEnd = 0.dp,
-            bottomStart = Sizes.CornerLarge,
-            bottomEnd = Sizes.CornerLarge
+            topStart = Sizes.CornerSmall,
+            topEnd = Sizes.CornerSmall,
+            bottomStart = Sizes.CornerExtraLarge,
+            bottomEnd = Sizes.CornerExtraLarge
         )
     }
 }

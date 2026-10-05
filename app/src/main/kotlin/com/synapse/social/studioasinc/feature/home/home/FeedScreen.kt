@@ -50,6 +50,7 @@ import com.synapse.social.studioasinc.feature.shared.components.post.PostCard
 import com.synapse.social.studioasinc.feature.shared.theme.LocalUiAtmosphere
 import com.synapse.social.studioasinc.feature.shared.components.post.PostUiMapper
 import com.synapse.social.studioasinc.feature.shared.components.post.PostSummarySheet
+import com.synapse.social.studioasinc.feature.shared.utils.PostShareUtils
 import com.synapse.social.studioasinc.ui.components.ExpressivePullToRefreshIndicator
 import com.synapse.social.studioasinc.feature.stories.tray.StoryTray
 import com.synapse.social.studioasinc.feature.stories.tray.StoryTrayViewModel
@@ -62,7 +63,7 @@ fun FeedScreen(
     storyTrayViewModel: StoryTrayViewModel = hiltViewModel(),
     onPostClick: (String) -> Unit,
     onUserClick: (String) -> Unit,
-    onCommentClick: (String) -> Unit,
+    onCommentClick: (Post) -> Unit,
     onQuoteClick: (String) -> Unit,
     onMediaClick: (Int) -> Unit,
     onEditPost: (String) -> Unit,
@@ -124,11 +125,11 @@ fun FeedScreen(
 
 
 
-    val actions = remember(viewModel, currentOnCommentClick, currentOnUserClick, currentOnMediaClick) {
+    val actions = remember(viewModel, context, currentOnCommentClick, currentOnUserClick, currentOnMediaClick) {
         PostActionsFactory.create(
             viewModel = viewModel,
-            onComment = { post -> currentOnCommentClick(post.id) },
-            onShare = viewModel::sharePost,
+            onComment = { post -> currentOnCommentClick(post) },
+            onShare = { post -> PostShareUtils.sharePost(context, post.id) },
             onQuote = { post -> onQuoteClick(post.id) },
             onUserClick = { userId -> currentOnUserClick(userId) },
             onOptionClick = { post -> selectedPost = post },
@@ -309,7 +310,7 @@ fun FeedScreen(
             onDismiss = { selectedPost = null },
             onEdit = { onEditPost(post.id) },
             onDelete = { viewModel.deletePost(post) },
-            onShare = { viewModel.sharePost(post) },
+            onShare = { PostShareUtils.sharePost(context, post.id) },
             onCopyLink = { viewModel.copyPostLink(post) },
             onBookmark = { viewModel.bookmarkPost(post) },
             onToggleComments = { viewModel.toggleComments(post) },
@@ -341,7 +342,7 @@ private fun FeedCommentItem(
     feedItem: FeedItem.CommentItem,
     postViewStyle: com.synapse.social.studioasinc.ui.settings.PostViewStyle,
     viewModel: FeedViewModel,
-    onCommentClick: (String) -> Unit,
+    onCommentClick: (Post) -> Unit,
     onUserClick: (String) -> Unit,
     onMediaClick: (Int) -> Unit,
     onOptionsClick: (Post) -> Unit
@@ -351,9 +352,10 @@ private fun FeedCommentItem(
         PostUiMapper.toPostCardState(feedItem)
     }
 
+    val context = LocalContext.current
     val onLikeClick = remember(feedItem.id) { { viewModel.reactToComment(feedItem.id, com.synapse.social.studioasinc.domain.model.ReactionType.LIKE) } }
-    val onCommentClickAction = remember(feedItem.parentPostId) { { feedItem.parentPostId?.let { postId -> onCommentClick(postId) } ?: Unit } }
-    val onShareClick = remember(feedItem.id) { { /* Share comment link? */ } }
+    val onCommentClickAction = remember(feedItem.id, onCommentClick) { { feedItem.parentPostId?.let { onCommentClick(commentState.post) } ?: Unit } }
+    val onShareClick = remember(feedItem.id, context) { { PostShareUtils.shareComment(context, feedItem.content) } }
     val onRepostClick = remember(commentState.post) { { viewModel.resharePost(commentState.post) } }
     val onQuoteClick = remember(commentState.post) { { viewModel.quotePost(commentState.post, "") } }
     val onBookmarkClick = remember(commentState.post) { { viewModel.bookmarkPost(commentState.post) } }

@@ -12,25 +12,25 @@ import com.synapse.social.studioasinc.core.auth.GoogleAuthHelper
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import io.github.aakira.napier.Napier
-import com.synapse.social.studioasinc.BuildConfig
+import com.synapse.social.studioasinc.feature.auth.presentation.viewmodel.AuthViewModel
 
 @AndroidEntryPoint
 class AuthActivity : BaseComposeActivity() {
 
-    private lateinit var viewModel: SignInViewModel
+    private lateinit var viewModel: AuthViewModel
     private lateinit var googleAuthHelper: GoogleAuthHelper
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        viewModel = ViewModelProvider(this)[SignInViewModel::class.java]
+        viewModel = ViewModelProvider(this)[AuthViewModel::class.java]
         googleAuthHelper = GoogleAuthHelper(this)
 
         intent?.let { handleDeepLink(it) }
         
         setAuthContent {
             AuthScreen(
-                signInViewModel = viewModel,
+                authViewModel = viewModel,
                 onInitiateGoogleSignIn = {
                     handleGoogleSignIn()
                 },
@@ -64,7 +64,7 @@ class AuthActivity : BaseComposeActivity() {
                 Napier.e(error, tag = "AuthActivity")
                 // Use fallback Log in case Napier isn't fully initialized
                 android.util.Log.e("AuthActivity", error)
-                android.widget.Toast.makeText(this@AuthActivity, error, android.widget.Toast.LENGTH_LONG).show()
+                viewModel.handleGoogleSignInError(error)
                 return@launch
             }
             
@@ -81,7 +81,7 @@ class AuthActivity : BaseComposeActivity() {
                     val errorMsg = error.message ?: "Google Sign-In failed"
                     Napier.e("Google Sign-In failed: $errorMsg", error, tag = "AuthActivity")
                     android.util.Log.e("AuthActivity", "Google Sign-In failed: $errorMsg", error)
-                    android.widget.Toast.makeText(this@AuthActivity, errorMsg, android.widget.Toast.LENGTH_LONG).show()
+                    viewModel.handleGoogleSignInError(errorMsg)
                 }
             )
         }

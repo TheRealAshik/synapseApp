@@ -1,4 +1,5 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.screens
+import com.synapse.social.studioasinc.feature.inbox.inbox.components.TypingIndicator
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -50,11 +51,10 @@ internal fun ChatMessageList(
     isLoadingMore: Boolean,
     typingStatus: TypingStatus?,
     onLoadMore: () -> Unit,
+    onSingleTap: (Message) -> Unit,
     onToggleSelection: (String) -> Unit,
     onSwipeToReply: (Message) -> Unit,
-    onLongClick: (Message) -> Unit,
     onReactionSelected: (String, SharedReactionType) -> Unit,
-    onShowReactionPicker: (Message) -> Unit,
     onNavigateToProfile: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -127,18 +127,23 @@ internal fun ChatMessageList(
                         position = position,
                         isSelected = isSelected,
                         reactions = message.reactions.map { it.key.emoji to it.value },
-                        onToggleSelection = { if (selectedMessageIds.isNotEmpty()) message.id?.let { onToggleSelection(it) } },
+                        onClick = {
+                            if (selectedMessageIds.isNotEmpty()) {
+                                message.id?.let { onToggleSelection(it) }
+                            } else {
+                                onSingleTap(message)
+                            }
+                        },
                         onSwipeToReply = { onSwipeToReply(message) },
                         replyToMessage = message.replyToId?.let { messagesMap[it] },
                         onLongClick = {
                             if (selectedMessageIds.isNotEmpty()) {
                                 message.id?.let { onToggleSelection(it) }
                             } else {
-                                onLongClick(message)
+                                message.id?.let { onToggleSelection(it) }
                             }
                         },
                         onReactionSelected = { reaction -> message.id?.let { onReactionSelected(it, reaction) } },
-                        onShowReactionPicker = { onShowReactionPicker(message) },
                         onQuoteClick = { targetId ->
                             val targetIndex = reversedItems.indexOfFirst {
                                 it is ChatListItem.MessageItem && it.message.id == targetId
@@ -151,7 +156,7 @@ internal fun ChatMessageList(
                         cornerRadius = chatMessageCornerRadius,
                         themePreset = chatThemePreset,
                         showAvatar = !chatAvatarDisabled,
-                        senderName = participantProfile?.displayName ?: participantProfile?.name,
+                        senderName = participantProfile?.displayName ?: participantProfile?.name ?: initialParticipantName,
                         senderAvatarUrl = participantAvatarUrl
                     )
                 }

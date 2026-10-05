@@ -20,9 +20,14 @@ import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 fun PrivacySecurityScreen(
     viewModel: PrivacySecurityViewModel,
     onNavigateBack: () -> Unit,
+    onNavigateToAppLock: () -> Unit,
     onNavigateToBlockedUsers: () -> Unit,
     onNavigateToMutedUsers: () -> Unit,
-    onNavigateToActiveSessions: () -> Unit
+    onNavigateToActiveSessions: () -> Unit,
+    onNavigateToLastSeen: () -> Unit,
+    onNavigateToProfilePhoto: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    onNavigateToStatus: () -> Unit
 ) {
     val privacySettings by viewModel.privacySettings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -33,15 +38,17 @@ fun PrivacySecurityScreen(
         isLoading = isLoading,
         error = error,
         onNavigateBack = onNavigateBack,
+        onNavigateToAppLock = onNavigateToAppLock,
         onNavigateToBlockedUsers = onNavigateToBlockedUsers,
         onNavigateToMutedUsers = onNavigateToMutedUsers,
         onNavigateToActiveSessions = onNavigateToActiveSessions,
+        onNavigateToLastSeen = onNavigateToLastSeen,
+        onNavigateToProfilePhoto = onNavigateToProfilePhoto,
+        onNavigateToAbout = onNavigateToAbout,
+        onNavigateToStatus = onNavigateToStatus,
         onClearError = { viewModel.clearError() },
         onReadReceiptsChanged = { viewModel.setReadReceiptsEnabled(it) },
-        onAppLockChanged = { viewModel.setAppLockEnabled(it) },
         onChatLockChanged = { viewModel.setChatLockEnabled(it) },
-        onProfileVisibilityChanged = { viewModel.setProfileVisibility(it) },
-        onContentVisibilityChanged = { viewModel.setContentVisibility(it) },
         onGroupPrivacyChanged = { viewModel.setGroupPrivacy(it) }
     )
 }
@@ -53,15 +60,17 @@ fun PrivacySecurityContent(
     isLoading: Boolean,
     error: String?,
     onNavigateBack: () -> Unit,
+    onNavigateToAppLock: () -> Unit,
     onNavigateToBlockedUsers: () -> Unit,
     onNavigateToMutedUsers: () -> Unit,
     onNavigateToActiveSessions: () -> Unit,
+    onNavigateToLastSeen: () -> Unit,
+    onNavigateToProfilePhoto: () -> Unit,
+    onNavigateToAbout: () -> Unit,
+    onNavigateToStatus: () -> Unit,
     onClearError: () -> Unit,
     onReadReceiptsChanged: (Boolean) -> Unit,
-    onAppLockChanged: (Boolean) -> Unit,
     onChatLockChanged: (Boolean) -> Unit,
-    onProfileVisibilityChanged: (ProfileVisibility) -> Unit,
-    onContentVisibilityChanged: (ContentVisibility) -> Unit,
     onGroupPrivacyChanged: (GroupPrivacy) -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -118,8 +127,10 @@ fun PrivacySecurityContent(
                 ProfilePrivacySection(
                     privacySettings = privacySettings,
                     isLoading = isLoading,
-                    onProfileVisibilityChanged = onProfileVisibilityChanged,
-                    onContentVisibilityChanged = onContentVisibilityChanged
+                    onNavigateToLastSeen = onNavigateToLastSeen,
+                    onNavigateToProfilePhoto = onNavigateToProfilePhoto,
+                    onNavigateToAbout = onNavigateToAbout,
+                    onNavigateToStatus = onNavigateToStatus
                 )
             }
 
@@ -145,7 +156,7 @@ fun PrivacySecurityContent(
             item {
                 SecuritySection(
                     appLockEnabled = privacySettings.appLockEnabled,
-                    onAppLockChanged = onAppLockChanged,
+                    onNavigateToAppLock = onNavigateToAppLock,
                     chatLockEnabled = privacySettings.chatLockEnabled,
                     onChatLockChanged = onChatLockChanged,
                     isLoading = isLoading

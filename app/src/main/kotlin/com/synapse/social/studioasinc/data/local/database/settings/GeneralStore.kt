@@ -6,8 +6,11 @@ import androidx.datastore.preferences.core.edit
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+import com.synapse.social.studioasinc.ui.settings.NavigationPlacement
+
 interface GeneralStore {
     val language: Flow<String>
+    val navigationPlacement: Flow<NavigationPlacement>
     val messageSuggestionEnabled: Flow<Boolean>
     val dataSaverEnabled: Flow<Boolean>
     val accountReportsAutoCreate: Flow<Boolean>
@@ -16,7 +19,13 @@ interface GeneralStore {
     val autoBackupEnabled: Flow<Boolean>
     val searchHistory: Flow<List<String>>
 
+    val increaseContrastEnabled: Flow<Boolean>
+    val highContrastTextEnabled: Flow<Boolean>
+    val reduceAnimationsEnabled: Flow<Boolean>
+    val autoplayAnimationsEnabled: Flow<Boolean>
+
     suspend fun setLanguage(languageCode: String)
+    suspend fun setNavigationPlacement(placement: NavigationPlacement)
     suspend fun setMessageSuggestionEnabled(enabled: Boolean)
     suspend fun setDataSaverEnabled(enabled: Boolean)
     suspend fun setEnterIsSendEnabled(enabled: Boolean)
@@ -30,6 +39,11 @@ interface GeneralStore {
     suspend fun setChannelsReportsAutoCreate(enabled: Boolean)
     suspend fun setHideProfilePicSuggestion(hide: Boolean)
     suspend fun setSearchHistory(history: List<String>)
+
+    suspend fun setIncreaseContrastEnabled(enabled: Boolean)
+    suspend fun setHighContrastTextEnabled(enabled: Boolean)
+    suspend fun setReduceAnimationsEnabled(enabled: Boolean)
+    suspend fun setAutoplayAnimationsEnabled(enabled: Boolean)
 }
 
 class GeneralStoreImpl(private val dataStore: DataStore<Preferences>) : GeneralStore {
@@ -40,6 +54,18 @@ class GeneralStoreImpl(private val dataStore: DataStore<Preferences>) : GeneralS
     override suspend fun setLanguage(languageCode: String) {
         dataStore.edit { preferences ->
             preferences[SettingsConstants.KEY_APP_LANGUAGE] = languageCode
+        }
+    }
+
+    override val navigationPlacement: Flow<NavigationPlacement> = dataStore.safePreferencesFlow().map { preferences ->
+        preferences[SettingsConstants.KEY_NAVIGATION_PLACEMENT]?.let {
+            try { NavigationPlacement.valueOf(it) } catch (e: Exception) { null }
+        } ?: SettingsConstants.DEFAULT_NAVIGATION_PLACEMENT
+    }
+
+    override suspend fun setNavigationPlacement(placement: NavigationPlacement) {
+        dataStore.edit { preferences ->
+            preferences[SettingsConstants.KEY_NAVIGATION_PLACEMENT] = placement.name
         }
     }
 
@@ -146,6 +172,46 @@ class GeneralStoreImpl(private val dataStore: DataStore<Preferences>) : GeneralS
     override suspend fun setSearchHistory(history: List<String>) {
         dataStore.edit { preferences ->
             preferences[SettingsConstants.KEY_SEARCH_HISTORY] = history.take(5).joinToString(",")
+        }
+    }
+
+    override val increaseContrastEnabled: Flow<Boolean> = dataStore.safePreferencesFlow().map { preferences ->
+        preferences[SettingsConstants.KEY_INCREASE_CONTRAST_ENABLED] ?: SettingsConstants.DEFAULT_INCREASE_CONTRAST_ENABLED
+    }
+
+    override val highContrastTextEnabled: Flow<Boolean> = dataStore.safePreferencesFlow().map { preferences ->
+        preferences[SettingsConstants.KEY_HIGH_CONTRAST_TEXT_ENABLED] ?: SettingsConstants.DEFAULT_HIGH_CONTRAST_TEXT_ENABLED
+    }
+
+    override val reduceAnimationsEnabled: Flow<Boolean> = dataStore.safePreferencesFlow().map { preferences ->
+        preferences[SettingsConstants.KEY_REDUCE_ANIMATIONS_ENABLED] ?: SettingsConstants.DEFAULT_REDUCE_ANIMATIONS_ENABLED
+    }
+
+    override val autoplayAnimationsEnabled: Flow<Boolean> = dataStore.safePreferencesFlow().map { preferences ->
+        preferences[SettingsConstants.KEY_AUTOPLAY_ANIMATIONS_ENABLED] ?: SettingsConstants.DEFAULT_AUTOPLAY_ANIMATIONS_ENABLED
+    }
+
+    override suspend fun setIncreaseContrastEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[SettingsConstants.KEY_INCREASE_CONTRAST_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setHighContrastTextEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[SettingsConstants.KEY_HIGH_CONTRAST_TEXT_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setReduceAnimationsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[SettingsConstants.KEY_REDUCE_ANIMATIONS_ENABLED] = enabled
+        }
+    }
+
+    override suspend fun setAutoplayAnimationsEnabled(enabled: Boolean) {
+        dataStore.edit { preferences ->
+            preferences[SettingsConstants.KEY_AUTOPLAY_ANIMATIONS_ENABLED] = enabled
         }
     }
 }

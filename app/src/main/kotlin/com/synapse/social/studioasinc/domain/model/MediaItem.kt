@@ -1,9 +1,8 @@
 package com.synapse.social.studioasinc.domain.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient
-
-
 
 @Serializable
 data class MediaItem(
@@ -14,6 +13,8 @@ data class MediaItem(
     val duration: Long? = null,
     val size: Long? = null,
     val mimeType: String? = null,
+    @SerialName("delete_url")
+    val deleteUrl: String? = null,
     @Transient
     val likesCount: Int = 0,
     @Transient
@@ -21,8 +22,6 @@ data class MediaItem(
     @Transient
     val userHasLiked: Boolean = false
 )
-
-
 
 @Serializable
 enum class MediaType {

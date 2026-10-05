@@ -170,7 +170,7 @@ fun ProfileScreen(
                         profile = profile,
                         isLoading = profileState is ProfileUiState.Loading,
                         listState = listState,
-                        scrollProgress = scrollProgress.value,
+                        scrollProgressProvider = { scrollProgress.value },
                         viewModel = viewModel,
                         onNavigateToEditProfile = onNavigateToEditProfile,
                         onNavigateToFollowers = onNavigateToFollowers,
@@ -197,7 +197,7 @@ fun ProfileScreen(
         val profile = (state.profileState as? ProfileUiState.Success)?.profile
         ProfileTopAppBar(
             displayName = profile?.name ?: profile?.username ?: state.viewAsUserName ?: "",
-            scrollProgress = scrollProgress.value,
+            scrollProgressProvider = { scrollProgress.value },
             onBackClick = onNavigateBack,
             onMoreClick = { viewModel.toggleMoreMenu() }
         )

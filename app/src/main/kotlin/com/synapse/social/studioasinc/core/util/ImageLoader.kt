@@ -10,6 +10,7 @@ import coil.request.ImageRequest
 import coil.request.Disposable
 import com.synapse.social.studioasinc.BuildConfig
 import com.synapse.social.studioasinc.R
+import io.github.jan.supabase.auth.auth
 
 
 
@@ -111,7 +112,13 @@ object ImageLoader {
                        !url.contains("/public/")
 
         if (needsAuth) {
-            builder.addHeader("Authorization", "Bearer ${BuildConfig.SUPABASE_ANON_KEY}")
+            val sessionToken = try {
+                com.synapse.social.studioasinc.shared.core.network.SupabaseClient.client.auth.currentSessionOrNull()?.accessToken
+            } catch (e: Exception) {
+                null
+            }
+            val token = sessionToken.takeIf { !it.isNullOrBlank() } ?: BuildConfig.SUPABASE_ANON_KEY
+            builder.addHeader("Authorization", "Bearer $token")
             builder.addHeader("apikey", BuildConfig.SUPABASE_ANON_KEY)
         }
     }

@@ -111,6 +111,24 @@ class SettingsRepositoryImpl private constructor(
 
     override val contentVisibility: Flow<ContentVisibility> = settingsDataStore.contentVisibility
 
+    override val lastSeenVisibility: Flow<com.synapse.social.studioasinc.ui.settings.LastSeenVisibility> = settingsDataStore.lastSeenVisibility
+
+    override val profilePhotoVisibility: Flow<com.synapse.social.studioasinc.ui.settings.ProfilePhotoVisibility> = settingsDataStore.profilePhotoVisibility
+
+    override val aboutVisibility: Flow<com.synapse.social.studioasinc.ui.settings.AboutVisibility> = settingsDataStore.aboutVisibility
+
+    override val statusVisibility: Flow<com.synapse.social.studioasinc.ui.settings.StatusVisibility> = settingsDataStore.statusVisibility
+
+    override val lastSeenExcludedUserIds: Flow<Set<String>> = settingsDataStore.lastSeenExcludedUserIds
+
+    override val profilePhotoExcludedUserIds: Flow<Set<String>> = settingsDataStore.profilePhotoExcludedUserIds
+
+    override val aboutExcludedUserIds: Flow<Set<String>> = settingsDataStore.aboutExcludedUserIds
+
+    override val statusExcludedUserIds: Flow<Set<String>> = settingsDataStore.statusExcludedUserIds
+
+    override val groupExcludedUserIds: Flow<Set<String>> = settingsDataStore.groupExcludedUserIds
+
     override val biometricLockEnabled: Flow<Boolean> = settingsDataStore.biometricLockEnabled
 
     override val twoFactorEnabled: Flow<Boolean> = settingsDataStore.twoFactorEnabled
@@ -123,6 +141,42 @@ class SettingsRepositoryImpl private constructor(
 
     override suspend fun setContentVisibility(visibility: ContentVisibility) {
         settingsDataStore.setContentVisibility(visibility)
+    }
+
+    override suspend fun setLastSeenVisibility(visibility: com.synapse.social.studioasinc.ui.settings.LastSeenVisibility) {
+        settingsDataStore.setLastSeenVisibility(visibility)
+    }
+
+    override suspend fun setProfilePhotoVisibility(visibility: com.synapse.social.studioasinc.ui.settings.ProfilePhotoVisibility) {
+        settingsDataStore.setProfilePhotoVisibility(visibility)
+    }
+
+    override suspend fun setAboutVisibility(visibility: com.synapse.social.studioasinc.ui.settings.AboutVisibility) {
+        settingsDataStore.setAboutVisibility(visibility)
+    }
+
+    override suspend fun setStatusVisibility(visibility: com.synapse.social.studioasinc.ui.settings.StatusVisibility) {
+        settingsDataStore.setStatusVisibility(visibility)
+    }
+
+    override suspend fun setLastSeenExcludedUserIds(user: Set<String>) {
+        settingsDataStore.setLastSeenExcludedUserIds(user)
+    }
+
+    override suspend fun setProfilePhotoExcludedUserIds(user: Set<String>) {
+        settingsDataStore.setProfilePhotoExcludedUserIds(user)
+    }
+
+    override suspend fun setAboutExcludedUserIds(user: Set<String>) {
+        settingsDataStore.setAboutExcludedUserIds(user)
+    }
+
+    override suspend fun setStatusExcludedUserIds(user: Set<String>) {
+        settingsDataStore.setStatusExcludedUserIds(user)
+    }
+
+    override suspend fun setGroupExcludedUserIds(user: Set<String>) {
+        settingsDataStore.setGroupExcludedUserIds(user)
     }
 
     override suspend fun setGroupPrivacy(privacy: GroupPrivacy) {
@@ -207,6 +261,12 @@ class SettingsRepositoryImpl private constructor(
         settingsDataStore.setChatSwipeGesture(gesture)
     }
 
+
+    override val navigationPlacement: Flow<com.synapse.social.studioasinc.ui.settings.NavigationPlacement> = settingsDataStore.navigationPlacement
+
+    override suspend fun setNavigationPlacement(placement: com.synapse.social.studioasinc.ui.settings.NavigationPlacement) {
+        settingsDataStore.setNavigationPlacement(placement)
+    }
 
     override val messageSuggestionEnabled: Flow<Boolean> = settingsDataStore.messageSuggestionEnabled
 
@@ -387,6 +447,7 @@ class SettingsRepositoryImpl private constructor(
     }
 
     override suspend fun setAppLockEnabled(enabled: Boolean) {
+        settingsDataStore.setAppLockEnabled(enabled)
         secureStorage.save(KEY_APP_LOCK_ENABLED, enabled.toString())
         secureStorage.save(KEY_APP_LOCK_TIMEOUT, "immediate")
         secureStorage.save(KEY_APP_LOCK_METHOD, "biometric")
@@ -442,5 +503,26 @@ class SettingsRepositoryImpl private constructor(
 
     override suspend fun setHideProfilePicSuggestion(hide: Boolean) {
         settingsDataStore.setHideProfilePicSuggestion(hide)
+    }
+
+    override val increaseContrastEnabled: Flow<Boolean> = settingsDataStore.increaseContrastEnabled
+    override val highContrastTextEnabled: Flow<Boolean> = settingsDataStore.highContrastTextEnabled
+    override val reduceAnimationsEnabled: Flow<Boolean> = settingsDataStore.reduceAnimationsEnabled
+    override val autoplayAnimationsEnabled: Flow<Boolean> = settingsDataStore.autoplayAnimationsEnabled
+
+    override suspend fun setIncreaseContrastEnabled(enabled: Boolean) {
+        settingsDataStore.setIncreaseContrastEnabled(enabled)
+    }
+
+    override suspend fun setHighContrastTextEnabled(enabled: Boolean) {
+        settingsDataStore.setHighContrastTextEnabled(enabled)
+    }
+
+    override suspend fun setReduceAnimationsEnabled(enabled: Boolean) {
+        settingsDataStore.setReduceAnimationsEnabled(enabled)
+    }
+
+    override suspend fun setAutoplayAnimationsEnabled(enabled: Boolean) {
+        settingsDataStore.setAutoplayAnimationsEnabled(enabled)
     }
 }

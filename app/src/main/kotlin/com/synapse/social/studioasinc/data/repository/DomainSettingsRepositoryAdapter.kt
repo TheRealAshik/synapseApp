@@ -18,6 +18,10 @@ import com.synapse.social.studioasinc.shared.domain.model.settings.NotificationP
 import com.synapse.social.studioasinc.shared.domain.model.settings.PostViewStyle
 import com.synapse.social.studioasinc.shared.domain.model.settings.PrivacySettings
 import com.synapse.social.studioasinc.shared.domain.model.settings.ProfileVisibility
+import com.synapse.social.studioasinc.shared.domain.model.settings.LastSeenVisibility
+import com.synapse.social.studioasinc.shared.domain.model.settings.ProfilePhotoVisibility
+import com.synapse.social.studioasinc.shared.domain.model.settings.AboutVisibility
+import com.synapse.social.studioasinc.shared.domain.model.settings.StatusVisibility
 import com.synapse.social.studioasinc.shared.domain.model.settings.StorageUsageBreakdown
 import com.synapse.social.studioasinc.shared.domain.model.settings.ThemeMode
 import com.synapse.social.studioasinc.shared.domain.repository.SettingsRepository as DomainSettingsRepository
@@ -29,6 +33,10 @@ import com.synapse.social.studioasinc.ui.settings.FontScale as UiFontScale
 import com.synapse.social.studioasinc.ui.settings.PostViewStyle as UiPostViewStyle
 import com.synapse.social.studioasinc.ui.settings.ProfileVisibility as UiProfileVisibility
 import com.synapse.social.studioasinc.ui.settings.ContentVisibility as UiContentVisibility
+import com.synapse.social.studioasinc.ui.settings.LastSeenVisibility as UiLastSeenVisibility
+import com.synapse.social.studioasinc.ui.settings.ProfilePhotoVisibility as UiProfilePhotoVisibility
+import com.synapse.social.studioasinc.ui.settings.AboutVisibility as UiAboutVisibility
+import com.synapse.social.studioasinc.ui.settings.StatusVisibility as UiStatusVisibility
 import com.synapse.social.studioasinc.ui.settings.GroupPrivacy as UiGroupPrivacy
 import com.synapse.social.studioasinc.ui.settings.NotificationCategory as UiNotificationCategory
 import com.synapse.social.studioasinc.ui.settings.MediaUploadQuality as UiMediaUploadQuality
@@ -60,12 +68,30 @@ class DomainSettingsRepositoryAdapter @Inject constructor(
     // --- Privacy ---
     override val profileVisibility: Flow<ProfileVisibility> = delegate.profileVisibility.map { ProfileVisibility.valueOf(it.name) }
     override val contentVisibility: Flow<ContentVisibility> = delegate.contentVisibility.map { ContentVisibility.valueOf(it.name) }
+    override val lastSeenVisibility: Flow<LastSeenVisibility> = delegate.lastSeenVisibility.map { LastSeenVisibility.valueOf(it.name) }
+    override val profilePhotoVisibility: Flow<ProfilePhotoVisibility> = delegate.profilePhotoVisibility.map { ProfilePhotoVisibility.valueOf(it.name) }
+    override val aboutVisibility: Flow<AboutVisibility> = delegate.aboutVisibility.map { AboutVisibility.valueOf(it.name) }
+    override val statusVisibility: Flow<StatusVisibility> = delegate.statusVisibility.map { StatusVisibility.valueOf(it.name) }
+    override val lastSeenExcludedUserIds: Flow<Set<String>> = delegate.lastSeenExcludedUserIds
+    override val profilePhotoExcludedUserIds: Flow<Set<String>> = delegate.profilePhotoExcludedUserIds
+    override val aboutExcludedUserIds: Flow<Set<String>> = delegate.aboutExcludedUserIds
+    override val statusExcludedUserIds: Flow<Set<String>> = delegate.statusExcludedUserIds
+    override val groupExcludedUserIds: Flow<Set<String>> = delegate.groupExcludedUserIds
     override val biometricLockEnabled: Flow<Boolean> = delegate.biometricLockEnabled
     override val twoFactorEnabled: Flow<Boolean> = delegate.twoFactorEnabled
     override val privacySettings: Flow<PrivacySettings> = delegate.privacySettings.map { it.toDomain() }
 
     override suspend fun setProfileVisibility(visibility: ProfileVisibility) = delegate.setProfileVisibility(UiProfileVisibility.valueOf(visibility.name))
     override suspend fun setContentVisibility(visibility: ContentVisibility) = delegate.setContentVisibility(UiContentVisibility.valueOf(visibility.name))
+    override suspend fun setLastSeenVisibility(visibility: LastSeenVisibility) = delegate.setLastSeenVisibility(UiLastSeenVisibility.valueOf(visibility.name))
+    override suspend fun setProfilePhotoVisibility(visibility: ProfilePhotoVisibility) = delegate.setProfilePhotoVisibility(UiProfilePhotoVisibility.valueOf(visibility.name))
+    override suspend fun setAboutVisibility(visibility: AboutVisibility) = delegate.setAboutVisibility(UiAboutVisibility.valueOf(visibility.name))
+    override suspend fun setStatusVisibility(visibility: StatusVisibility) = delegate.setStatusVisibility(UiStatusVisibility.valueOf(visibility.name))
+    override suspend fun setLastSeenExcludedUserIds(user: Set<String>) = delegate.setLastSeenExcludedUserIds(user)
+    override suspend fun setProfilePhotoExcludedUserIds(user: Set<String>) = delegate.setProfilePhotoExcludedUserIds(user)
+    override suspend fun setAboutExcludedUserIds(user: Set<String>) = delegate.setAboutExcludedUserIds(user)
+    override suspend fun setStatusExcludedUserIds(user: Set<String>) = delegate.setStatusExcludedUserIds(user)
+    override suspend fun setGroupExcludedUserIds(user: Set<String>) = delegate.setGroupExcludedUserIds(user)
     override suspend fun setGroupPrivacy(privacy: GroupPrivacy) = delegate.setGroupPrivacy(UiGroupPrivacy.valueOf(privacy.name))
     override suspend fun setBiometricLockEnabled(enabled: Boolean) = delegate.setBiometricLockEnabled(enabled)
     override suspend fun setTwoFactorEnabled(enabled: Boolean) = delegate.setTwoFactorEnabled(enabled)
@@ -148,6 +174,15 @@ class DomainSettingsRepositoryAdapter @Inject constructor(
     override suspend fun checkForUpdates(): Result<AppUpdateInfo?> = delegate.checkForUpdates()
     override val hideProfilePicSuggestion: Flow<Boolean> = delegate.hideProfilePicSuggestion
     override suspend fun setHideProfilePicSuggestion(hide: Boolean) = delegate.setHideProfilePicSuggestion(hide)
+
+    override val increaseContrastEnabled: Flow<Boolean> = delegate.increaseContrastEnabled
+    override suspend fun setIncreaseContrastEnabled(enabled: Boolean) = delegate.setIncreaseContrastEnabled(enabled)
+    override val highContrastTextEnabled: Flow<Boolean> = delegate.highContrastTextEnabled
+    override suspend fun setHighContrastTextEnabled(enabled: Boolean) = delegate.setHighContrastTextEnabled(enabled)
+    override val reduceAnimationsEnabled: Flow<Boolean> = delegate.reduceAnimationsEnabled
+    override suspend fun setReduceAnimationsEnabled(enabled: Boolean) = delegate.setReduceAnimationsEnabled(enabled)
+    override val autoplayAnimationsEnabled: Flow<Boolean> = delegate.autoplayAnimationsEnabled
+    override suspend fun setAutoplayAnimationsEnabled(enabled: Boolean) = delegate.setAutoplayAnimationsEnabled(enabled)
 }
 
 // --- Mappers ---
@@ -167,7 +202,16 @@ private fun com.synapse.social.studioasinc.ui.settings.PrivacySettings.toDomain(
     groupPrivacy = GroupPrivacy.valueOf(groupPrivacy.name),
     readReceiptsEnabled = readReceiptsEnabled,
     appLockEnabled = appLockEnabled,
-    chatLockEnabled = chatLockEnabled
+    chatLockEnabled = chatLockEnabled,
+    lastSeenVisibility = LastSeenVisibility.valueOf(lastSeenVisibility.name),
+    profilePhotoVisibility = ProfilePhotoVisibility.valueOf(profilePhotoVisibility.name),
+    aboutVisibility = AboutVisibility.valueOf(aboutVisibility.name),
+    statusVisibility = StatusVisibility.valueOf(statusVisibility.name),
+    lastSeenExcludedUserIds = lastSeenExcludedUserIds,
+    profilePhotoExcludedUserIds = profilePhotoExcludedUserIds,
+    aboutExcludedUserIds = aboutExcludedUserIds,
+    statusExcludedUserIds = statusExcludedUserIds,
+    groupExcludedUserIds = groupExcludedUserIds
 )
 
 private fun com.synapse.social.studioasinc.ui.settings.NotificationPreferences.toDomain() = NotificationPreferences(

@@ -7,5 +7,6 @@ data class PickedFile(
     val mimeType: String,
     val fileName: String,
     val size: Long,
-    val duration: Long? = null
+    val duration: Long? = null,
+    val thumbnailUri: Uri? = null
 )

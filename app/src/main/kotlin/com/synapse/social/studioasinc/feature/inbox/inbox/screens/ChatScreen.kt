@@ -1,4 +1,5 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.screens
+import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatInputBar
 
 import com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile
 import com.synapse.social.studioasinc.feature.shared.components.picker.SynapseFilePicker
@@ -251,8 +252,7 @@ fun ChatScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
-    var selectedMediaUri by remember { mutableStateOf<Uri?>(null) }
-    var selectedMediaType by remember { mutableStateOf("") }
+    var selectedMediaFiles by remember { mutableStateOf<List<PickedFile>?>(null) }
 
     // Voice Recording State
     var isRecording by remember { mutableStateOf(false) }
@@ -346,27 +346,29 @@ fun ChatScreen(
     var showDisappearingModeDialog by remember { mutableStateOf(false) }
 
     // Auto-scroll to bottom when new messages arrive
-    var previousMessagesSize by remember { mutableStateOf(0) }
-    val newestMessageId = remember(messages) { messages.lastOrNull()?.id }
+    var lastScrolledMessageId by remember { mutableStateOf<String?>(null) }
+    val newestMessage = remember(messages) { messages.lastOrNull() }
+    val newestMessageId = newestMessage?.id
+
     LaunchedEffect(newestMessageId) {
-        if (messages.isNotEmpty()) {
+        if (newestMessageId != null) {
             if (!listReady) {
                 // Initial load: Snap to bottom instantly, then reveal the list
                 listState.scrollToItem(0)
                 listReady = true
-            } else if (messages.size > previousMessagesSize) {
-                // New message arrived (ID changed AND size increased): Animate scroll
-                // only if it's from the current user or if the user is already near the bottom.
-                val latestMessage = messages.lastOrNull()
-                val isFromMe = latestMessage?.senderId == currentUserId
-                val isNearBottom = listState.firstVisibleItemIndex <= 1
+                lastScrolledMessageId = newestMessageId
+            } else if (newestMessageId != lastScrolledMessageId) {
+                // New message arrived (or ID updated): Animate scroll
+                // if it's from the current user or if the user is near the bottom.
+                val isFromMe = newestMessage.senderId == currentUserId
+                val isNearBottom = listState.firstVisibleItemIndex <= 3
 
                 if (isFromMe || isNearBottom) {
                     listState.animateScrollToItem(0)
                 }
+                lastScrolledMessageId = newestMessageId
             }
         }
-        previousMessagesSize = messages.size
     }
 
     Scaffold(
@@ -460,11 +462,10 @@ fun ChatScreen(
                         isLoadingMore = isLoadingMore,
                         typingStatus = typingStatus,
                         onLoadMore = { if (hasMoreMessages) viewModel.loadMoreMessages() },
+                        onSingleTap = { selectedMessageForMenu = it },
                         onToggleSelection = { viewModel.toggleMessageSelection(it) },
                         onSwipeToReply = { viewModel.setReplyingToMessage(it) },
-                        onLongClick = { selectedMessageForMenu = it },
                         onReactionSelected = { id, reaction -> viewModel.toggleMessageReaction(id, reaction) },
-                        onShowReactionPicker = { selectedMessageForMenu = it },
                         onNavigateToProfile = onNavigateToProfile
                     )
 
@@ -527,6 +528,7 @@ fun ChatScreen(
                     onCancelReply = viewModel::cancelReply,
                     onCancelEditing = viewModel::cancelEditing,
                     onUploadAndSendMedia = viewModel::uploadAndSendMedia,
+                    onFilesSelected = { files -> selectedMediaFiles = files },
                     isRecording = isRecording,
                     recordingDurationMs = recordingDurationMs,
                     recordingAmplitude = recordingAmplitude,
@@ -534,8 +536,13 @@ fun ChatScreen(
                         val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
                         if (hasPermission) {
                             val tempFile = File(context.cacheDir, "temp_voice_${System.currentTimeMillis()}.m4a")
-                            voiceRecorder.start(tempFile)
-                            isRecording = true
+                            try {
+                                voiceRecorder.start(tempFile)
+                                isRecording = true
+                            } catch (e: Exception) {
+                                isRecording = false
+                                android.widget.Toast.makeText(context, context.getString(R.string.voice_record_start_failed), android.widget.Toast.LENGTH_SHORT).show()
+                            }
                         } else {
                             recordPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                         }
@@ -577,17 +584,22 @@ fun ChatScreen(
         }
     }
 
-    selectedMediaUri?.let { uri ->
+    selectedMediaFiles?.let { files ->
         MediaPreviewDialog(
-            selectedMediaUri = uri,
-            selectedMediaType = selectedMediaType,
+            selectedFiles = files,
             context = context,
             onDismissRequest = {
-                selectedMediaUri = null
+                selectedMediaFiles = null
             },
-            onSendMedia = { finalUri, type, caption ->
-                handleFileSelection(finalUri, type, caption)
-                selectedMediaUri = null
+            onSendMedia = { finalFiles, caption, quality ->
+                val validFiles = finalFiles.mapNotNull { pickedFile ->
+                    val filePath = com.synapse.social.studioasinc.core.util.FileUtils.validateAndCleanPath(context, pickedFile.uri.toString())
+                    if (filePath != null) filePath to pickedFile else null
+                }
+                if (validFiles.isNotEmpty()) {
+                    viewModel.uploadAndSendMultipleMedia(validFiles, caption, quality)
+                }
+                selectedMediaFiles = null
             }
         )
     }

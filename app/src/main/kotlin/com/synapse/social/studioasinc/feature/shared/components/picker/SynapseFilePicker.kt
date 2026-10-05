@@ -198,7 +198,7 @@ fun SynapseFilePicker(
                     Button(
                         onClick = {
                             val allItems = uiState.mediaItems + uiState.fileItems + uiState.contactItems
-                            val selectedFiles = allItems.filter { it.uri in uiState.selectedUris }
+                            val selectedFiles = uiState.selectedUris.mapNotNull { uri -> allItems.find { it.uri == uri } }
                             onFilesSelected(selectedFiles)
                             onDismissRequest()
                         },
@@ -211,7 +211,7 @@ fun SynapseFilePicker(
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surfaceContainer,
-                    shadowElevation = 4.dp
+                    shadowElevation = Spacing.ExtraSmall
                 ) {
                     Row(
                         modifier = Modifier

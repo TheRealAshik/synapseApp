@@ -74,8 +74,10 @@ class SynapseApplication : Application(), ImageLoaderFactory {
             Napier.base(DebugAntilog())
         }
 
-        // Apply saved language before anything else
-        applySavedLanguage()
+        // Set default night mode to follow system
+        androidx.appcompat.app.AppCompatDelegate.setDefaultNightMode(
+            androidx.appcompat.app.AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        )
 
         initializeOneSignal()
 
@@ -216,6 +218,10 @@ class SynapseApplication : Application(), ImageLoaderFactory {
         // Observe Supabase Auth changes to sync with OneSignal and manage Realtime connection
         applicationScope.launch(Dispatchers.IO) {
             try {
+                if (!SupabaseClient.isConfigured()) {
+                    Napier.w("Supabase not configured, skipping realtime/auth session observer", tag = "SynapseApplication")
+                    return@launch
+                }
                 // Wait for Supabase to be initialized via service
                 SupabaseAuthenticationService.getInstance(this@SynapseApplication)
                 
@@ -269,31 +275,6 @@ class SynapseApplication : Application(), ImageLoaderFactory {
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SynapseApplication", "Error in OneSignal session listener", e)
-            }
-        }
-    }
-
-    private fun applySavedLanguage() {
-        val settingsRepository = SettingsRepositoryImpl.getInstance(this)
-        applicationScope.launch {
-            try {
-                val languageCode = settingsRepository.language.first()
-                if (languageCode.isNotEmpty() && languageCode != "en") {
-                    val locale = if (languageCode.contains("-")) {
-                        val parts = languageCode.split("-")
-                        java.util.Locale.Builder().setLanguage(parts[0]).setRegion(parts[1]).build()
-                    } else {
-                        java.util.Locale.Builder().setLanguage(languageCode).build()
-                    }
-                    
-                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
-                        androidx.core.os.LocaleListCompat.create(locale)
-                    )
-                    
-                    android.util.Log.d("SynapseApplication", "Applied saved language: $languageCode")
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SynapseApplication", "Failed to apply saved language", e)
             }
         }
     }

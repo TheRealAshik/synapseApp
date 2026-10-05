@@ -3,10 +3,12 @@ package com.synapse.social.studioasinc.data.repository.helpers
 import com.synapse.social.studioasinc.domain.model.Post
 import com.synapse.social.studioasinc.shared.data.local.database.PostDao
 import com.synapse.social.studioasinc.shared.domain.repository.OfflineActionRepository
+import com.synapse.social.studioasinc.shared.domain.repository.MediaUploadRepository
 import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
 import com.synapse.social.studioasinc.data.repository.PostMapper
 import com.synapse.social.studioasinc.data.repository.toInsertDto
 import com.synapse.social.studioasinc.data.repository.toUpdateDto
+import com.synapse.social.studioasinc.data.repository.toDomain
 import com.synapse.social.studioasinc.data.repository.PostInsertDto
 import io.github.jan.supabase.SupabaseClient as JanSupabaseClient
 import io.github.jan.supabase.auth.auth
@@ -14,19 +16,26 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.rpc
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 
 internal class PostCrudHelper(
     private val postDao: PostDao,
     private val client: JanSupabaseClient,
     private val offlineActionRepository: OfflineActionRepository,
-    private val utils: PostRepositoryUtils
+    private val utils: PostRepositoryUtils,
+    private val mediaUploadRepository: MediaUploadRepository? = null
 ) {
 
     suspend fun createPost(post: Post): Result<Post> = withContext(Dispatchers.IO) {
@@ -51,8 +60,12 @@ internal class PostCrudHelper(
             android.util.Log.d(PostRepositoryUtils.TAG, "Current auth user: ${client.auth.currentUserOrNull()?.id}")
 
             client.from("posts").insert(postDto)
+            post.quotedPost?.let { quoted ->
+                postDao.insert(PostMapper.toEntity(quoted))
+            }
             postDao.insert(PostMapper.toEntity(post))
             processMentions(post.id, post.postText ?: "", post.authorUid)
+            processHashtags(post.id, post.postText ?: "")
 
             android.util.Log.d(PostRepositoryUtils.TAG, "Post created successfully: ${post.id}")
             Result.success(post)
@@ -101,6 +114,7 @@ internal class PostCrudHelper(
 
             enrichedPosts.forEach { post ->
                 processMentions(post.id, post.postText ?: "", post.authorUid)
+                processHashtags(post.id, post.postText ?: "")
             }
 
             android.util.Log.d(PostRepositoryUtils.TAG, "Batch posts created successfully")
@@ -152,14 +166,22 @@ internal class PostCrudHelper(
     suspend fun quotePost(postId: String, text: String): Result<Post> = withContext(Dispatchers.IO) {
         try {
             val userId = client.auth.currentUserOrNull()?.id ?: return@withContext Result.failure(Exception("Not authenticated"))
+            val quotedPost = getPost(postId).getOrNull()
             val post = Post(
                 id = java.util.UUID.randomUUID().toString(),
                 authorUid = userId,
                 postText = text,
                 quotedPostId = postId,
+                quotedPost = quotedPost,
                 isQuote = true
             )
-            createPost(post)
+            val result = createPost(post)
+            if (result.isSuccess) {
+                com.synapse.social.studioasinc.feature.shared.components.post.PostEventBus.emit(
+                    com.synapse.social.studioasinc.feature.shared.components.post.PostEvent.Created(post)
+                )
+            }
+            result
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -170,6 +192,9 @@ internal class PostCrudHelper(
     suspend fun updateLocalPost(post: Any): Result<Unit> = withContext(Dispatchers.IO) {
         try {
             if (post is Post) {
+                post.quotedPost?.let { quoted ->
+                    postDao.insert(PostMapper.toEntity(quoted))
+                }
                 postDao.insert(PostMapper.toEntity(post))
             }
             Result.success(Unit)
@@ -178,6 +203,71 @@ internal class PostCrudHelper(
         } catch (e: Exception) {
             android.util.Log.e(PostRepositoryUtils.TAG, "Failed to update local post", e)
             Result.failure(Exception("Failed to update local post"))
+        }
+    }
+
+    suspend fun hydrateQuotedPosts(posts: List<Post>): List<Post> = withContext(Dispatchers.IO) {
+        if (posts.isEmpty()) return@withContext posts
+
+        val missingQuotedIds = posts
+            .filter { !it.quotedPostId.isNullOrBlank() && it.quotedPost == null }
+            .mapNotNull { it.quotedPostId }
+            .distinct()
+
+        if (missingQuotedIds.isEmpty()) return@withContext posts
+
+        val resolvedMap = mutableMapOf<String, Post>()
+
+        // 1. Try resolving locally from PostDao
+        missingQuotedIds.forEach { id ->
+            postDao.getPostById(id)?.let { entity ->
+                val model = PostMapper.toModel(entity)
+                if (model.username == null) {
+                    utils.fetchUserProfile(model.authorUid)?.let { profile ->
+                        model.username = profile.username
+                        model.avatarUrl = profile.avatarUrl
+                        model.isVerified = profile.isVerified
+                    }
+                }
+                resolvedMap[id] = model
+            }
+        }
+
+        // 2. Fetch any remaining missing quoted posts remotely from Supabase
+        val remainingMissingIds = missingQuotedIds.filter { it !in resolvedMap }
+        if (remainingMissingIds.isNotEmpty()) {
+            try {
+                val remoteDtos = client.from("posts")
+                    .select(
+                        columns = Columns.raw("""
+                            *,
+                            users!author_uid(uid, username, display_name, avatar, verify)
+                        """.trimIndent())
+                    ) {
+                        filter { isIn("id", remainingMissingIds) }
+                    }
+                    .decodeList<com.synapse.social.studioasinc.data.repository.PostSelectDto>()
+
+                remoteDtos.forEach { dto ->
+                    val domainPost = dto.toDomain(
+                        PostRepositoryUtils.Companion::constructMediaUrl,
+                        PostRepositoryUtils.Companion::constructAvatarUrl
+                    )
+                    postDao.insert(PostMapper.toEntity(domainPost))
+                    resolvedMap[domainPost.id] = domainPost
+                }
+            } catch (e: Exception) {
+                android.util.Log.e(PostRepositoryUtils.TAG, "Failed to fetch missing quoted posts remotely", e)
+            }
+        }
+
+        posts.map { post ->
+            val quotedId = post.quotedPostId
+            if (post.quotedPost == null && !quotedId.isNullOrBlank() && resolvedMap.containsKey(quotedId)) {
+                post.copy(quotedPost = resolvedMap[quotedId])
+            } else {
+                post
+            }
         }
     }
 
@@ -204,7 +294,8 @@ internal class PostCrudHelper(
                 }
                 model
             }
-            Result.success(post)
+            val hydratedPost = post?.let { hydrateQuotedPosts(listOf(it)).firstOrNull() }
+            Result.success(hydratedPost)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -244,6 +335,35 @@ internal class PostCrudHelper(
 
     suspend fun deletePost(postId: String): Result<Unit> = withContext(Dispatchers.IO) {
         try {
+            val postFromDao = getPost(postId).getOrNull()
+            val deleteUrlsFromDao = postFromDao?.mediaItems?.mapNotNull { it.deleteUrl?.takeIf { url -> url.isNotBlank() } } ?: emptyList()
+
+            val deleteUrls = if (deleteUrlsFromDao.isNotEmpty()) {
+                deleteUrlsFromDao
+            } else {
+                try {
+                    val dto = client.from("posts").select(Columns.list("media_items")) {
+                        filter { eq("id", postId) }
+                    }.decodeSingleOrNull<JsonObject>()
+                    dto?.get("media_items")?.takeIf { it !is JsonNull }?.jsonArray?.mapNotNull { item ->
+                        val obj = item.jsonObject
+                        val deleteUrl = obj["delete_url"]?.let { if (it is JsonPrimitive) it else null }?.contentOrNull
+                            ?: obj["deleteUrl"]?.let { if (it is JsonPrimitive) it else null }?.contentOrNull
+                        deleteUrl?.takeIf { it.isNotBlank() }
+                    } ?: emptyList()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+            }
+
+            if (deleteUrls.isNotEmpty()) {
+                try {
+                    mediaUploadRepository?.deleteImgBbImages(deleteUrls)
+                } catch (_: Exception) {
+                    // Best-effort remote image cleanup
+                }
+            }
+
             client.from("posts").delete {
                 filter { eq("id", postId) }
             }
@@ -294,6 +414,30 @@ internal class PostCrudHelper(
             throw e
         } catch (e: Exception) {
             android.util.Log.e(PostRepositoryUtils.TAG, "Failed to process mentions: ${e.message}", e)
+        }
+    }
+
+    private suspend fun processHashtags(
+        postId: String,
+        content: String
+    ) {
+        try {
+            val hashtags = com.synapse.social.studioasinc.shared.domain.usecase.ParseHashtagsUseCase()(content)
+            if (hashtags.isEmpty()) return
+
+            android.util.Log.d(PostRepositoryUtils.TAG, "Processing hashtags: $hashtags for post $postId")
+
+            client.postgrest.rpc(
+                "process_post_hashtags",
+                buildJsonObject {
+                    put("post_id", postId)
+                    put("tags", kotlinx.serialization.json.JsonArray(hashtags.map { JsonPrimitive(it) }))
+                }
+            )
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            android.util.Log.e(PostRepositoryUtils.TAG, "Failed to process hashtags: ${e.message}", e)
         }
     }
 }

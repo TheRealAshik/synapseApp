@@ -131,8 +131,6 @@ fun ApiKeySettingsScreen(
                         }
                     }
 
-                    SettingsDivider()
-
                     Box(modifier = Modifier.padding(SettingsSpacing.itemPadding)) {
                         OutlinedTextField(
                             value = customModelText,
@@ -156,14 +154,13 @@ fun ApiKeySettingsScreen(
                         )
                     }
 
-                    SettingsDivider()
-
                     SettingsToggleItem(
                         imageVector = Icons.Default.CloudSync,
                         title = stringResource(R.string.api_fallback_platform),
                         subtitle = stringResource(R.string.api_fallback_support),
                         checked = providerSettings.fallbackToPlatform,
-                        onCheckedChange = { viewModel.updateFallbackSetting(it) }
+                        onCheckedChange = { viewModel.updateFallbackSetting(it) },
+                        position = SettingsItemPosition.Bottom
                     )
                 }
             }
@@ -233,14 +230,23 @@ fun ApiKeySettingsScreen(
                             }
                         }
                     } else {
-                        SettingsCard {
+                        Column(verticalArrangement = Arrangement.spacedBy(SettingsSpacing.itemSpacing)) {
                             apiKeys.forEachIndexed { index, apiKey ->
-                                ApiKeyItem(
-                                    apiKey = apiKey,
-                                    onDelete = { viewModel.deleteApiKey(apiKey.id) }
-                                )
-                                if (index < apiKeys.size - 1) {
-                                    SettingsDivider()
+                                val position = when {
+                                    apiKeys.size == 1 -> SettingsItemPosition.Single
+                                    index == 0 -> SettingsItemPosition.Top
+                                    index == apiKeys.lastIndex -> SettingsItemPosition.Bottom
+                                    else -> SettingsItemPosition.Middle
+                                }
+                                Surface(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = position.getShape(),
+                                    color = SettingsColors.cardBackground
+                                ) {
+                                    ApiKeyItem(
+                                        apiKey = apiKey,
+                                        onDelete = { viewModel.deleteApiKey(apiKey.id) }
+                                    )
                                 }
                             }
                         }

@@ -24,7 +24,7 @@ fun LanguageRegionScreen(
     viewModel: LanguageRegionViewModel,
     onBackClick: () -> Unit
 ) {
-    val currentLanguage by viewModel.currentLanguage.collectAsState()
+    val currentLanguageCode by viewModel.currentLanguage.collectAsState()
     val availableLanguages by viewModel.availableLanguages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -40,7 +40,7 @@ fun LanguageRegionScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.settings_back_button),
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -80,9 +80,22 @@ fun LanguageRegionScreen(
         ) {
 
             item {
-                SettingsSection(title = "App Language") {
+                SettingsSection(title = stringResource(R.string.settings_app_language_title)) {
+                    val currentLanguageName = availableLanguages.find { it.code == currentLanguageCode }?.nativeName ?: stringResource(R.string.language_english)
+                    Text(
+                        text = stringResource(R.string.language_current_format, currentLanguageName),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
+                    )
 
                     availableLanguages.forEachIndexed { index, languageOption ->
+                        val position = when {
+                            availableLanguages.size == 1 -> SettingsItemPosition.Single
+                            index == 0 -> SettingsItemPosition.Top
+                            index == availableLanguages.lastIndex -> SettingsItemPosition.Bottom
+                            else -> SettingsItemPosition.Middle
+                        }
                         LanguageSelectionItem(
                             languageOption = languageOption,
                             isSelected = viewModel.isLanguageSelected(languageOption),
@@ -91,23 +104,19 @@ fun LanguageRegionScreen(
                                     viewModel.setLanguage(languageOption)
                                 }
                             },
-                            enabled = !isLoading
+                            enabled = !isLoading,
+                            position = position
                         )
-
-
-                        if (index < availableLanguages.size - 1) {
-                            SettingsDivider()
-                        }
                     }
                 }
             }
 
 
             item {
-                SettingsSection(title = "Region") {
+                SettingsSection(title = stringResource(R.string.settings_region_title)) {
                     SettingsNavigationItem(
-                        title = "Region Preferences",
-                        subtitle = "Date, time, and number formats",
+                        title = stringResource(R.string.settings_region_preferences_title),
+                        subtitle = stringResource(R.string.settings_region_preferences_subtitle),
                         imageVector = Icons.Filled.Language,
                         onClick = { viewModel.navigateToRegionPreferences() },
                         enabled = !isLoading
@@ -130,13 +139,15 @@ private fun LanguageSelectionItem(
     languageOption: LanguageOption,
     isSelected: Boolean,
     onClick: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    position: SettingsItemPosition = SettingsItemPosition.Single
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(enabled = enabled, onClick = onClick),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        shape = position.getShape(),
+        color = SettingsColors.cardBackground
     ) {
         Row(
             modifier = Modifier

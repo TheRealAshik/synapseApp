@@ -16,6 +16,13 @@ class FlagsViewModel @Inject constructor(
     private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
+    val navigationPlacement: StateFlow<NavigationPlacement> = settingsRepository.navigationPlacement
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = SettingsConstants.DEFAULT_NAVIGATION_PLACEMENT
+        )
+
     val messageSuggestionEnabled: StateFlow<Boolean> = settingsRepository.messageSuggestionEnabled
         .stateIn(
             scope = viewModelScope,
@@ -36,6 +43,12 @@ class FlagsViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = SettingsConstants.DEFAULT_CHAT_MESSAGE_PAGINATION_LIMIT
         )
+
+    fun setNavigationPlacement(placement: NavigationPlacement) {
+        viewModelScope.launch {
+            settingsRepository.setNavigationPlacement(placement)
+        }
+    }
 
     fun setMessageSuggestionEnabled(enabled: Boolean) {
         viewModelScope.launch {

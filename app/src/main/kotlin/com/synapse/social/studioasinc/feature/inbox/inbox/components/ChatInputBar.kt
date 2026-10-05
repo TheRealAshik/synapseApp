@@ -1,4 +1,5 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.components
+import androidx.compose.ui.unit.dp
 
 import android.content.Context
 import androidx.compose.animation.*
@@ -33,10 +34,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.positionChange
+import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.filled.Delete
+import kotlin.math.abs
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.drawWithContent
@@ -47,12 +54,13 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.IntOffset
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewCard
+import com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile
 import com.synapse.social.studioasinc.feature.shared.components.picker.SynapseFilePicker
 import com.synapse.social.studioasinc.feature.shared.theme.Sizes
+import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.feature.shared.utils.UrlUtils
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
@@ -74,6 +82,7 @@ fun ChatInputBar(
     onCancelReply: () -> Unit,
     onCancelEditing: () -> Unit,
     onUploadAndSendMedia: (filePath: String, fileName: String, contentType: String, messageType: String, caption: String?) -> Unit,
+    onFilesSelected: ((List<PickedFile>) -> Unit)? = null,
     isRecording: Boolean = false,
     recordingDurationMs: Long = 0L,
     recordingAmplitude: Int = 0,
@@ -86,10 +95,13 @@ fun ChatInputBar(
     val coroutineScope = rememberCoroutineScope()
     var isSwipeToCancel by remember { mutableStateOf(false) }
     var slideOffset by remember { mutableFloatStateOf(0f) }
+    var isArmedForCancel by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
+    val haptic = LocalHapticFeedback.current
+    val cancelThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
 
     val micScale by animateFloatAsState(
-        targetValue = if (isRecording) 1.2f else 1f,
+        targetValue = if (isRecording) (if (isArmedForCancel) 1.35f else 1.2f) else 1f,
         animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
         label = "micScale"
     )
@@ -141,7 +153,7 @@ fun ChatInputBar(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    IconButton(onClick = onCancelReply, modifier = Modifier.size(Sizes.IconLarge),) {
+                    IconButton(onClick = onCancelReply, modifier = Modifier.size(Sizes.IconLarge)) {
                         Icon(Icons.Default.Close, contentDescription = "Cancel reply", modifier = Modifier.size(Sizes.IconSemiMedium))
                     }
                 }
@@ -156,7 +168,7 @@ fun ChatInputBar(
         ) {
             Surface(
                 color = MaterialTheme.colorScheme.secondaryContainer,
-                shape = if (replyingToMessage == null) RoundedCornerShape(topStart = Sizes.CornerExtraLarge, topEnd = Sizes.CornerExtraLarge) else RoundedCornerShape(0.dp),
+                shape = if (replyingToMessage == null) RoundedCornerShape(topStart = Sizes.CornerExtraLarge, topEnd = Sizes.CornerExtraLarge) else RoundedCornerShape(Spacing.None),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -174,7 +186,7 @@ fun ChatInputBar(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                    IconButton(onClick = onCancelEditing, modifier = Modifier.size(Sizes.IconLarge),) {
+                    IconButton(onClick = onCancelEditing, modifier = Modifier.size(Sizes.IconLarge)) {
                         Icon(Icons.Default.Close, contentDescription = "Cancel edit", modifier = Modifier.size(Sizes.IconSemiMedium))
                     }
                 }
@@ -234,23 +246,7 @@ fun ChatInputBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .offset { IntOffset(slideOffset.toInt(), 0) }
-                    .pointerInput(Unit) {
-                        detectHorizontalDragGestures(
-                            onDragEnd = {
-                                if (slideOffset < -150f) {
-                                    isSwipeToCancel = true
-                                    onRecordingCancelled()
-                                }
-                                slideOffset = 0f
-                            },
-                            onDragCancel = {
-                                slideOffset = 0f
-                            }
-                        ) { change, dragAmount ->
-                            slideOffset += dragAmount
-                        }
-                    }
+                    .offset { IntOffset(animatedSlideOffset.toInt(), 0) }
                     .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -269,7 +265,7 @@ fun ChatInputBar(
                     Box(
                         modifier = Modifier
                             .size(Sizes.IconSmall)
-                            .background(MaterialTheme.colorScheme.error.copy(alpha = alpha), CircleShape)
+                            .background(if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.error.copy(alpha = alpha), CircleShape)
                     )
                     Spacer(modifier = Modifier.width(Spacing.Small))
                     val totalSeconds = recordingDurationMs / 1000
@@ -278,7 +274,7 @@ fun ChatInputBar(
                     Text(
                         text = String.format("%02d:%02d", m, s),
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
                     )
 
                     Spacer(modifier = Modifier.width(Spacing.Medium))
@@ -288,13 +284,13 @@ fun ChatInputBar(
                     val normalizedAmp = (recordingAmplitude / maxAmp).coerceIn(0.1f, 1f)
 
                     Row(
-                        modifier = Modifier.height(24.dp),
+                        modifier = Modifier.height(Sizes.IconLarge),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(2.dp)
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
                     ) {
                         for (i in 0 until 5) {
                             val seed = remember { Random.nextFloat() * 0.5f + 0.5f }
-                            val targetHeight = (24.dp * normalizedAmp * seed).coerceIn(4.dp, 24.dp)
+                            val targetHeight = (Sizes.IconLarge * normalizedAmp * seed).coerceIn(Spacing.ExtraSmall, Sizes.IconLarge)
                             val animatedHeight by animateDpAsState(
                                 targetValue = targetHeight,
                                 animationSpec = tween(100),
@@ -302,9 +298,12 @@ fun ChatInputBar(
                             )
                             Box(
                                 modifier = Modifier
-                                    .width(4.dp)
+                                    .width(Spacing.ExtraSmall)
                                     .height(animatedHeight)
-                                    .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(Sizes.CornerSmall))
+                                    .background(
+                                        if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(Sizes.CornerSmall)
+                                    )
                             )
                         }
                     }
@@ -313,10 +312,9 @@ fun ChatInputBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
                 ) {
-                    val isCanceling = slideOffset < -100f
-                    val cancelColor = if (isCanceling) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                    val cancelColor = if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
 
-                    val shakeOffset = if (isCanceling) {
+                    val shakeOffset = if (isArmedForCancel) {
                         val infiniteTransition = rememberInfiniteTransition(label = "shake")
                         infiniteTransition.animateFloat(
                             initialValue = -5f,
@@ -376,21 +374,26 @@ fun ChatInputBar(
                         SynapseFilePicker(
                             onDismissRequest = { showAttachmentMenu = false },
                             onFilesSelected = { files ->
-                                files.forEach { pickedFile ->
-                                    val filePath = com.synapse.social.studioasinc.core.util.FileUtils.validateAndCleanPath(context, pickedFile.uri.toString())
-                                    if (filePath != null) {
-                                        val type = if (pickedFile.mimeType.startsWith("video/")) "video" else if (pickedFile.mimeType.startsWith("image/")) "image" else if (pickedFile.mimeType.startsWith("audio/")) "audio" else "file"
-                                        onUploadAndSendMedia(
-                                            filePath,
-                                            pickedFile.fileName,
-                                            pickedFile.mimeType,
-                                            type,
-                                            null
-                                        )
+                                showAttachmentMenu = false
+                                if (onFilesSelected != null) {
+                                    onFilesSelected(files)
+                                } else {
+                                    files.forEach { pickedFile ->
+                                        val filePath = com.synapse.social.studioasinc.core.util.FileUtils.validateAndCleanPath(context, pickedFile.uri.toString())
+                                        if (filePath != null) {
+                                            val type = if (pickedFile.mimeType.startsWith("video/")) "video" else if (pickedFile.mimeType.startsWith("image/")) "image" else if (pickedFile.mimeType.startsWith("audio/")) "audio" else "file"
+                                            onUploadAndSendMedia(
+                                                filePath,
+                                                pickedFile.fileName,
+                                                pickedFile.mimeType,
+                                                type,
+                                                null
+                                            )
+                                        }
                                     }
                                 }
                             },
-                            maxSelection = 1
+                            maxSelection = 10
                         )
                     }
                 }
@@ -406,7 +409,7 @@ fun ChatInputBar(
                         .focusRequester(focusRequester)
                         .onFocusChanged { isFocused = it.isFocused }
                         .graphicsLayer {
-                            compositingStrategy = if (size.height > 90.dp.toPx()) {
+                            compositingStrategy = if (size.height > Sizes.HeartSize.toPx()) {
                                 CompositingStrategy.Offscreen
                             } else {
                                 CompositingStrategy.Auto
@@ -414,8 +417,8 @@ fun ChatInputBar(
                         }
                         .drawWithContent {
                             drawContent()
-                            if (size.height > 90.dp.toPx()) {
-                                val fadeSize = 16.dp.toPx()
+                            if (size.height > Sizes.HeartSize.toPx()) {
+                                val fadeSize = Spacing.Medium.toPx()
                                 drawRect(
                                     brush = Brush.verticalGradient(
                                         colors = listOf(Color.Transparent, Color.Black),
@@ -498,56 +501,80 @@ fun ChatInputBar(
                             scaleY = micScale
                         }
                         .pointerInput(inputText, canSendMessage) {
-                            detectTapGestures(
-                                onPress = {
-                                    if (inputText.isEmpty() && canSendMessage) {
-                                        isSwipeToCancel = false
-                                        onMicHeld()
-                                        try {
-                                            tryAwaitRelease()
-                                            if (!isSwipeToCancel) {
+                            if (inputText.isNotEmpty() || !canSendMessage) {
+                                detectTapGestures(
+                                    onTap = {
+                                        if (inputText.isNotEmpty()) {
+                                            onSendMessage()
+                                            dismissedPreviewUrl = null
+                                            focusRequester.requestFocus()
+                                        }
+                                    }
+                                )
+                            } else {
+                                awaitEachGesture {
+                                    val down = awaitFirstDown(requireUnconsumed = false)
+                                    isSwipeToCancel = false
+                                    isArmedForCancel = false
+                                    slideOffset = 0f
+                                    onMicHeld()
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+
+                                    var cumulativeDrag = 0f
+                                    var cancelTriggered = false
+
+                                    while (true) {
+                                        val event = awaitPointerEvent()
+                                        val change = event.changes.firstOrNull { it.id == down.id }
+                                        if (change == null || !change.pressed) {
+                                            if (cancelTriggered || isArmedForCancel) {
+                                                isSwipeToCancel = true
+                                                onRecordingCancelled()
+                                            } else {
                                                 onMicReleased()
                                             }
-                                        } catch (e: Exception) {
-                                            onRecordingCancelled()
+                                            slideOffset = 0f
+                                            isArmedForCancel = false
+                                            break
                                         }
-                                    } else {
-                                        // Normal send logic
-                                        tryAwaitRelease()
+
+                                        val dragDelta = change.positionChange().x
+                                        cumulativeDrag += dragDelta
+                                        slideOffset = cumulativeDrag.coerceAtMost(0f)
+
+                                        val currentDistance = abs(slideOffset)
+                                        if (currentDistance >= cancelThresholdPx) {
+                                            if (!cancelTriggered) {
+                                                cancelTriggered = true
+                                                isArmedForCancel = true
+                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            }
+                                        } else {
+                                            if (cancelTriggered) {
+                                                cancelTriggered = false
+                                                isArmedForCancel = false
+                                            }
+                                        }
                                     }
-                                },
-                                onTap = {
-                                    if (inputText.isNotEmpty()) {
-                                        onSendMessage()
-                                        dismissedPreviewUrl = null
-                                        focusRequester.requestFocus()
-                                    }
-                                }
-                            )
-                        }
-                        .pointerInput(inputText) {
-                            detectHorizontalDragGestures { change, dragAmount ->
-                                if (isRecording && dragAmount < -20f) {
-                                    isSwipeToCancel = true
-                                    onRecordingCancelled()
                                 }
                             }
                         },
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    color = if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    contentColor = if (isArmedForCancel) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val icon = when {
                             editingMessage != null -> Icons.Default.Check
-                            inputText.isEmpty() && canSendMessage -> Icons.Default.Mic
-                            else -> Icons.Default.ArrowUpward
+                            inputText.isNotEmpty() || !canSendMessage -> Icons.Default.ArrowUpward
+                            isArmedForCancel -> Icons.Default.Delete
+                            else -> Icons.Default.Mic
                         }
                         AnimatedContent(
                             targetState = icon,
                             transitionSpec = {
-                                fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f, animationSpec = tween(300)) togetherWith
-                                fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f, animationSpec = tween(300))
+                                fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = tween(200)) togetherWith
+                                fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.8f, animationSpec = tween(200))
                             },
                             label = "iconAnimation"
                         ) { targetIcon ->
@@ -555,7 +582,7 @@ fun ChatInputBar(
                                 targetIcon,
                                 contentDescription = stringResource(if (inputText.isEmpty()) R.string.voice_hold_to_record else R.string.chat_action_send),
                                 modifier = Modifier.size(Sizes.IconLarge),
-                                tint = MaterialTheme.colorScheme.onPrimary
+                                tint = if (isArmedForCancel) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }

@@ -39,6 +39,18 @@ import androidx.compose.runtime.remember
 import com.synapse.social.studioasinc.feature.shared.theme.UiAtmosphereColors
 import com.synapse.social.studioasinc.ui.settings.PostViewStyle
 
+fun calculateMediaDisplayHeight(
+    intrinsicWidth: Float,
+    intrinsicHeight: Float,
+    containerWidth: Float,
+    maxHeight: Float = Sizes.HeightMediaSingle.value
+): Float {
+    if (intrinsicWidth <= 0f || intrinsicHeight <= 0f) return maxHeight
+    val intrinsicAspectRatio = intrinsicWidth / intrinsicHeight
+    val idealHeight = containerWidth / intrinsicAspectRatio
+    return idealHeight.coerceAtMost(maxHeight)
+}
+
 @Composable
 fun MediaContent(
     mediaUrls: List<String>,
@@ -70,7 +82,7 @@ fun MediaContent(
                     .fillMaxWidth()
                     .heightIn(max = Sizes.HeightMediaSingle)
                     .clip(RoundedCornerShape(Sizes.CornerMedium)),
-                contentScale = ContentScale.Fit,
+                contentScale = ContentScale.Crop,
                 onSuccess = { result ->
                     AmbientColorExtractor.extractColorsFromDrawable(result.result.drawable) { colors ->
                         extractedColors[0] = colors
@@ -123,7 +135,7 @@ fun MediaContent(
                             .fillMaxWidth()
                             .heightIn(max = Sizes.HeightMediaSingle)
                             .clip(RoundedCornerShape(Sizes.CornerMedium)),
-                        contentScale = ContentScale.Fit,
+                        contentScale = ContentScale.Crop,
                         onSuccess = { result ->
                             AmbientColorExtractor.extractColorsFromDrawable(result.result.drawable) { colors ->
                                 extractedColors[page] = colors

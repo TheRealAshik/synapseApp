@@ -89,6 +89,22 @@ val SunsetBubbleBackground = Color(0xFFFBE9E7)
 val SunsetBubbleText = Color(0xFFBF360C)
 val SunsetAccent = Color(0xFFFF5722)
 
+// Chat Preset Harmonized Color Tokens
+val OceanDarkContainer = Color(0xFF00497D)
+val OceanLightContainer = Color(0xFFE0F2FE)
+val OceanDarkOnContainer = Color(0xFFC2E8FF)
+val OceanLightOnContainer = Color(0xFF001D33)
+
+val ForestDarkContainer = Color(0xFF00391A)
+val ForestLightContainer = Color(0xFFE8F5E9)
+val ForestDarkOnContainer = Color(0xFF86F8AC)
+val ForestLightOnContainer = Color(0xFF00210C)
+
+val SunsetDarkContainer = Color(0xFF5C1D00)
+val SunsetLightContainer = Color(0xFFFBE9E7)
+val SunsetDarkOnContainer = Color(0xFFFFDBCF)
+val SunsetLightOnContainer = Color(0xFF380B00)
+
 // Interaction colors
 val InteractionIconDefault = Color(0xFF657786)
 val InteractionLikeActive = Color(0xFFE0245E)
@@ -123,3 +139,17 @@ val ChatPresetColor7 = Color(0xFFE0E0E0)
 val StoryColorOrange = Color(0xFFFF9800)
 val StoryColorGreen = Color(0xFF4CAF50)
 val StoryColorPurple = Color(0xFF9C27B0)
+
+
+// Inbox Specific Colors
+val OnlineGreenLight = Color(0xFF81C784)
+val PinnedBackground = Color(0xFFFFF8E1)
+val PinnedBackgroundDark = Color(0xFF3E2723)
+val StoryGradientStart = Color(0xFFE040FB)
+val StoryGradientMiddle = Color(0xFFFF5722)
+val StoryGradientEnd = Color(0xFFFFEB3B)
+
+val StoryRingMiddle = Color(0xFF7C4DFF)
+val StoryRingEnd = Color(0xFF00BCD4)
+val ShimmerBase = Color(0xFFE0E0E0)
+val ShimmerHighlight = Color(0xFFF5F5F5)

@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import com.synapse.social.studioasinc.BuildConfig
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.core.util.IntentUtils
 import com.synapse.social.studioasinc.domain.model.Post
@@ -32,6 +31,7 @@ import com.synapse.social.studioasinc.feature.profile.profile.components.*
 import com.synapse.social.studioasinc.feature.shared.components.post.PostActions
 import com.synapse.social.studioasinc.feature.shared.components.post.PostActionsFactory
 import com.synapse.social.studioasinc.feature.shared.components.post.PostCard
+import com.synapse.social.studioasinc.feature.shared.utils.PostShareUtils
 import com.synapse.social.studioasinc.feature.shared.components.post.SharedPostItem
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.ui.components.EmptyState
@@ -47,7 +47,7 @@ internal fun ProfileContent(
     profile: com.synapse.social.studioasinc.data.model.UserProfile?,
     isLoading: Boolean,
     listState: androidx.compose.foundation.lazy.LazyListState,
-    scrollProgress: Float,
+    scrollProgressProvider: () -> Float,
     viewModel: ProfileViewModel,
     onNavigateToEditProfile: () -> Unit,
     onNavigateToFollowers: () -> Unit,
@@ -92,11 +92,7 @@ internal fun ProfileContent(
                 context.startActivity(intent)
             },
             onShare = { post ->
-                val intent = Intent(Intent.ACTION_SEND).apply {
-                    type = "text/plain"
-                    putExtra(Intent.EXTRA_TEXT, context.getString(R.string.share_post_text, "${BuildConfig.APP_DOMAIN}/post/${post.id}"))
-                }
-                context.startActivity(Intent.createChooser(intent, context.getString(R.string.title_share_post)))
+                PostShareUtils.sharePost(context, post.id)
             },
             onQuote = { post ->
                 currentOnNavigateToQuotePost(post.id)
@@ -161,7 +157,7 @@ internal fun ProfileContent(
                             isOwnProfile = state.isOwnProfile && state.viewAsMode == null,
                             isFollowing = state.isFollowing,
                             isFollowLoading = state.isFollowLoading,
-                            scrollOffset = scrollProgress,
+                            scrollOffsetProvider = scrollProgressProvider,
                             bioExpanded = bioExpanded,
                             onToggleBio = { bioExpanded = !bioExpanded },
                             onProfileImageClick = {
@@ -406,15 +402,10 @@ internal fun ProfileContent(
 
         if (state.contentFilter == ProfileContentFilter.POSTS && state.posts.isNotEmpty()) {
             val posts = state.posts.filterIsInstance<com.synapse.social.studioasinc.domain.model.Post>()
-            itemsIndexed(posts, key = { index, it -> "${it.id}_${index}" }) { index, post ->
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(post.id) {
-                    visible = true
-                }
-
+            itemsIndexed(posts, key = { _, post -> post.id }) { index, post ->
                 val currentProfile = (state.profileState as? ProfileUiState.Success)?.profile
 
-                val postActions = remember(actions, post) {
+                val postActions = remember(actions, post.id) {
                     actions.copy(
                         onMediaClick = { idx ->
                             val urls = post.mediaItems?.mapNotNull { it.url } ?: listOfNotNull(post.postImage)
@@ -428,27 +419,17 @@ internal fun ProfileContent(
                     )
                 }
 
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn(animationSpec = tween(TRANSITION_DURATION_MS)),
-                    exit = fadeOut(animationSpec = tween(TRANSITION_DURATION_MS))
-                ) {
-                    AnimatedPostCard(
-                        post = post,
-                        currentProfile = currentProfile,
-                        actions = postActions
-                    )
-                }
+                SharedPostItem(
+                    post = post,
+                    currentProfile = currentProfile,
+                    actions = postActions
+                )
             }
         }
 
         if (state.contentFilter == ProfileContentFilter.REPLIES && state.replies.isNotEmpty()) {
             val replies = state.replies.filterIsInstance<com.synapse.social.studioasinc.domain.model.CommentWithUser>()
-            itemsIndexed(replies, key = { index, it -> "${it.id}_${index}" }) { index, comment ->
-                var visible by remember { mutableStateOf(false) }
-                LaunchedEffect(comment.id) {
-                    visible = true
-                }
+            itemsIndexed(replies, key = { _, comment -> comment.id }) { index, comment ->
                 val postCardState = remember(comment) {
                     com.synapse.social.studioasinc.feature.shared.components.post.PostUiMapper.toPostCardState(
                         comment = comment,
@@ -459,35 +440,29 @@ internal fun ProfileContent(
                     )
                 }
 
-                AnimatedVisibility(
-                    visible = visible,
-                    enter = fadeIn(animationSpec = tween(TRANSITION_DURATION_MS)),
-                    exit = fadeOut(animationSpec = tween(TRANSITION_DURATION_MS))
-                ) {
-                    PostCard(
-                        state = postCardState,
-                        onLikeClick = { viewModel.reactToPost(postCardState.post, com.synapse.social.studioasinc.domain.model.ReactionType.LIKE) },
-                        onCommentClick = { /* Navigate to detail */ },
-                        onShareClick = { /* Share comment */ },
-                        onRepostClick = { },
-                        onBookmarkClick = { },
-                        onUserClick = { comment.userId.let { onNavigateToUserProfile(it) } },
-                        onPostClick = {
-                            PostDetailActivity.start(context, comment.postId, comment.userId)
-                        },
-                        onMediaClick = { idx ->
-                            val urls = listOfNotNull(comment.mediaUrl)
-                            if (urls.isNotEmpty()) {
-                                onOpenMediaViewer(urls, idx)
-                            }
-                        },
-                        onOptionsClick = { /* Show options */ },
-                        onPollVote = { /* No polls in comments */ },
-                        onReactionSelected = { reaction -> /* Handle reaction */ },
-                        onQuoteClick = { },
-                        modifier = Modifier.padding(bottom = Spacing.Small)
-                    )
-                }
+                PostCard(
+                    state = postCardState,
+                    onLikeClick = { viewModel.reactToPost(postCardState.post, com.synapse.social.studioasinc.domain.model.ReactionType.LIKE) },
+                    onCommentClick = { /* Navigate to detail */ },
+                    onShareClick = { PostShareUtils.shareComment(context, comment.content) },
+                    onRepostClick = { },
+                    onBookmarkClick = { },
+                    onUserClick = { comment.userId.let { onNavigateToUserProfile(it) } },
+                    onPostClick = {
+                        PostDetailActivity.start(context, comment.postId, comment.userId)
+                    },
+                    onMediaClick = { idx ->
+                        val urls = listOfNotNull(comment.mediaUrl)
+                        if (urls.isNotEmpty()) {
+                            onOpenMediaViewer(urls, idx)
+                        }
+                    },
+                    onOptionsClick = { /* Show options */ },
+                    onPollVote = { /* No polls in comments */ },
+                    onReactionSelected = { reaction -> /* Handle reaction */ },
+                    onQuoteClick = { },
+                    modifier = Modifier.padding(bottom = Spacing.Small)
+                )
             }
         }
 
@@ -497,18 +472,6 @@ internal fun ProfileContent(
     }
 }
 
-@Composable
-internal fun AnimatedPostCard(
-    post: com.synapse.social.studioasinc.domain.model.Post,
-    currentProfile: com.synapse.social.studioasinc.data.model.UserProfile?,
-    actions: PostActions
-) {
-    SharedPostItem(
-        post = post,
-        currentProfile = currentProfile,
-        actions = actions
-    )
-}
 
 internal fun formatJoinedDate(timestamp: Long): String {
     if (timestamp == 0L) return ""
