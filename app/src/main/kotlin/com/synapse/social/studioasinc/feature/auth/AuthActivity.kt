@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.lifecycle.ViewModelProvider
 import com.synapse.social.studioasinc.feature.shared.main.MainActivity
 import com.synapse.social.studioasinc.feature.auth.ui.AuthScreen
-import com.synapse.social.studioasinc.feature.auth.presentation.viewmodel.SignInViewModel
 import com.synapse.social.studioasinc.core.ui.base.BaseComposeActivity
 import dagger.hilt.android.AndroidEntryPoint
 import com.synapse.social.studioasinc.core.auth.GoogleAuthHelper

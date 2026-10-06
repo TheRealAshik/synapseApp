@@ -52,11 +52,7 @@ abstract class BaseComposeActivity : AppCompatActivity() {
     }
 
     protected fun setAuthContent(content: @Composable () -> Unit) {
-        setContent {
-            AuthTheme(enableEdgeToEdge = true) {
-                content()
-            }
-        }
+        setSynapseContent(content)
     }
 
     private fun applyThemeFromSettings() {

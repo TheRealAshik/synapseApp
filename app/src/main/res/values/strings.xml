@@ -1,6 +1,13 @@
 <resources>
     <string name="app_name">Synapse</string>
     <string name="lang">en</string>
+    <!-- Welcome Screen Strings -->
+    <string name="welcome_title">Welcome to Synapse</string>
+    <string name="welcome_subtitle">Connect, share, and express yourself in a thoughtful, modern social space.</string>
+    <string name="welcome_get_started">Get Started</string>
+    <string name="welcome_already_have_account">I already have an account</string>
+    <string name="welcome_terms_notice">By continuing, you agree to our Terms of Service &amp; Privacy Policy</string>
+
     <string name="login_synapse_community">Get into the Synapse community</string>
     <string name="sign_with_email">Sign in with Email</string>
     <string name="sign_with_google">Continue with Google</string>

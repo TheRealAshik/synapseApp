@@ -17,6 +17,7 @@ object AuthOAuthHelper {
         var refreshToken: String? = null
         var error: String? = null
         var errorDescription: String? = null
+        var type: String? = if (code != null) "pkce" else "implicit"
 
         if (fragment != null) {
             Napier.d("Deep link has fragment: $fragment", tag = "AuthViewModel")
@@ -28,7 +29,10 @@ object AuthOAuthHelper {
             refreshToken = params["refresh_token"]
             error = params["error"]
             errorDescription = params["error_description"]
+            params["type"]?.let { type = it }
         }
+
+        uri.getQueryParameter("type")?.let { type = it }
 
         if (uri.getQueryParameter("error") != null) {
             error = uri.getQueryParameter("error")
@@ -41,7 +45,7 @@ object AuthOAuthHelper {
             code = code,
             accessToken = accessToken,
             refreshToken = refreshToken,
-            type = if (code != null) "pkce" else "implicit",
+            type = type,
             error = error,
             errorCode = null,
             errorDescription = errorDescription

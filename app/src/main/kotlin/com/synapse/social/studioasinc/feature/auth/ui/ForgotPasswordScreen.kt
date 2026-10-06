@@ -66,6 +66,11 @@ fun ForgotPasswordScreen(
 
             Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
 
+            ErrorCard(
+                error = state.generalError,
+                onDismiss = {}
+            )
+
             if (state.isEmailSent) {
 
                 Text(

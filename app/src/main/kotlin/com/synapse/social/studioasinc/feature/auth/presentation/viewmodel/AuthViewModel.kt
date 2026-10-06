@@ -290,15 +290,42 @@ class AuthViewModel @Inject constructor(
         _uiState.value = AuthInputHelper.handleGoogleSignInError(_uiState.value, errorMessage)
     }
 
+    fun showSignUpScreen() {
+        val current = _uiState.value
+        if (current !is AuthUiState.SignUp) {
+            _uiState.value = AuthUiState.SignUp(
+                email = (current as? AuthUiState.SignIn)?.email ?: "",
+                password = (current as? AuthUiState.SignIn)?.password ?: "",
+                isEmailValid = (current as? AuthUiState.SignIn)?.isEmailValid ?: false
+            )
+        }
+    }
+
+    fun showSignInScreen() {
+        val current = _uiState.value
+        if (current !is AuthUiState.SignIn) {
+            _uiState.value = AuthUiState.SignIn(
+                email = (current as? AuthUiState.SignUp)?.email ?: "",
+                password = (current as? AuthUiState.SignUp)?.password ?: "",
+                isEmailValid = (current as? AuthUiState.SignUp)?.isEmailValid ?: false
+            )
+        }
+    }
+
     fun handleDeepLink(uri: Uri?) {
         val deepLink = AuthOAuthHelper.parseDeepLink(uri) ?: return
         
-        Napier.d("Processing OAuth callback", tag = "AuthViewModel")
+        Napier.d("Processing OAuth callback with type: ${deepLink.type}", tag = "AuthViewModel")
 
         viewModelScope.launch {
             handleOAuthCallbackUseCase(deepLink).fold(
                 onSuccess = {
-                    _navigationEvent.emit(AuthNavigationEvent.NavigateToMain)
+                    if (deepLink.type == "recovery") {
+                        _uiState.value = AuthUiState.ResetPassword()
+                        _navigationEvent.emit(AuthNavigationEvent.NavigateToResetPassword(""))
+                    } else {
+                        _navigationEvent.emit(AuthNavigationEvent.NavigateToMain)
+                    }
                 },
                 onFailure = { e ->
                      _uiState.value = AuthUiState.SignIn()

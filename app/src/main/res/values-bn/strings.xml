@@ -2,6 +2,13 @@
 <resources>
     <string name="app_name">Synapse</string>
     <string name="lang">bn</string>
+    <!-- Welcome Screen Strings -->
+    <string name="welcome_title">Synapse-এ স্বাগতম</string>
+    <string name="welcome_subtitle">একটি আধুনিক ও চিন্তাশীল সামাজিক মাধ্যমে যুক্ত থাকুন, শেয়ার করুন এবং নিজেকে প্রকাশ করুন।</string>
+    <string name="welcome_get_started">শুরু করুন</string>
+    <string name="welcome_already_have_account">আমার একটি অ্যাকাউন্ট রয়েছে</string>
+    <string name="welcome_terms_notice">চালিয়ে যাওয়ার মাধ্যমে আপনি আমাদের সেবার শর্তাবলী ও গোপনীয়তা নীতি মেনে নিচ্ছেন</string>
+
     <string name="login_synapse_community">Synapse কমিউনিটিতে প্রবেশ করুন</string>
     <string name="sign_with_email">ইমেইল দিয়ে সাইন ইন করুন</string>
     <string name="sign_with_google">গুগল দিয়ে চালিয়ে যান</string>

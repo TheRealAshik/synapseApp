@@ -47,6 +47,7 @@ sealed class AuthUiState {
     data class ForgotPassword(
         val email: String = "",
         val validationErrors: Map<AuthField, String?> = emptyMap(),
+        val generalError: String? = null,
         val isEmailValid: Boolean = false,
         val isEmailSent: Boolean = false,
         val isLoading: Boolean = false
@@ -56,8 +57,10 @@ sealed class AuthUiState {
         val password: String = "",
         val confirmPassword: String = "",
         val validationErrors: Map<AuthField, String?> = emptyMap(),
+        val generalError: String? = null,
         val passwordStrength: PasswordStrength = PasswordStrength.Weak,
-        val isLoading: Boolean = false
+        val isLoading: Boolean = false,
+        val isSuccess: Boolean = false
     ) : AuthUiState()
 
     data class Success(val message: String) : AuthUiState()

@@ -45,13 +45,16 @@ class ForgotPasswordViewModel @Inject constructor(
          }
 
          viewModelScope.launch {
-             _uiState.value = state.copy(isLoading = true)
+             _uiState.value = state.copy(isLoading = true, generalError = null)
              sendPasswordResetUseCase(state.email).fold(
                  onSuccess = {
-                     _uiState.value = state.copy(isLoading = false, isEmailSent = true)
+                     _uiState.value = state.copy(isLoading = false, isEmailSent = true, generalError = null)
                  },
                  onFailure = { error ->
-                     _uiState.value = state.copy(isLoading = false)
+                     _uiState.value = state.copy(
+                         isLoading = false,
+                         generalError = error.message ?: "Failed to send reset link. Please try again."
+                     )
                  }
              )
          }

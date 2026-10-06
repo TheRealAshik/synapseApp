@@ -61,6 +61,11 @@ fun ResetPasswordScreen(
 
             Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
 
+            ErrorCard(
+                error = state.generalError,
+                onDismiss = {}
+            )
+
             AuthTextField(
                 value = state.password,
                 onValueChange = onPasswordChanged,

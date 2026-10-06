@@ -75,7 +75,7 @@ fun AuthScreen(
     ) {
         NavHost(
             navController = navController,
-            startDestination = "authMain",
+            startDestination = "welcome",
             enterTransition = {
                 if (reducedMotion) androidx.compose.animation.EnterTransition.None
                 else slideIntoContainer(AnimatedContentTransitionScope.SlideDirection.Left, tween(300))
@@ -93,6 +93,19 @@ fun AuthScreen(
                 else slideOutOfContainer(AnimatedContentTransitionScope.SlideDirection.Right, tween(300))
             }
         ) {
+            composable("welcome") {
+                WelcomeScreen(
+                    onGetStartedClick = {
+                        authViewModel.showSignUpScreen()
+                        navController.navigate("authMain")
+                    },
+                    onSignInClick = {
+                        authViewModel.showSignInScreen()
+                        navController.navigate("authMain")
+                    }
+                )
+            }
+
             composable("authMain") {
                 val state by authViewModel.uiState.collectAsState()
 
