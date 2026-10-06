@@ -89,6 +89,8 @@ fun EditProfileContent(
                 onCategoryClick = { categoryName ->
                     if (categoryName == "Interests & Skills") {
                         onEvent(EditProfileEvent.InterestsSkillsClicked)
+                    } else if (categoryName == "Work & Education") {
+                        onEvent(EditProfileEvent.WorkEducationClicked)
                     } else {
                         Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
                     }

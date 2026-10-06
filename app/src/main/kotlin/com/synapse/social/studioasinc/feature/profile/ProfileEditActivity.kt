@@ -50,12 +50,21 @@ class ProfileEditActivity : AppCompatActivity() {
                                 },
                                 onNavigateToInterestsSkills = {
                                     navController.navigate("interests_skills")
+                                },
+                                onNavigateToWorkEducation = {
+                                    navController.navigate("work_education")
                                 }
                             )
                         }
 
                         composable("interests_skills") {
                             InterestsSkillsScreen(
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable("work_education") {
+                            com.synapse.social.studioasinc.feature.profile.editprofile.workeducation.WorkEducationScreen(
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }

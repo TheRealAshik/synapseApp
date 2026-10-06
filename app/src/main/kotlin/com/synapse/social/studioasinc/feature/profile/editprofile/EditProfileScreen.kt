@@ -63,7 +63,8 @@ fun EditProfileScreen(
     onNavigateBack: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
     onNavigateToPhotoHistory: (String) -> Unit,
-    onNavigateToInterestsSkills: () -> Unit = {}
+    onNavigateToInterestsSkills: () -> Unit = {},
+    onNavigateToWorkEducation: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -151,6 +152,9 @@ fun EditProfileScreen(
                 }
                 EditProfileNavigation.NavigateToInterestsSkills -> {
                     onNavigateToInterestsSkills()
+                }
+                EditProfileNavigation.NavigateToWorkEducation -> {
+                    onNavigateToWorkEducation()
                 }
             }
         }
