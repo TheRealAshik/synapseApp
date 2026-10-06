@@ -125,6 +125,16 @@ fun CreatePostScreen(
     val scope = rememberCoroutineScope()
 
     with(sharedTransitionScope) {
+        val boundsTransformSpec = remember {
+            BoundsTransform { _, _ ->
+                spring(
+                    dampingRatio = 0.8f,
+                    stiffness = 380f
+                )
+            }
+        }
+        val overlayClipSpec = remember { OverlayClip(RoundedCornerShape(Sizes.IconExtraLarge)) }
+
         BottomSheetScaffold(
             scaffoldState = scaffoldState,
             modifier = Modifier
@@ -132,13 +142,8 @@ fun CreatePostScreen(
                 .sharedBounds(
                     rememberSharedContentState(key = "create_post_fab"),
                     animatedVisibilityScope = animatedVisibilityScope,
-                    boundsTransform = BoundsTransform { _, _ ->
-                        spring(
-                            dampingRatio = 0.8f,
-                            stiffness = 380f
-                        )
-                    },
-                    clipInOverlayDuringTransition = OverlayClip(RoundedCornerShape(Sizes.IconExtraLarge))
+                    boundsTransform = boundsTransformSpec,
+                    clipInOverlayDuringTransition = overlayClipSpec
                 ),
             sheetPeekHeight = Sizes.HeightAvatarLarge,
             sheetDragHandle = {

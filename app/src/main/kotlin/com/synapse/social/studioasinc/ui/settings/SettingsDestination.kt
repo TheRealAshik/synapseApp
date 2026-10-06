@@ -108,6 +108,14 @@ sealed class SettingsDestination(val route: String) {
 
     object PrivacyStatus : SettingsDestination(ROUTE_PRIVACY_STATUS)
 
+    object PrivacyGroups : SettingsDestination(ROUTE_PRIVACY_GROUPS)
+
+    object PrivacyDisappearingMessages : SettingsDestination(ROUTE_PRIVACY_DISAPPEARING_MESSAGES)
+
+    object PrivacyCheckup : SettingsDestination(ROUTE_PRIVACY_CHECKUP)
+
+    object PrivacyCheckupCategory : SettingsDestination(ROUTE_PRIVACY_CHECKUP_CATEGORY)
+
     object PrivacyExceptionSelector : SettingsDestination(ROUTE_PRIVACY_EXCEPTION_SELECTOR)
 
     object AppLock : SettingsDestination(ROUTE_APP_LOCK)
@@ -146,8 +154,15 @@ sealed class SettingsDestination(val route: String) {
         const val ROUTE_PRIVACY_PROFILE_PHOTO = "settings_privacy_profile_photo"
         const val ROUTE_PRIVACY_ABOUT = "settings_privacy_about"
         const val ROUTE_PRIVACY_STATUS = "settings_privacy_status"
+        const val ROUTE_PRIVACY_GROUPS = "settings_privacy_groups"
+        const val ROUTE_PRIVACY_DISAPPEARING_MESSAGES = "settings_privacy_disappearing_messages"
+        const val ROUTE_PRIVACY_CHECKUP = "settings_privacy_checkup"
+        const val ROUTE_PRIVACY_CHECKUP_CATEGORY = "settings_privacy_checkup_category/{categoryId}"
         const val ROUTE_PRIVACY_EXCEPTION_SELECTOR = "settings_privacy_exception_selector/{settingKey}"
         const val ROUTE_APP_LOCK = "settings_app_lock"
+
+        fun createPrivacyCheckupCategoryRoute(categoryId: String): String =
+            "settings_privacy_checkup_category/$categoryId"
 
         fun createPrivacyExceptionSelectorRoute(settingKey: String): String =
             "settings_privacy_exception_selector/$settingKey"
@@ -185,6 +200,10 @@ sealed class SettingsDestination(val route: String) {
             PrivacyProfilePhoto,
             PrivacyAbout,
             PrivacyStatus,
+            PrivacyGroups,
+            PrivacyDisappearingMessages,
+            PrivacyCheckup,
+            PrivacyCheckupCategory,
             PrivacyExceptionSelector,
             AppLock
         )
@@ -223,6 +242,9 @@ sealed class SettingsDestination(val route: String) {
             ROUTE_PRIVACY_PROFILE_PHOTO -> PrivacyProfilePhoto
             ROUTE_PRIVACY_ABOUT -> PrivacyAbout
             ROUTE_PRIVACY_STATUS -> PrivacyStatus
+            ROUTE_PRIVACY_GROUPS -> PrivacyGroups
+            ROUTE_PRIVACY_DISAPPEARING_MESSAGES -> PrivacyDisappearingMessages
+            ROUTE_PRIVACY_CHECKUP -> PrivacyCheckup
             ROUTE_APP_LOCK -> AppLock
             else -> null
         }

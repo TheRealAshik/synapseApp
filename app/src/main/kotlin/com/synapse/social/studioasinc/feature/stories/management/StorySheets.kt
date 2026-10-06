@@ -47,6 +47,8 @@ fun ViewerListSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
+        containerColor = MaterialTheme.colorScheme.surface,
+        contentColor = MaterialTheme.colorScheme.onSurface,
         modifier = modifier
     ) {
         Column(
@@ -222,7 +224,13 @@ fun StoryOptionsSheet(
             if (isOwnStory) {
 
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.story_delete)) },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.story_delete),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
                     leadingContent = {
                         Icon(
                             imageVector = Icons.Default.Delete,
@@ -235,18 +243,30 @@ fun StoryOptionsSheet(
             } else {
 
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.story_mute)) },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.story_mute),
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    },
                     leadingContent = {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.VolumeOff,
-                            contentDescription = null
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface
                         )
                     },
                     modifier = Modifier.clickable { onMute() }
                 )
 
                 ListItem(
-                    headlineContent = { Text(stringResource(R.string.story_report)) },
+                    headlineContent = {
+                        Text(
+                            stringResource(R.string.story_report),
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.Medium
+                        )
+                    },
                     leadingContent = {
                         Icon(
                             imageVector = Icons.Default.Flag,

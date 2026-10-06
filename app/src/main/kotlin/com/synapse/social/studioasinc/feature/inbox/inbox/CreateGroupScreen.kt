@@ -164,14 +164,17 @@ private fun UserSelectionItem(
             .padding(Spacing.Medium),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val displayName = user.displayName?.takeIf { it.isNotBlank() && it != "null" }
+            ?: user.username?.takeIf { it.isNotBlank() && it != "null" }
+            ?: "Unknown"
         com.synapse.social.studioasinc.feature.shared.components.UserAvatar(
             avatarUrl = user.avatar,
-            displayName = user.displayName ?: user.username,
+            displayName = displayName,
             size = Sizes.IconMassive
         )
         Spacer(modifier = Modifier.width(Spacing.Medium))
         Text(
-            text = user.displayName ?: user.username ?: "Unknown",
+            text = displayName,
             style = MaterialTheme.typography.bodyLarge,
             modifier = Modifier.weight(1f)
         )
@@ -195,10 +198,17 @@ private fun SelectedUserItem(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.width(Sizes.AvatarLarge)
     ) {
+        val displayName = user.displayName?.takeIf { it.isNotBlank() && it != "null" }
+            ?: user.username?.takeIf { it.isNotBlank() && it != "null" }
+            ?: "Unknown"
+        val firstName = user.displayName?.takeIf { it.isNotBlank() && it != "null" }?.split(" ")?.firstOrNull()
+            ?: user.username?.takeIf { it.isNotBlank() && it != "null" }
+            ?: "Unknown"
+
         Box {
             com.synapse.social.studioasinc.feature.shared.components.UserAvatar(
                 avatarUrl = user.avatar,
-                displayName = user.displayName ?: user.username,
+                displayName = displayName,
                 size = Sizes.AvatarDefault
             )
             Surface(
@@ -220,7 +230,7 @@ private fun SelectedUserItem(
         }
         Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
         Text(
-            text = user.displayName?.split(" ")?.firstOrNull() ?: user.username ?: "Unknown",
+            text = firstName,
             style = MaterialTheme.typography.bodySmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis

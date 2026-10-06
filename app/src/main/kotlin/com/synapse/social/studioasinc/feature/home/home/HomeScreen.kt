@@ -38,6 +38,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -244,6 +245,16 @@ fun HomeScreen(
 
         if (!isPostDetail && isFeedScreen) {
             with(sharedTransitionScope) {
+                val fabBoundsTransform = remember {
+                    androidx.compose.animation.BoundsTransform { _, _ ->
+                        androidx.compose.animation.core.spring(
+                            dampingRatio = 0.8f,
+                            stiffness = 380f
+                        )
+                    }
+                }
+                val fabOverlayClip = remember { OverlayClip(CircleShape) }
+
                 FloatingActionButton(
                     onClick = { onNavigateToCreatePost(null) },
                     shape = CircleShape,
@@ -260,7 +271,9 @@ fun HomeScreen(
                         }
                         .sharedBounds(
                             rememberSharedContentState(key = "create_post_fab"),
-                            animatedVisibilityScope = animatedVisibilityScope
+                            animatedVisibilityScope = animatedVisibilityScope,
+                            boundsTransform = fabBoundsTransform,
+                            clipInOverlayDuringTransition = fabOverlayClip
                         )
                 ) {
                     Icon(

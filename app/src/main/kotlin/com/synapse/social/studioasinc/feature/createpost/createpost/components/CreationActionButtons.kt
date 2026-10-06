@@ -142,9 +142,7 @@ fun AddToPostSheet(
             )
 
             val actions = listOf(
-                Triple("Photo/Video", Icons.Filled.Image, MaterialTheme.colorScheme.primary) to onMediaClick,
                 Triple("Tag People", Icons.Filled.Person, MaterialTheme.colorScheme.secondary) to onTagClick,
-                Triple("Feeling/Activity", Icons.Filled.Mood, MaterialTheme.colorScheme.tertiary) to onFeelingClick,
                 Triple("Check In", Icons.Filled.Place, MaterialTheme.colorScheme.error) to onLocationClick,
                 Triple("Poll", Icons.Default.Poll, MaterialTheme.colorScheme.tertiary) to onPollClick,
                 Triple("YouTube", Icons.Default.VideoLibrary, MaterialTheme.colorScheme.secondary) to onYoutubeClick,
@@ -224,14 +222,8 @@ fun StickyBottomActionArea(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            IconButton(onClick = onMediaClick) {
-                Icon(Icons.Filled.Image, contentDescription = "Photo/Video", tint = MaterialTheme.colorScheme.primary)
-            }
             IconButton(onClick = onTagClick) {
                 Icon(Icons.Filled.Person, contentDescription = "Tag People", tint = MaterialTheme.colorScheme.secondary)
-            }
-            IconButton(onClick = onFeelingClick) {
-                Icon(Icons.Filled.Mood, contentDescription = "Feeling/Activity", tint = MaterialTheme.colorScheme.tertiary)
             }
             IconButton(onClick = onLocationClick) {
                 Icon(Icons.Filled.Place, contentDescription = "Check In", tint = MaterialTheme.colorScheme.error)

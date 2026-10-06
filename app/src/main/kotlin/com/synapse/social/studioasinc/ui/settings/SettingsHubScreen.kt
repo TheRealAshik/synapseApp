@@ -73,64 +73,61 @@ fun SettingsHubScreen(
                     com.synapse.social.studioasinc.ui.components.ExpressiveLoadingIndicator()
                 }
             } else {
-                Column(modifier = Modifier.fillMaxSize()) {
-                    Box(modifier = Modifier.padding(horizontal = SettingsSpacing.screenPadding)) {
-                        SettingsSearchBar(
-                            query = searchQuery,
-                            onQueryChange = viewModel::onSearchQueryChange
-                        )
-                    }
-
-                    Box(modifier = Modifier.weight(1f)) {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = SettingsSpacing.screenPadding),
-                            verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing),
-                            contentPadding = PaddingValues(vertical = Spacing.Small)
-                        ) {
-                            item {
-                                userProfile?.let { profile ->
-                            ProfileHeaderCard(
-                                displayName = profile.displayName,
-                                email = profile.email,
-                                avatarUrl = profile.avatarUrl
+                Box(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = SettingsSpacing.screenPadding),
+                        verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing),
+                        contentPadding = PaddingValues(vertical = Spacing.Small)
+                    ) {
+                        item {
+                            SettingsSearchBar(
+                                query = searchQuery,
+                                onQueryChange = viewModel::onSearchQueryChange
                             )
                         }
-                    }
 
-                    item {
-                        SettingsFlattenedContent(
-                            settingsGroups = settingsGroups,
-                            onNavigate = {
-                                viewModel.onNavigateToCategory(it)
-                                onNavigateToCategory(it)
+                        item {
+                            userProfile?.let { profile ->
+                                ProfileHeaderCard(
+                                    displayName = profile.displayName,
+                                    email = profile.email,
+                                    avatarUrl = profile.avatarUrl
+                                )
                             }
-                        )
-                    }
-
-                    item {
-                        Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
-                    }
-                }
-
                         }
 
-                        // Command Palette Result Overlay
-                        AnimatedVisibility(
-                            visible = searchQuery.isNotEmpty(),
-                            enter = fadeIn() + expandVertically(),
-                            exit = fadeOut() + shrinkVertically()
-                        ) {
-                            SettingsCommandPaletteResults(
-                                results = searchResults,
-                                onActionClick = viewModel::onActionClick,
-                                onNavigate = { route ->
-                                    val dest = SettingsDestination.fromRoute(route)
-                                    if (dest != null) onNavigateToCategory(dest)
+                        item {
+                            SettingsFlattenedContent(
+                                settingsGroups = settingsGroups,
+                                onNavigate = {
+                                    viewModel.onNavigateToCategory(it)
+                                    onNavigateToCategory(it)
                                 }
                             )
                         }
+
+                        item {
+                            Spacer(modifier = Modifier.height(Spacing.ExtraLarge))
+                        }
+                    }
+
+                    // Command Palette Result Overlay
+                    AnimatedVisibility(
+                        visible = searchQuery.isNotEmpty(),
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        SettingsCommandPaletteResults(
+                            results = searchResults,
+                            onActionClick = viewModel::onActionClick,
+                            onNavigate = { route ->
+                                val dest = SettingsDestination.fromRoute(route)
+                                if (dest != null) onNavigateToCategory(dest)
+                            }
+                        )
+                    }
                 }
             }
         }

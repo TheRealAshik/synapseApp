@@ -221,9 +221,12 @@ private fun GroupMemberItem(
             contentScale = ContentScale.Crop
         )
         Spacer(modifier = Modifier.width(Spacing.Medium))
+        val displayName = user.displayName?.takeIf { it.isNotBlank() && it != "null" }
+            ?: user.username?.takeIf { it.isNotBlank() && it != "null" }
+            ?: "Unknown"
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = (user.displayName ?: user.username ?: "Unknown") + if (isMe) " (You)" else "",
+                text = displayName + if (isMe) " (You)" else "",
                 style = MaterialTheme.typography.bodyLarge
             )
             if (isAdmin) {

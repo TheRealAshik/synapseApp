@@ -27,7 +27,10 @@ fun PrivacySecurityScreen(
     onNavigateToLastSeen: () -> Unit,
     onNavigateToProfilePhoto: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    onNavigateToStatus: () -> Unit
+    onNavigateToStatus: () -> Unit,
+    onNavigateToGroups: () -> Unit = {},
+    onNavigateToDisappearingMessages: () -> Unit = {},
+    onNavigateToPrivacyCheckup: () -> Unit = {}
 ) {
     val privacySettings by viewModel.privacySettings.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -46,10 +49,12 @@ fun PrivacySecurityScreen(
         onNavigateToProfilePhoto = onNavigateToProfilePhoto,
         onNavigateToAbout = onNavigateToAbout,
         onNavigateToStatus = onNavigateToStatus,
+        onNavigateToGroups = onNavigateToGroups,
+        onNavigateToDisappearingMessages = onNavigateToDisappearingMessages,
+        onNavigateToPrivacyCheckup = onNavigateToPrivacyCheckup,
         onClearError = { viewModel.clearError() },
         onReadReceiptsChanged = { viewModel.setReadReceiptsEnabled(it) },
-        onChatLockChanged = { viewModel.setChatLockEnabled(it) },
-        onGroupPrivacyChanged = { viewModel.setGroupPrivacy(it) }
+        onChatLockChanged = { viewModel.setChatLockEnabled(it) }
     )
 }
 
@@ -68,10 +73,12 @@ fun PrivacySecurityContent(
     onNavigateToProfilePhoto: () -> Unit,
     onNavigateToAbout: () -> Unit,
     onNavigateToStatus: () -> Unit,
+    onNavigateToGroups: () -> Unit = {},
+    onNavigateToDisappearingMessages: () -> Unit = {},
+    onNavigateToPrivacyCheckup: () -> Unit = {},
     onClearError: () -> Unit,
     onReadReceiptsChanged: (Boolean) -> Unit,
-    onChatLockChanged: (Boolean) -> Unit,
-    onGroupPrivacyChanged: (GroupPrivacy) -> Unit
+    onChatLockChanged: (Boolean) -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
 
@@ -119,7 +126,10 @@ fun PrivacySecurityContent(
         ) {
 
             item {
-                PrivacyCheckupSection(isLoading = isLoading)
+                PrivacyCheckupSection(
+                    isLoading = isLoading,
+                    onNavigateToPrivacyCheckup = onNavigateToPrivacyCheckup
+                )
             }
 
 
@@ -139,6 +149,7 @@ fun PrivacySecurityContent(
                 MessagePrivacySection(
                     readReceiptsEnabled = privacySettings.readReceiptsEnabled,
                     onReadReceiptsChanged = onReadReceiptsChanged,
+                    onNavigateToDisappearingMessages = onNavigateToDisappearingMessages,
                     isLoading = isLoading
                 )
             }
@@ -148,7 +159,7 @@ fun PrivacySecurityContent(
                 GroupPrivacySection(
                     privacySettings = privacySettings,
                     isLoading = isLoading,
-                    onGroupPrivacyChanged = onGroupPrivacyChanged
+                    onNavigateToGroups = onNavigateToGroups
                 )
             }
 

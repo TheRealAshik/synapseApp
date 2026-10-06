@@ -43,7 +43,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.synapse.social.studioasinc.core.ui.animation.NeuralParticleEmitter
 import com.synapse.social.studioasinc.feature.search.search.components.AccountCard
 import com.synapse.social.studioasinc.feature.search.search.components.HashtagCard
 import com.synapse.social.studioasinc.feature.search.search.components.NewsCard
@@ -82,8 +81,6 @@ fun SearchScreen(
     var selectedPost by remember { mutableStateOf<Post?>(null) }
     var showSummarySheet by remember { mutableStateOf(false) }
 
-    var searchBarBounds by remember { mutableStateOf<Rect?>(null) }
-    var showNeuralAnimation by remember { mutableStateOf(true) }
 
     val pagerState = rememberPagerState(
         initialPage = 0,
@@ -183,11 +180,6 @@ fun SearchScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
-                            .onGloballyPositioned { coords ->
-                                if (searchBarBounds == null) {
-                                    searchBarBounds = coords.boundsInRoot()
-                                }
-                            }
                     ) {
                         if (uiState.trendingHashtags.isNotEmpty()) {
                             Text(
@@ -311,8 +303,8 @@ fun SearchScreen(
                                     } else {
                                         LazyColumn(
                                             modifier = Modifier.fillMaxSize(),
-                                            contentPadding = PaddingValues(Spacing.Medium),
-                                            verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+                                            contentPadding = PaddingValues(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
+                                            verticalArrangement = Arrangement.spacedBy(Spacing.Small)
                                         ) {
                                             items(uiState.hashtags) { hashtag ->
                                                 Card(
@@ -372,7 +364,8 @@ fun SearchScreen(
                                 else -> {
                                     LazyColumn(
                                         modifier = Modifier.fillMaxSize(),
-                                        contentPadding = PaddingValues(bottom = Sizes.WidthLarge)
+                                        contentPadding = PaddingValues(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall),
+                                        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
                                     ) {
                                         when (tab) {
                                             SearchTab.FOR_YOU -> {}
@@ -491,14 +484,6 @@ fun SearchScreen(
             }
         }
 
-        NeuralParticleEmitter(
-            targetRect = searchBarBounds,
-            isAnimating = showNeuralAnimation,
-            onAnimationComplete = {
-                showNeuralAnimation = false
-            },
-            modifier = Modifier.fillMaxSize()
-        )
     }
 
     selectedPost?.let { post ->

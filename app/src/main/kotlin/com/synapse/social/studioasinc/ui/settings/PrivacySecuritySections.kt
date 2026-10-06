@@ -9,13 +9,16 @@ import com.synapse.social.studioasinc.R
 
 
 @Composable
-internal fun PrivacyCheckupSection(isLoading: Boolean) {
+internal fun PrivacyCheckupSection(
+    isLoading: Boolean,
+    onNavigateToPrivacyCheckup: () -> Unit = {}
+) {
     SettingsSection(title = stringResource(R.string.settings_privacy_checkup_section)) {
         SettingsNavigationItem(
             title = stringResource(R.string.settings_privacy_checkup_section),
             subtitle = stringResource(R.string.settings_privacy_settings_subtitle),
             imageVector = Icons.Filled.Security,
-            onClick = { },
+            onClick = onNavigateToPrivacyCheckup,
             enabled = !isLoading
         )
     }
@@ -74,6 +77,7 @@ internal fun ProfilePrivacySection(
 internal fun MessagePrivacySection(
     readReceiptsEnabled: Boolean,
     onReadReceiptsChanged: (Boolean) -> Unit,
+    onNavigateToDisappearingMessages: () -> Unit = {},
     isLoading: Boolean
 ) {
     SettingsSection(title = stringResource(R.string.settings_message_privacy_section)) {
@@ -90,7 +94,7 @@ internal fun MessagePrivacySection(
             title = stringResource(R.string.settings_disappearing_messages_title),
             subtitle = stringResource(R.string.settings_disappearing_messages_subtitle),
             imageVector = Icons.Filled.Timer,
-            onClick = { },
+            onClick = onNavigateToDisappearingMessages,
             enabled = !isLoading,
             position = SettingsItemPosition.Bottom
         )
@@ -103,21 +107,14 @@ internal fun MessagePrivacySection(
 internal fun GroupPrivacySection(
     privacySettings: PrivacySettings,
     isLoading: Boolean,
-    onGroupPrivacyChanged: (GroupPrivacy) -> Unit
+    onNavigateToGroups: () -> Unit
 ) {
     SettingsSection(title = stringResource(R.string.settings_group_privacy_section)) {
-        SettingsSelectionItem(
+        SettingsNavigationItem(
             title = stringResource(R.string.settings_groups_title),
-            subtitle = stringResource(R.string.settings_groups_subtitle),
-            icon = Icons.Filled.Group,
-            options = GroupPrivacy.values().map { it.displayName() },
-            selectedOption = privacySettings.groupPrivacy.displayName(),
-            onSelect = { option ->
-                val privacy = GroupPrivacy.values().find { it.displayName() == option }
-                if (privacy != null) {
-                    onGroupPrivacyChanged(privacy)
-                }
-            },
+            subtitle = privacySettings.groupPrivacy.displayName(),
+            imageVector = Icons.Filled.Group,
+            onClick = onNavigateToGroups,
             enabled = !isLoading
         )
     }

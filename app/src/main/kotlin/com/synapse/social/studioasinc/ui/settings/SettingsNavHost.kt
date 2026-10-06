@@ -10,6 +10,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -144,7 +147,49 @@ fun SettingsNavHost(
                 },
                 onNavigateToStatus = {
                     navController.navigate(SettingsDestination.ROUTE_PRIVACY_STATUS)
+                },
+                onNavigateToGroups = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_GROUPS)
+                },
+                onNavigateToDisappearingMessages = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_DISAPPEARING_MESSAGES)
+                },
+                onNavigateToPrivacyCheckup = {
+                    navController.navigate(SettingsDestination.ROUTE_PRIVACY_CHECKUP)
                 }
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_CHECKUP) {
+            PrivacyCheckupScreen(
+                onNavigateToCategory = { categoryId ->
+                    navController.navigate(SettingsDestination.createPrivacyCheckupCategoryRoute(categoryId))
+                },
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = SettingsDestination.ROUTE_PRIVACY_CHECKUP_CATEGORY,
+            arguments = listOf(
+                androidx.navigation.navArgument("categoryId") {
+                    type = androidx.navigation.NavType.StringType
+                }
+            )
+        ) { backStackEntry ->
+            val categoryId = backStackEntry.arguments?.getString("categoryId") ?: ""
+            PrivacyCheckupCategoryScreen(
+                categoryId = categoryId,
+                onNavigateToGroups = { navController.navigate(SettingsDestination.ROUTE_PRIVACY_GROUPS) },
+                onNavigateToBlockedContacts = { navController.navigate(SettingsDestination.ROUTE_BLOCKED_CONTACTS) },
+                onNavigateToProfilePhoto = { navController.navigate(SettingsDestination.ROUTE_PRIVACY_PROFILE_PHOTO) },
+                onNavigateToLastSeen = { navController.navigate(SettingsDestination.ROUTE_PRIVACY_LAST_SEEN) },
+                onNavigateToAbout = { navController.navigate(SettingsDestination.ROUTE_PRIVACY_ABOUT) },
+                onNavigateToStatus = { navController.navigate(SettingsDestination.ROUTE_PRIVACY_STATUS) },
+                onNavigateToAppLock = { navController.navigate(SettingsDestination.ROUTE_APP_LOCK) },
+                onNavigateToDisappearingMessages = { navController.navigate(SettingsDestination.ROUTE_PRIVACY_DISAPPEARING_MESSAGES) },
+                onNavigateToAccountInfo = { navController.navigate(SettingsDestination.ROUTE_REQUEST_ACCOUNT_INFO) },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 
@@ -180,6 +225,78 @@ fun SettingsNavHost(
                 },
                 onNavigateBack = { navController.popBackStack() },
                 isLoading = isLoading
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_GROUPS) {
+            val parentEntry = androidx.compose.runtime.remember(it) {
+                navController.getBackStackEntry(SettingsDestination.ROUTE_PRIVACY)
+            }
+            val viewModel: PrivacySecurityViewModel = viewModel(parentEntry)
+            val privacySettings by viewModel.privacySettings.collectAsState()
+            val isLoading by viewModel.isLoading.collectAsState()
+
+            val options = GroupPrivacy.values().map { groupPrivacy ->
+                PrivacyOptionItem(
+                    title = groupPrivacy.displayName(),
+                    subtitle = when (groupPrivacy) {
+                        GroupPrivacy.EVERYONE -> "Anyone on Synapse can add you to groups."
+                        GroupPrivacy.MY_CONTACTS -> "Only your contacts can add you to groups."
+                        GroupPrivacy.MY_CONTACTS_EXCEPT -> "Your contacts can add you to groups, except excluded contacts."
+                        GroupPrivacy.NOBODY -> "Nobody can add you to groups automatically."
+                    },
+                    value = groupPrivacy,
+                    isExceptionOption = groupPrivacy == GroupPrivacy.MY_CONTACTS_EXCEPT
+                )
+            }
+
+            PrivacySelectionScreen(
+                title = stringResource(R.string.settings_groups_title),
+                subtitle = stringResource(R.string.settings_groups_subtitle),
+                options = options,
+                selectedOption = privacySettings.groupPrivacy,
+                onOptionSelected = { viewModel.setGroupPrivacy(it) },
+                onNavigateToExceptionSelector = {
+                    navController.navigate(SettingsDestination.createPrivacyExceptionSelectorRoute("group"))
+                },
+                onNavigateBack = { navController.popBackStack() },
+                isLoading = isLoading
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_PRIVACY_DISAPPEARING_MESSAGES) {
+            var selectedTimer by remember { mutableStateOf("Off") }
+
+            val timerOptions = listOf(
+                PrivacyOptionItem(
+                    title = "24 hours",
+                    subtitle = "Messages in new chats disappear after 24 hours.",
+                    value = "24h"
+                ),
+                PrivacyOptionItem(
+                    title = "7 days",
+                    subtitle = "Messages in new chats disappear after 7 days.",
+                    value = "7d"
+                ),
+                PrivacyOptionItem(
+                    title = "90 days",
+                    subtitle = "Messages in new chats disappear after 90 days.",
+                    value = "90d"
+                ),
+                PrivacyOptionItem(
+                    title = "Off",
+                    subtitle = "Messages in new chats will not disappear automatically.",
+                    value = "Off"
+                )
+            )
+
+            PrivacySelectionScreen(
+                title = stringResource(R.string.settings_disappearing_messages_title),
+                subtitle = stringResource(R.string.settings_disappearing_messages_subtitle),
+                options = timerOptions,
+                selectedOption = selectedTimer,
+                onOptionSelected = { selectedTimer = it },
+                onNavigateBack = { navController.popBackStack() }
             )
         }
 

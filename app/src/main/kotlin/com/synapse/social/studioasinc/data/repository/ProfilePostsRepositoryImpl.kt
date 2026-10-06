@@ -127,7 +127,7 @@ internal class ProfilePostsRepositoryImpl(
     internal suspend fun getMediaItemsByType(userId: String, limit: Int, offset: Int, isVideo: Boolean): Result<List<com.synapse.social.studioasinc.feature.profile.profile.components.MediaItem>> = try {
         val actualUserId = resolveUserId(userId) ?: return Result.failure(Exception("User not authenticated"))
         val response = client.from("posts").select(
-            columns = Columns.raw("$KEY_ID, $KEY_MEDIA_ITEMS")
+            columns = Columns.raw("$KEY_ID, $KEY_MEDIA_ITEMS, $KEY_POST_IMAGE")
         ) {
             filter { eq(KEY_AUTHOR_UID, actualUserId) }
             limit(limit.toLong())
@@ -136,7 +136,7 @@ internal class ProfilePostsRepositoryImpl(
 
         val mediaItems = response.flatMap { data ->
             val postId = data[KEY_ID]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: return@flatMap emptyList()
-            data[KEY_MEDIA_ITEMS]?.takeIf { it !is JsonNull }?.jsonArray?.mapNotNull { item ->
+            val itemsFromMediaArray = data[KEY_MEDIA_ITEMS]?.takeIf { it !is JsonNull }?.jsonArray?.mapNotNull { item ->
                 val mediaMap = item.jsonObject
                 val url = mediaMap[KEY_URL]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: return@mapNotNull null
                 val typeStr = mediaMap[KEY_TYPE]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull ?: MEDIA_TYPE_IMAGE
@@ -148,6 +148,24 @@ internal class ProfilePostsRepositoryImpl(
                     isVideo = isVideo
                 )
             } ?: emptyList()
+
+            if (itemsFromMediaArray.isNotEmpty()) {
+                itemsFromMediaArray
+            } else {
+                // Fallback to legacy post_image column (photos only)
+                if (!isVideo) {
+                    val legacyImageUrl = data[KEY_POST_IMAGE]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.contentOrNull
+                    if (!legacyImageUrl.isNullOrBlank() && legacyImageUrl != "null") {
+                        listOf(
+                            com.synapse.social.studioasinc.feature.profile.profile.components.MediaItem(
+                                id = postId,
+                                url = constructMediaUrl(legacyImageUrl),
+                                isVideo = false
+                            )
+                        )
+                    } else emptyList()
+                } else emptyList()
+            }
         }
         Result.success(mediaItems)
     } catch (e: Exception) {

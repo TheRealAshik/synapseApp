@@ -250,11 +250,13 @@ class StoryViewerViewModel @Inject constructor(
     }
 
     fun showViewersSheet() {
+        pause()
         _uiState.update { it.copy(showViewersSheet = true) }
     }
 
     fun hideViewersSheet() {
         _uiState.update { it.copy(showViewersSheet = false) }
+        resume()
     }
 
     fun showReactionsSheet() {

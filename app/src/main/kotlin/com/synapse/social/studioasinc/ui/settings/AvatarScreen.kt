@@ -249,7 +249,6 @@ fun AvatarScreen(
                             }
                         }
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
                         title = stringResource(R.string.take_photo),
                         subtitle = stringResource(R.string.take_photo_subtitle),
@@ -268,7 +267,6 @@ fun AvatarScreen(
                             }
                         }
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
                         title = stringResource(R.string.remove_profile_photo_title),
                         subtitle = stringResource(R.string.remove_profile_photo_subtitle),
@@ -290,7 +288,6 @@ fun AvatarScreen(
                             Toast.makeText(context, context.getString(R.string.avatar_creator_soon), Toast.LENGTH_SHORT).show()
                         }
                     )
-                    SettingsDivider()
                     SettingsNavigationItem(
                         title = stringResource(R.string.edit_avatar),
                         subtitle = stringResource(R.string.edit_avatar_subtitle),

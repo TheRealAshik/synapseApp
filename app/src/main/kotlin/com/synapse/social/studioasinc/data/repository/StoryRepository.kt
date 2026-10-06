@@ -21,6 +21,8 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -89,12 +91,17 @@ class StoryRepositoryImpl @Inject constructor(
 ) : StoryRepository {
     private val client = SupabaseClient.client
 
+    private val refreshTrigger = MutableSharedFlow<Unit>(replay = 1).apply { tryEmit(Unit) }
 
     companion object {
         private const val TABLE_STORIES = "stories"
         private const val TABLE_STORY_VIEWS = "story_views"
         private const val TABLE_STORY_REACTIONS = "story_reactions"
         private const val TABLE_USERS = "users"
+    }
+
+    private fun triggerRefresh() {
+        refreshTrigger.tryEmit(Unit)
     }
 
     override suspend fun hasActiveStory(userId: String): Result<Boolean> = try {
@@ -115,8 +122,9 @@ class StoryRepositoryImpl @Inject constructor(
         Result.failure(e)
     }
 
-    override fun getActiveStories(currentUserId: String): Flow<List<StoryWithUser>> = flow {
-        try {
+    override fun getActiveStories(currentUserId: String): Flow<List<StoryWithUser>> = refreshTrigger.flatMapLatest {
+        flow {
+            try {
             val now = Instant.now().toString()
 
 
@@ -218,12 +226,13 @@ class StoryRepositoryImpl @Inject constructor(
                 }
             }
 
-            emit(result)
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: Exception) {
-            android.util.Log.e("StoryRepository", "Error fetching active stories", e)
-            emit(emptyList())
+                emit(result)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                android.util.Log.e("StoryRepository", "Error fetching active stories", e)
+                emit(emptyList())
+            }
         }
     }
 
@@ -310,6 +319,7 @@ class StoryRepositoryImpl @Inject constructor(
             }
             .decodeSingle<Story>()
 
+        triggerRefresh()
         Result.success(insertedStory)
     } catch (e: CancellationException) {
             throw e
@@ -324,6 +334,7 @@ class StoryRepositoryImpl @Inject constructor(
                     eq("id", storyId)
                 }
             }
+        triggerRefresh()
         Result.success(Unit)
     } catch (e: CancellationException) {
             throw e

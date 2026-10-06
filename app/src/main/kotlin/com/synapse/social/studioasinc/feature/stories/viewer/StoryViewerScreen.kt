@@ -1,6 +1,7 @@
 package com.synapse.social.studioasinc.feature.stories.viewer
 
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -362,11 +363,11 @@ fun StoryViewerScreen(
                         },
                         onReport = {
                             viewModel.hideOptionsSheet()
-                            // Report logic
+                            Toast.makeText(context, context.getString(R.string.story_report), Toast.LENGTH_SHORT).show()
                         },
                         onMute = {
                             viewModel.hideOptionsSheet()
-                            // Mute logic
+                            Toast.makeText(context, context.getString(R.string.story_mute), Toast.LENGTH_SHORT).show()
                         }
                     )
                 }
