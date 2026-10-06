@@ -24,6 +24,8 @@ sealed interface AppDestination {
     @Serializable
     data object ProfileMedia : AppDestination
     @Serializable
+    data object PersonalInformation : AppDestination
+    @Serializable
     data object RegionSelection : AppDestination
     @Serializable
     data class PhotoHistory(val type: String) : AppDestination

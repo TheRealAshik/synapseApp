@@ -22,6 +22,7 @@ fun EditProfileContent(
     onCoverClick: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
     onNavigateToProfileMedia: () -> Unit,
+    onNavigateToPersonalInfo: () -> Unit,
     onEvent: (EditProfileEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -87,6 +88,7 @@ fun EditProfileContent(
                 onNavigateToProfileHistory = { onEvent(EditProfileEvent.ProfileHistoryClicked) },
                 onNavigateToCoverHistory = { onEvent(EditProfileEvent.CoverHistoryClicked) },
                 onNavigateToRegionSelection = onNavigateToRegionSelection,
+                onNavigateToPersonalInfo = onNavigateToPersonalInfo,
                 onCategoryClick = { categoryName ->
                     if (categoryName == "Profile Media") {
                         onEvent(EditProfileEvent.ProfileMediaClicked)

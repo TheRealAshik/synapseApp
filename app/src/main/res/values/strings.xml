@@ -2096,6 +2096,10 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="complete_your_profile">Complete your profile</string>
     <string name="improvements_recommended">%1$d recommended improvements →</string>
     <string name="section_basic_information">BASIC INFORMATION</string>
+    <string name="section_personal_identity">PERSONAL IDENTITY</string>
+    <string name="section_basic_details">BASIC DETAILS</string>
+    <string name="not_set">Not set</string>
+    <string name="custom_pronouns">Custom pronouns</string>
     <string name="section_profile">PROFILE</string>
     <string name="section_professional">PROFESSIONAL</string>
     <string name="section_customize">CUSTOMIZE</string>

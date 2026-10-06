@@ -29,6 +29,7 @@ fun ProfileCategorySection(
     onNavigateToProfileHistory: () -> Unit,
     onNavigateToCoverHistory: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
+    onNavigateToPersonalInfo: () -> Unit,
     onCategoryClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -53,7 +54,7 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_personal_info),
                 subtitle = stringResource(R.string.nav_personal_info_sub),
                 imageVector = Icons.Filled.PersonOutline,
-                onClick = { onCategoryClick("Personal Information") },
+                onClick = onNavigateToPersonalInfo,
                 position = SettingsItemPosition.Middle
             )
 
