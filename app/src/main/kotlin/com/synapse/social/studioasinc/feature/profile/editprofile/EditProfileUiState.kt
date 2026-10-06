@@ -71,6 +71,7 @@ sealed class EditProfileEvent {
     object BackClicked : EditProfileEvent()
     object ProfileHistoryClicked : EditProfileEvent()
     object CoverHistoryClicked : EditProfileEvent()
+    object InterestsSkillsClicked : EditProfileEvent()
 
     // New Events
     data class CurrentCityChanged(val city: String) : EditProfileEvent()
@@ -93,4 +94,5 @@ sealed class EditProfileNavigation {
     object NavigateToRegionSelection : EditProfileNavigation()
     object NavigateToProfileHistory : EditProfileNavigation()
     object NavigateToCoverHistory : EditProfileNavigation()
+    object NavigateToInterestsSkills : EditProfileNavigation()
 }

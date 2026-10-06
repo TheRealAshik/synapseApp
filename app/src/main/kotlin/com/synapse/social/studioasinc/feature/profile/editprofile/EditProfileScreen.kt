@@ -62,7 +62,8 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
-    onNavigateToPhotoHistory: (String) -> Unit
+    onNavigateToPhotoHistory: (String) -> Unit,
+    onNavigateToInterestsSkills: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -147,6 +148,9 @@ fun EditProfileScreen(
                 }
                 EditProfileNavigation.NavigateToCoverHistory -> {
                     onNavigateToPhotoHistory("COVER")
+                }
+                EditProfileNavigation.NavigateToInterestsSkills -> {
+                    onNavigateToInterestsSkills()
                 }
             }
         }

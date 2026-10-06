@@ -87,7 +87,11 @@ fun EditProfileContent(
                 onNavigateToCoverHistory = { onEvent(EditProfileEvent.CoverHistoryClicked) },
                 onNavigateToRegionSelection = onNavigateToRegionSelection,
                 onCategoryClick = { categoryName ->
-                    Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                    if (categoryName == "Interests & Skills") {
+                        onEvent(EditProfileEvent.InterestsSkillsClicked)
+                    } else {
+                        Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
         }

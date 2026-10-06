@@ -2180,4 +2180,28 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="unmuted">Unmuted</string>
     <string name="user">User</string>
 
+    <!-- Interests & Skills -->
+    <string name="interests_skills_title">Interests &amp; Skills</string>
+    <string name="interests_section_title">Personal Interests</string>
+    <string name="interests_section_subtitle">Add hobbies, topics, or causes you care about.</string>
+    <string name="add_interest_placeholder">Add an interest...</string>
+    <string name="add_interest_button">Add</string>
+    <string name="add_interest_content_description">Add interest</string>
+    <string name="remove_interest_content_description">Remove %1$s</string>
+    <string name="move_interest_up">Move %1$s up</string>
+    <string name="move_interest_down">Move %1$s down</string>
+    <string name="empty_interests_title">No interests added yet</string>
+    <string name="empty_interests_subtitle">Add your hobbies, topics, or causes above to highlight them on your profile.</string>
+    <string name="skills_section_title">Skills</string>
+    <string name="skills_pending_title">Pending Backend Support</string>
+    <string name="skills_pending_description">Professional skills editing requires backend database persistence and will be supported in a future update.</string>
+    <string name="languages_section_title">Languages</string>
+    <string name="languages_pending_title">Pending Backend Support</string>
+    <string name="languages_pending_description">Languages spoken editing requires backend database persistence and will be supported in a future update.</string>
+    <string name="interest_input_empty_error">Interest cannot be empty</string>
+    <string name="interest_input_duplicate_error">This interest has already been added</string>
+    <string name="interests_save_success">Interests saved successfully</string>
+    <string name="interests_save">Save</string>
+    <string name="back_content_description">Back</string>
+
 </resources>

@@ -15,6 +15,7 @@ import com.synapse.social.studioasinc.presentation.editprofile.EditProfileScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileViewModel
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoHistoryScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoType
+import com.synapse.social.studioasinc.feature.profile.editprofile.interestsskills.InterestsSkillsScreen
 import com.synapse.social.studioasinc.ui.settings.SelectRegionScreen
 import com.synapse.social.studioasinc.feature.shared.theme.SynapseTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -46,7 +47,16 @@ class ProfileEditActivity : AppCompatActivity() {
                                 },
                                 onNavigateToPhotoHistory = { type ->
                                     navController.navigate("photo_history/$type")
+                                },
+                                onNavigateToInterestsSkills = {
+                                    navController.navigate("interests_skills")
                                 }
+                            )
+                        }
+
+                        composable("interests_skills") {
+                            InterestsSkillsScreen(
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
 
