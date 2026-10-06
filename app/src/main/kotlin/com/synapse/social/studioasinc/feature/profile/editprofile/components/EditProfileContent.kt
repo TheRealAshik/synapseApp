@@ -21,6 +21,7 @@ fun EditProfileContent(
     onAvatarClick: () -> Unit,
     onCoverClick: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
+    onNavigateToProfileMedia: () -> Unit,
     onEvent: (EditProfileEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -87,7 +88,9 @@ fun EditProfileContent(
                 onNavigateToCoverHistory = { onEvent(EditProfileEvent.CoverHistoryClicked) },
                 onNavigateToRegionSelection = onNavigateToRegionSelection,
                 onCategoryClick = { categoryName ->
-                    if (categoryName == "Interests & Skills") {
+                    if (categoryName == "Profile Media") {
+                        onEvent(EditProfileEvent.ProfileMediaClicked)
+                    } else if (categoryName == "Interests & Skills") {
                         onEvent(EditProfileEvent.InterestsSkillsClicked)
                     } else if (categoryName == "Work & Education") {
                         onEvent(EditProfileEvent.WorkEducationClicked)

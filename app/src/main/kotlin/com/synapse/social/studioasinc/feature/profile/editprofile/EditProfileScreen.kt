@@ -62,6 +62,7 @@ fun EditProfileScreen(
     viewModel: EditProfileViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
+    onNavigateToProfileMedia: () -> Unit,
     onNavigateToPhotoHistory: (String) -> Unit,
     onNavigateToInterestsSkills: () -> Unit = {},
     onNavigateToWorkEducation: () -> Unit = {}
@@ -144,6 +145,9 @@ fun EditProfileScreen(
                 EditProfileNavigation.NavigateToRegionSelection -> {
                     onNavigateToRegionSelection(viewModel.uiState.value.selectedRegion ?: "")
                 }
+                EditProfileNavigation.NavigateToProfileMedia -> {
+                    onNavigateToProfileMedia()
+                }
                 EditProfileNavigation.NavigateToProfileHistory -> {
                     onNavigateToPhotoHistory("PROFILE")
                 }
@@ -195,6 +199,7 @@ fun EditProfileScreen(
                     onAvatarClick = { launchAvatarPicker() },
                     onCoverClick = { launchCoverPicker() },
                     onNavigateToRegionSelection = onNavigateToRegionSelection,
+                    onNavigateToProfileMedia = onNavigateToProfileMedia,
                     onEvent = viewModel::onEvent
                 )
             }

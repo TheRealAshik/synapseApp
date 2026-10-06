@@ -139,6 +139,9 @@ class EditProfileViewModel @Inject constructor(
             EditProfileEvent.BackClicked -> {
                 viewModelScope.launch { _navigationEvents.emit(EditProfileNavigation.NavigateBack) }
             }
+            EditProfileEvent.ProfileMediaClicked -> {
+                viewModelScope.launch { _navigationEvents.emit(EditProfileNavigation.NavigateToProfileMedia) }
+            }
             EditProfileEvent.ProfileHistoryClicked -> {
                 viewModelScope.launch { _navigationEvents.emit(EditProfileNavigation.NavigateToProfileHistory) }
             }

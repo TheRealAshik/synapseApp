@@ -13,6 +13,7 @@ import androidx.navigation.NavType
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileEvent
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileViewModel
+import com.synapse.social.studioasinc.feature.profile.editprofile.media.ProfileMediaScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoHistoryScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoType
 import com.synapse.social.studioasinc.feature.profile.editprofile.interestsskills.InterestsSkillsScreen
@@ -45,6 +46,9 @@ class ProfileEditActivity : AppCompatActivity() {
                                     val encodedRegion = java.net.URLEncoder.encode(currentRegion, "UTF-8")
                                     navController.navigate("select_region?currentRegion=$encodedRegion")
                                 },
+                                onNavigateToProfileMedia = {
+                                    navController.navigate("profile_media")
+                                },
                                 onNavigateToPhotoHistory = { type ->
                                     navController.navigate("photo_history/$type")
                                 },
@@ -53,6 +57,15 @@ class ProfileEditActivity : AppCompatActivity() {
                                 },
                                 onNavigateToWorkEducation = {
                                     navController.navigate("work_education")
+                                }
+                            )
+                        }
+
+                        composable("profile_media") {
+                            ProfileMediaScreen(
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToPhotoHistory = { type ->
+                                    navController.navigate("photo_history/$type")
                                 }
                             )
                         }

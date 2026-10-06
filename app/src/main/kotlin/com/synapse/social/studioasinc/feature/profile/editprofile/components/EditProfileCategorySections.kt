@@ -44,17 +44,8 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_profile_media),
                 subtitle = stringResource(R.string.nav_profile_media_sub),
                 imageVector = Icons.Filled.PermMedia,
-                onClick = onNavigateToProfileHistory,
+                onClick = { onCategoryClick("Profile Media") },
                 position = SettingsItemPosition.Top
-            )
-
-            // 2. Cover Photo History - Middle
-            SettingsNavigationItem(
-                title = stringResource(R.string.nav_cover_photo_history),
-                subtitle = stringResource(R.string.nav_cover_photo_history_sub),
-                imageVector = Icons.Filled.PermMedia,
-                onClick = onNavigateToCoverHistory,
-                position = SettingsItemPosition.Middle
             )
 
             // 3. Personal Information - Middle

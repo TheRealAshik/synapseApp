@@ -2209,4 +2209,22 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="interests_save">Save</string>
     <string name="back_content_description">Back</string>
 
+    <!-- Profile Media Screen -->
+    <string name="profile_media_title">Profile Media</string>
+    <string name="profile_media_subtitle">Manage your profile picture, cover banner, and history</string>
+    <string name="section_profile_photo">PROFILE PHOTO</string>
+    <string name="section_cover_photo">COVER PHOTO</string>
+    <string name="action_change_photo">Change photo</string>
+    <string name="action_remove_photo">Remove photo</string>
+    <string name="action_view_photo_history">View photo history</string>
+    <string name="action_change_cover">Change cover</string>
+    <string name="action_remove_cover">Remove cover</string>
+    <string name="action_view_cover_history">View cover history</string>
+    <string name="remove_cover_photo_title">Remove Cover Photo</string>
+    <string name="remove_cover_photo_body">Are you sure you want to remove your cover photo?</string>
+    <string name="cd_avatar_preview">Profile photo preview</string>
+    <string name="cd_cover_preview">Cover photo preview</string>
+    <string name="uploading_image">Uploading image...</string>
+    <string name="retry_upload">Retry upload</string>
+
 </resources>

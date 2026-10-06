@@ -69,6 +69,7 @@ sealed class EditProfileEvent {
     object RetryCoverUpload : EditProfileEvent()
     object SaveClicked : EditProfileEvent()
     object BackClicked : EditProfileEvent()
+    object ProfileMediaClicked : EditProfileEvent()
     object ProfileHistoryClicked : EditProfileEvent()
     object CoverHistoryClicked : EditProfileEvent()
     object InterestsSkillsClicked : EditProfileEvent()
@@ -93,6 +94,7 @@ sealed class EditProfileEvent {
 sealed class EditProfileNavigation {
     object NavigateBack : EditProfileNavigation()
     object NavigateToRegionSelection : EditProfileNavigation()
+    object NavigateToProfileMedia : EditProfileNavigation()
     object NavigateToProfileHistory : EditProfileNavigation()
     object NavigateToCoverHistory : EditProfileNavigation()
     object NavigateToInterestsSkills : EditProfileNavigation()

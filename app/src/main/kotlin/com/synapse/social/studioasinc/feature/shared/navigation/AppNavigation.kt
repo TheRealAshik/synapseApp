@@ -33,6 +33,7 @@ import com.synapse.social.studioasinc.feature.post.postdetail.PostDetailScreen
 import com.synapse.social.studioasinc.ui.createpost.CreatePostScreen
 import com.synapse.social.studioasinc.ui.createpost.CreatePostViewModel
 import com.synapse.social.studioasinc.ui.settings.SettingsScreen
+import com.synapse.social.studioasinc.feature.profile.editprofile.media.ProfileMediaScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileViewModel
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileEvent
@@ -351,6 +352,17 @@ fun NavGraphBuilder.profileGraph(
                     onNavigateToRegionSelection = { _ ->
                         navController.navigate(AppDestination.RegionSelection)
                     },
+                    onNavigateToProfileMedia = {
+                        navController.navigate(AppDestination.ProfileMedia)
+                    },
+                    onNavigateToPhotoHistory = { type ->
+                        navController.navigate(AppDestination.PhotoHistory(type))
+                    }
+                )
+            }
+    composable<AppDestination.ProfileMedia> {
+                ProfileMediaScreen(
+                    onNavigateBack = { navController.popBackStack() },
                     onNavigateToPhotoHistory = { type ->
                         navController.navigate(AppDestination.PhotoHistory(type))
                     }
