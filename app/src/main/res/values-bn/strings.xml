@@ -1879,4 +1879,25 @@
     <string name="field_value_hint">%1$s লিখুন</string>
     <string name="error_loading_social_links">সোশ্যাল ও লিঙ্কসমূহ লোড করতে ব্যর্থ হয়েছে</string>
 
+    <!-- Featured Content Screen -->
+    <string name="featured_content_title">ফিচারড কনটেন্ট</string>
+    <string name="featured_backend_notice_title">প্রিভিউ মোড ও স্কিমা বিজ্ঞপ্তি</string>
+    <string name="featured_backend_notice_body">ফিচারড প্রোফাইল কনটেন্টের জন্য বর্তমানে কোনো ব্যাকএন্ড ডাটাবেস স্কিমা বিদ্যমান নেই। নির্বাচিত বিষয়বস্তু ও ক্রম সাজানো ড্রাফট প্রিভিউ মোডে কাজ করে।</string>
+    <string name="featured_preview_header">ফিচারড লাইভ প্রিভিউ</string>
+    <string name="featured_preview_empty_description">এখনো কোনো কনটেন্ট নির্বাচন করা হয়নি। আপনার প্রোফাইলে ফিচার করার জন্য নিচে পোস্ট বা মিডিয়া নির্বাচন করুন।</string>
+    <string name="featured_selected_posts_header">ফিচারড পোস্টসমূহ (%1$d)</string>
+    <string name="featured_selected_media_header">ফিচারড মিডিয়া (%1$d)</string>
+    <string name="action_clear_all">সব মুছুন</string>
+    <string name="featured_tab_posts">পোস্টসমূহ (%1$d)</string>
+    <string name="featured_tab_media">মিডিয়া (%1$d)</string>
+    <string name="featured_tab_collections">কালেকশনসমূহ</string>
+    <string name="featured_empty_posts_title">কোনো উপযুক্ত পোস্ট পাওয়া যায়নি</string>
+    <string name="featured_empty_posts_message">ফিচারড সেকশনে হাইলাইট করার জন্য প্রথমে আপনার প্রোফাইলে পোস্ট তৈরি করুন।</string>
+    <string name="featured_empty_media_title">কোনো প্রোফাইল মিডিয়া পাওয়া যায়নি</string>
+    <string name="featured_empty_media_message">আপনার পোস্টে আপলোড করা ছবি ও ভিডিও এখানে ফিচার করার জন্য প্রদর্শিত হবে।</string>
+    <string name="featured_collections_title">হাইলাইটস ও কালেকশনসমূহ</string>
+    <string name="featured_collections_body">স্টোরি হাইলাইটস ও কাস্টম কালেকশন তৈরি করার জন্য পার্সিস্টেন্ট ব্যাকএন্ড ডাটা মডেল প্রয়োজন।</string>
+    <string name="post_media_attachment_label">মিডিয়া পোস্ট</string>
+    <string name="post_contains_media_badge">মিডিয়া অন্তর্ভুক্ত</string>
+
 </resources>

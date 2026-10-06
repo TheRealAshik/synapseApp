@@ -2283,4 +2283,25 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="field_value_hint">Enter %1$s</string>
     <string name="error_loading_social_links">Failed to load social &amp; links</string>
 
+    <!-- Featured Content Screen -->
+    <string name="featured_content_title">Featured Content</string>
+    <string name="featured_backend_notice_title">Preview Mode &amp; Schema Notice</string>
+    <string name="featured_backend_notice_body">No persistent database schema currently exists for featured profile content. Content selection and reordering operate in draft preview mode.</string>
+    <string name="featured_preview_header">Featured Live Preview</string>
+    <string name="featured_preview_empty_description">No content selected yet. Select posts or media below to feature them on your profile.</string>
+    <string name="featured_selected_posts_header">Featured Posts (%1$d)</string>
+    <string name="featured_selected_media_header">Featured Media (%1$d)</string>
+    <string name="action_clear_all">Clear All</string>
+    <string name="featured_tab_posts">Posts (%1$d)</string>
+    <string name="featured_tab_media">Media (%1$d)</string>
+    <string name="featured_tab_collections">Collections</string>
+    <string name="featured_empty_posts_title">No Eligible Posts Found</string>
+    <string name="featured_empty_posts_message">Create posts on your profile first to highlight them in your featured section.</string>
+    <string name="featured_empty_media_title">No Profile Media Found</string>
+    <string name="featured_empty_media_message">Photos and videos uploaded to your posts will appear here for featuring.</string>
+    <string name="featured_collections_title">Highlights &amp; Collections</string>
+    <string name="featured_collections_body">Creating story highlights and custom content collections requires a persistent backend highlight data model.</string>
+    <string name="post_media_attachment_label">Media Post</string>
+    <string name="post_contains_media_badge">Includes Media</string>
+
 </resources>

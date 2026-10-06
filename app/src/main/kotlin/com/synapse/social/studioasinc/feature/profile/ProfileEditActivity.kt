@@ -71,7 +71,16 @@ class ProfileEditActivity : AppCompatActivity() {
                                 },
                                 onNavigateToProfessionalProfile = {
                                     navController.navigate("professional_profile")
+                                },
+                                onNavigateToFeaturedContent = {
+                                    navController.navigate("featured_content")
                                 }
+                            )
+                        }
+
+                        composable("featured_content") {
+                            com.synapse.social.studioasinc.feature.profile.editprofile.featured.FeaturedContentScreen(
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
 

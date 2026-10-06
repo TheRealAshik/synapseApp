@@ -25,6 +25,7 @@ fun EditProfileContent(
     onNavigateToPersonalInfo: () -> Unit,
     onNavigateToSocialLinks: () -> Unit,
     onNavigateToProfileAppearance: () -> Unit = {},
+    onNavigateToFeaturedContent: () -> Unit = {},
     onEvent: (EditProfileEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -119,6 +120,7 @@ fun EditProfileContent(
                 onCategoryClick = { categoryType ->
                     when (categoryType) {
                         ProfileCategoryType.PROFILE_APPEARANCE -> onNavigateToProfileAppearance()
+                        ProfileCategoryType.FEATURED_CONTENT -> onNavigateToFeaturedContent()
                         else -> Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryType.name), Toast.LENGTH_SHORT).show()
                     }
                 }

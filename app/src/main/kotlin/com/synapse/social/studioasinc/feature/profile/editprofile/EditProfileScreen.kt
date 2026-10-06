@@ -69,7 +69,8 @@ fun EditProfileScreen(
     onNavigateToPersonalInfo: () -> Unit = {},
     onNavigateToSocialLinks: () -> Unit = {},
     onNavigateToProfileAppearance: () -> Unit = {},
-    onNavigateToProfessionalProfile: () -> Unit = {}
+    onNavigateToProfessionalProfile: () -> Unit = {},
+    onNavigateToFeaturedContent: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
@@ -176,6 +177,9 @@ fun EditProfileScreen(
                 EditProfileNavigation.NavigateToProfileAppearance -> {
                     onNavigateToProfileAppearance()
                 }
+                EditProfileNavigation.NavigateToFeaturedContent -> {
+                    onNavigateToFeaturedContent()
+                }
             }
         }
     }
@@ -219,6 +223,7 @@ fun EditProfileScreen(
                     onNavigateToPersonalInfo = onNavigateToPersonalInfo,
                     onNavigateToSocialLinks = onNavigateToSocialLinks,
                     onNavigateToProfileAppearance = { viewModel.onEvent(EditProfileEvent.ProfileAppearanceClicked) },
+                    onNavigateToFeaturedContent = { viewModel.onEvent(EditProfileEvent.FeaturedContentClicked) },
                     onEvent = viewModel::onEvent
                 )
             }
