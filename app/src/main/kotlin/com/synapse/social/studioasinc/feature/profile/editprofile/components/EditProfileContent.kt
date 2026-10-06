@@ -105,8 +105,8 @@ fun EditProfileContent(
         // 5. Category Navigation: PROFESSIONAL
         item {
             ProfessionalCategorySection(
-                onCategoryClick = { categoryName ->
-                    Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                onCategoryClick = { _ ->
+                    onEvent(EditProfileEvent.NavigateToProfessionalProfile)
                 }
             )
         }

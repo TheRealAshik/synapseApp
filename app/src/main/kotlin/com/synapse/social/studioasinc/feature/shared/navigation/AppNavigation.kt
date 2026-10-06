@@ -1,6 +1,7 @@
 package com.synapse.social.studioasinc.ui.navigation
 
 import android.content.Intent
+import android.widget.Toast
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -50,6 +51,10 @@ import com.synapse.social.studioasinc.feature.profile.profile.ProfileViewModel
 import com.synapse.social.studioasinc.feature.profile.lockprofile.LockProfileScreen
 import com.synapse.social.studioasinc.feature.profile.lockprofile.LockProfileViewModel
 import com.synapse.social.studioasinc.ui.settings.SettingsNavHost
+import com.synapse.social.studioasinc.ui.settings.BusinessPlatformScreen
+import com.synapse.social.studioasinc.ui.settings.BusinessPlatformViewModel
+import com.synapse.social.studioasinc.ui.settings.ScheduledPostsScreen
+import com.synapse.social.studioasinc.ui.settings.ScheduledPostsViewModel
 import kotlinx.serialization.Serializable
 import com.synapse.social.studioasinc.feature.inbox.inbox.screens.ChatScreen
 import androidx.compose.runtime.rememberCoroutineScope
@@ -361,10 +366,47 @@ fun NavGraphBuilder.profileGraph(
                     },
                     onNavigateToPhotoHistory = { type ->
                         navController.navigate(AppDestination.PhotoHistory(type))
+                    },
+                    onNavigateToProfessionalProfile = {
+                        navController.navigate(AppDestination.ProfessionalProfile)
                     }
                 )
             }
-    composable<AppDestination.ProfileMedia> {
+            composable<AppDestination.ProfessionalProfile> {
+                com.synapse.social.studioasinc.feature.profile.editprofile.professional.ProfessionalProfileScreen(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToBusinessPlatform = {
+                        navController.navigate(AppDestination.BusinessPlatform)
+                    }
+                )
+            }
+            composable<AppDestination.BusinessPlatform> {
+                val viewModel: com.synapse.social.studioasinc.ui.settings.BusinessPlatformViewModel = hiltViewModel()
+                val currentContext = androidx.compose.ui.platform.LocalContext.current
+                com.synapse.social.studioasinc.ui.settings.BusinessPlatformScreen(
+                    viewModel = viewModel,
+                    onBackClick = {
+                        navController.popBackStack()
+                    },
+                    onNavigateToScheduledPosts = {
+                        navController.navigate(AppDestination.ScheduledPosts)
+                    },
+                    onNavigateToContentCalendar = {
+                        android.widget.Toast.makeText(currentContext, "Content Calendar coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                    },
+                    onNavigateToBrandPartnerships = {
+                        android.widget.Toast.makeText(currentContext, "Brand Partnerships coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                    }
+                )
+            }
+            composable<AppDestination.ScheduledPosts> {
+                val viewModel: com.synapse.social.studioasinc.ui.settings.ScheduledPostsViewModel = hiltViewModel()
+                com.synapse.social.studioasinc.ui.settings.ScheduledPostsScreen(
+                    viewModel = viewModel,
+                    onBackClick = { navController.popBackStack() }
+                )
+            }
+            composable<AppDestination.ProfileMedia> {
                 ProfileMediaScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToPhotoHistory = { type ->
@@ -372,12 +414,12 @@ fun NavGraphBuilder.profileGraph(
                     }
                 )
             }
-    composable<AppDestination.PersonalInformation> {
+            composable<AppDestination.PersonalInformation> {
                 PersonalInformationScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
-    composable<AppDestination.RegionSelection> {
+            composable<AppDestination.RegionSelection> {
                 RegionSelectionScreen(
                     onBackClick = { navController.popBackStack() },
                     onRegionSelected = { region ->

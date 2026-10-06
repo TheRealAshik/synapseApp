@@ -74,6 +74,20 @@ class ProfileEditActivity : AppCompatActivity() {
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToPhotoHistory = { type ->
                                     navController.navigate("photo_history/$type")
+                                },
+                                onNavigateToProfessionalProfile = {
+                                    navController.navigate("professional_profile")
+                                }
+                            )
+                        }
+
+                        composable("professional_profile") {
+                            com.synapse.social.studioasinc.feature.profile.editprofile.professional.ProfessionalProfileScreen(
+                                onBackClick = { navController.popBackStack() },
+                                onNavigateToBusinessPlatform = {
+                                    startActivity(android.content.Intent(this@ProfileEditActivity, com.synapse.social.studioasinc.feature.settings.SettingsActivity::class.java).apply {
+                                        putExtra("destination", "settings_business_platform")
+                                    })
                                 }
                             )
                         }

@@ -22,6 +22,12 @@ sealed interface AppDestination {
     @Serializable
     data object EditProfile : AppDestination
     @Serializable
+    data object ProfessionalProfile : AppDestination
+    @Serializable
+    data object BusinessPlatform : AppDestination
+    @Serializable
+    data object ScheduledPosts : AppDestination
+    @Serializable
     data object ProfileMedia : AppDestination
     @Serializable
     data object PersonalInformation : AppDestination

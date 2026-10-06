@@ -10,10 +10,13 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.rememberNavController
 import javax.inject.Inject
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.synapse.social.studioasinc.shared.data.local.database.CachedConversationDao
@@ -22,6 +25,7 @@ import com.synapse.social.studioasinc.shared.domain.repository.AuthRepository
 import com.synapse.social.studioasinc.AuthActivity
 import com.synapse.social.studioasinc.feature.profile.ProfileEditActivity
 import com.synapse.social.studioasinc.ui.settings.AppearanceViewModel
+import com.synapse.social.studioasinc.ui.settings.SettingsDestination
 import com.synapse.social.studioasinc.ui.settings.SettingsNavHost
 import com.synapse.social.studioasinc.feature.shared.theme.SynapseTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -49,10 +53,8 @@ class SettingsActivity : AppCompatActivity() {
         try {
             android.util.Log.d("SettingsActivity", "Setting up content")
             setContent {
-
                 val appearanceViewModel: AppearanceViewModel = viewModel()
                 val appearanceSettings by appearanceViewModel.appearanceSettings.collectAsState()
-
 
                 val darkTheme = when (appearanceSettings.themeMode) {
                     com.synapse.social.studioasinc.ui.settings.ThemeMode.LIGHT -> false
@@ -61,9 +63,11 @@ class SettingsActivity : AppCompatActivity() {
                         androidx.compose.foundation.isSystemInDarkTheme()
                 }
 
-
                 val dynamicColor = appearanceSettings.dynamicColorEnabled &&
                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+
+                val settingsNavController = rememberNavController()
+                val initialDestination = intent.getStringExtra("destination")
 
                 SynapseTheme(
                     darkTheme = darkTheme,
@@ -74,12 +78,11 @@ class SettingsActivity : AppCompatActivity() {
                         color = MaterialTheme.colorScheme.background
                     ) {
                         SettingsNavHost(
+                            navController = settingsNavController,
                             onBackClick = {
-
                                 finish()
                             },
                             onNavigateToProfileEdit = {
-
                                 startActivity(Intent(this@SettingsActivity, ProfileEditActivity::class.java))
                             },
                             onNavigateToChatPrivacy = {
@@ -89,6 +92,15 @@ class SettingsActivity : AppCompatActivity() {
                                 performLogout()
                             }
                         )
+
+                        LaunchedEffect(initialDestination, settingsNavController) {
+                            initialDestination?.let { destination ->
+                                val currentRoute = settingsNavController.currentDestination?.route
+                                if (currentRoute != destination) {
+                                    settingsNavController.navigate(destination)
+                                }
+                            }
+                        }
                     }
                 }
             }

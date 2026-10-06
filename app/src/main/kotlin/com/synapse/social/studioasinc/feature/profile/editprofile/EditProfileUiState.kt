@@ -89,6 +89,7 @@ sealed class EditProfileEvent {
     data class PersonalWebsiteChanged(val website: String) : EditProfileEvent()
     data class PublicEmailChanged(val email: String) : EditProfileEvent()
     object DismissShareToFeedDialog : EditProfileEvent()
+    object NavigateToProfessionalProfile : EditProfileEvent()
 }
 
 sealed class EditProfileNavigation {
@@ -99,4 +100,7 @@ sealed class EditProfileNavigation {
     object NavigateToCoverHistory : EditProfileNavigation()
     object NavigateToInterestsSkills : EditProfileNavigation()
     object NavigateToWorkEducation : EditProfileNavigation()
+    object NavigateToPersonalInfo : EditProfileNavigation()
+    object NavigateToSocialLinks : EditProfileNavigation()
+    object NavigateToProfessionalProfile : EditProfileNavigation()
 }

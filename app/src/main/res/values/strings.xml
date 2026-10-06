@@ -1626,6 +1626,23 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="settings_chat_title">Chat Settings</string>
     <string name="label_select_resource">Select Resource</string>
     <string name="settings_favourites_title">Favourites</string>
+
+    <!-- Professional Profile -->
+    <string name="professional_profile_title">Professional Profile</string>
+    <string name="professional_section_account_type">Account Type</string>
+    <string name="professional_account_type_personal">Personal</string>
+    <string name="professional_account_type_creator">Creator</string>
+    <string name="professional_account_type_business">Business</string>
+    <string name="professional_account_type_switch_subtitle">Switch to access professional tools</string>
+    <string name="professional_account_type_business_description">Business account with access to professional tools</string>
+    <string name="professional_switch_to_business">Switch to Business Account</string>
+    <string name="professional_section_identity">Professional Identity</string>
+    <string name="professional_occupation_label">Occupation</string>
+    <string name="professional_workplace_label">Workplace</string>
+    <string name="professional_save_changes">Save Changes</string>
+    <string name="professional_section_business_tools">Business Tools</string>
+    <string name="professional_business_platform_title">Business Platform</string>
+    <string name="professional_business_platform_subtitle">Manage analytics, monetization, and professional features</string>
     <string name="no_favourites_yet">No Favourites Yet</string>
     <string name="add_contacts_favourites">Add contacts to your favourites for quick access</string>
     <string name="manage_favourites">Manage Favourites</string>

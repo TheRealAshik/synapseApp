@@ -1343,6 +1343,23 @@
     <string name="settings_chat_folders_title">চ্যাট ফোল্ডার</string>
     <string name="settings_chat_title">চ্যাট সেটিংস</string>
     <string name="settings_favourites_title">প্রিয়</string>
+
+    <!-- Professional Profile -->
+    <string name="professional_profile_title">Professional Profile</string>
+    <string name="professional_section_account_type">Account Type</string>
+    <string name="professional_account_type_personal">Personal</string>
+    <string name="professional_account_type_creator">Creator</string>
+    <string name="professional_account_type_business">Business</string>
+    <string name="professional_account_type_switch_subtitle">Switch to access professional tools</string>
+    <string name="professional_account_type_business_description">Business account with access to professional tools</string>
+    <string name="professional_switch_to_business">Switch to Business Account</string>
+    <string name="professional_section_identity">Professional Identity</string>
+    <string name="professional_occupation_label">Occupation</string>
+    <string name="professional_workplace_label">Workplace</string>
+    <string name="professional_save_changes">Save Changes</string>
+    <string name="professional_section_business_tools">Business Tools</string>
+    <string name="professional_business_platform_title">Business Platform</string>
+    <string name="professional_business_platform_subtitle">Manage analytics, monetization, and professional features</string>
     <string name="settings_language_region_title">ভাষা ও অঞ্চল</string>
     <string name="settings_licenses_title">ওপেন সোর্স লাইসেন্স</string>
     <string name="settings_notifications_title">বিজ্ঞপ্তি</string>

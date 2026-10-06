@@ -167,6 +167,9 @@ class EditProfileViewModel @Inject constructor(
             is EditProfileEvent.PersonalWebsiteChanged -> _uiState.update { it.copy(personalWebsite = event.website, hasChanges = true) }
             is EditProfileEvent.PublicEmailChanged -> _uiState.update { it.copy(publicEmail = event.email, hasChanges = true) }
             EditProfileEvent.DismissShareToFeedDialog -> _uiState.update { it.copy(showShareToFeedDialog = false) }
+            EditProfileEvent.NavigateToProfessionalProfile -> {
+                viewModelScope.launch { _navigationEvents.emit(EditProfileNavigation.NavigateToProfessionalProfile) }
+            }
         }
     }
 
