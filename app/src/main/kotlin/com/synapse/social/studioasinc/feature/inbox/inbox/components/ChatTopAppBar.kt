@@ -43,7 +43,7 @@ fun ChatTopAppBar(
     onNavigateBack: () -> Unit,
     onSummarizeChat: () -> Unit,
     onNavigateToGroupInfo: (String, String) -> Unit,
-    onNavigateToUserMoreOptions: (String) -> Unit,
+    onNavigateToChatInfo: (String, String) -> Unit,
     onSetDisappearingMode: (DisappearingMode) -> Unit,
     onLockChat: () -> Unit,
     onUnlockChat: () -> Unit
@@ -138,7 +138,7 @@ fun ChatTopAppBar(
                 }
                 IconButton(onClick = {
                     if (participantProfile?.accountType != "group") {
-                        onNavigateToUserMoreOptions(participantId ?: "")
+                        onNavigateToChatInfo(chatId, participantId ?: "")
                     } else {
                         onNavigateToGroupInfo(chatId, participantProfile?.displayName ?: initialParticipantName ?: "Group")
                     }

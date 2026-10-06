@@ -202,8 +202,8 @@ fun NavGraphBuilder.inboxGraph(
                     onNavigateToGroupInfo = { chatId, groupName ->
                         navController.navigate(AppDestination.GroupInfo(chatId, groupName))
                     },
-                    onNavigateToUserMoreOptions = { userId ->
-                        navController.navigate(AppDestination.UserMoreOptions(userId))
+                    onNavigateToChatInfo = { chatId, userId ->
+                        navController.navigate(AppDestination.ChatInfo(chatId, userId))
                     },
                     onNavigateToProfile = { userId ->
                         navController.navigate(AppDestination.Profile(userId))
@@ -227,10 +227,48 @@ fun NavGraphBuilder.inboxGraph(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
-    composable<AppDestination.UserMoreOptions> { backStackEntry ->
-                val args = backStackEntry.toRoute<AppDestination.UserMoreOptions>()
-                com.synapse.social.studioasinc.feature.inbox.inbox.screens.UserMoreOptionsScreen(
+    composable<AppDestination.ChatInfo> { backStackEntry ->
+                val args = backStackEntry.toRoute<AppDestination.ChatInfo>()
+                com.synapse.social.studioasinc.feature.inbox.inbox.screens.ChatInfoScreen(
+                    chatId = args.chatId,
                     userId = args.userId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToProfile = { userId ->
+                        navController.navigate(AppDestination.Profile(userId))
+                    },
+                    onNavigateToCreateGroup = {
+                        navController.navigate(AppDestination.CreateGroup)
+                    },
+                    onNavigateToDisappearingMessages = { chatId ->
+                        navController.navigate(AppDestination.DisappearingMessages(chatId))
+                    },
+                    onNavigateToSharedContent = { chatId, tab ->
+                        navController.navigate(AppDestination.SharedContent(chatId, tab))
+                    },
+                    onNavigateToChatPrivacy = { chatId ->
+                        navController.navigate(AppDestination.ChatPrivacy(chatId))
+                    }
+                )
+            }
+    composable<AppDestination.DisappearingMessages> { backStackEntry ->
+                val args = backStackEntry.toRoute<AppDestination.DisappearingMessages>()
+                com.synapse.social.studioasinc.feature.inbox.inbox.screens.DisappearingMessagesScreen(
+                    chatId = args.chatId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+    composable<AppDestination.SharedContent> { backStackEntry ->
+                val args = backStackEntry.toRoute<AppDestination.SharedContent>()
+                com.synapse.social.studioasinc.feature.inbox.inbox.screens.SharedContentScreen(
+                    chatId = args.chatId,
+                    initialTab = args.initialTab,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+    composable<AppDestination.ChatPrivacy> { backStackEntry ->
+                val args = backStackEntry.toRoute<AppDestination.ChatPrivacy>()
+                com.synapse.social.studioasinc.feature.inbox.inbox.screens.ChatPrivacyScreen(
+                    chatId = args.chatId,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

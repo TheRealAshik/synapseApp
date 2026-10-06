@@ -39,7 +39,11 @@ sealed interface AppDestination {
     @Serializable
     data object StoryCreator : AppDestination
     @Serializable
-    data object ChatPrivacy : AppDestination
+    data class ChatPrivacy(val chatId: String) : AppDestination
+    @Serializable
+    data class DisappearingMessages(val chatId: String) : AppDestination
+    @Serializable
+    data class SharedContent(val chatId: String, val initialTab: Int = 0) : AppDestination
     @Serializable
     data object LockProfile : AppDestination
     @Serializable
@@ -47,7 +51,7 @@ sealed interface AppDestination {
     @Serializable
     data class GroupInfo(val chatId: String, val groupName: String) : AppDestination
     @Serializable
-    data class UserMoreOptions(val userId: String) : AppDestination
+    data class ChatInfo(val chatId: String, val userId: String) : AppDestination
     @Serializable
     data class HashtagFeed(val tag: String) : AppDestination
 }

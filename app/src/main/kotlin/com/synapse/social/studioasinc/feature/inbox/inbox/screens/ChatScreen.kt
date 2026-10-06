@@ -165,7 +165,7 @@ fun ChatScreen(
     initialParticipantAvatar: String? = null,
     onNavigateBack: () -> Unit,
     onNavigateToGroupInfo: (String, String) -> Unit = { _, _ -> },
-    onNavigateToUserMoreOptions: (String) -> Unit = {},
+    onNavigateToChatInfo: (String, String) -> Unit = { _, _ -> },
     onNavigateToProfile: (String) -> Unit = {},
     viewModel: ChatViewModel = hiltViewModel()
 ) {
@@ -391,7 +391,7 @@ fun ChatScreen(
                 onNavigateBack = onNavigateBack,
                 onSummarizeChat = viewModel::summarizeChat,
                 onNavigateToGroupInfo = onNavigateToGroupInfo,
-                onNavigateToUserMoreOptions = onNavigateToUserMoreOptions,
+                onNavigateToChatInfo = onNavigateToChatInfo,
                 onSetDisappearingMode = { showDisappearingModeDialog = true },
                 onLockChat = viewModel::lockCurrentChat,
                 onUnlockChat = viewModel::unlockCurrentChat

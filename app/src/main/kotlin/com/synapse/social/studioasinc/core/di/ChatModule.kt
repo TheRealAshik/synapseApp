@@ -335,5 +335,19 @@ object ChatModule {
     ): com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToMessageReactionsUseCase {
         return SubscribeToMessageReactionsUseCase(chatRepository)
     }
+    @Provides
+    @Singleton
+    fun provideDeleteConversationUseCase(
+        chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
+    ): com.synapse.social.studioasinc.shared.domain.usecase.chat.DeleteConversationUseCase {
+        return com.synapse.social.studioasinc.shared.domain.usecase.chat.DeleteConversationUseCase(chatRepository)
+    }
+    @Provides
+    @Singleton
+    fun provideGetSharedContentSummaryUseCase(
+        chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
+    ): com.synapse.social.studioasinc.shared.domain.usecase.chat.GetSharedContentSummaryUseCase {
+        return com.synapse.social.studioasinc.shared.domain.usecase.chat.GetSharedContentSummaryUseCase(chatRepository)
+    }
 
 }
