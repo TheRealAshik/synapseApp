@@ -1,4 +1,5 @@
 import SwiftUI
+import shared
 
 struct NotificationsView: View {
     @EnvironmentObject var navigator: AppNavigator
@@ -41,21 +42,56 @@ struct NotificationsView: View {
                     }
                     .padding()
                 } else {
-                    List {
-                        ForEach(viewModel.notifications) { notification in
-                            NotificationRowView(notification: notification)
-                                .listRowInsets(EdgeInsets())
-                                .listRowSeparator(.hidden)
-                                .contentShape(Rectangle())
-                                .onTapGesture {
-                                    if !notification.isRead {
-                                        viewModel.markAsRead(notification.id)
+                    ScrollView {
+                        LazyVStack(spacing: 0, pinnedViews: [.sectionHeaders]) {
+                            let notificationGroups = Dictionary(grouping: viewModel.notifications, by: { $0.timestamp })
+                            let sortedKeys = notificationGroups.keys.sorted(by: >)
+
+                            ForEach(sortedKeys, id: \.self) { dateGroup in
+                                Section(header: sectionHeaderView(title: dateGroup)) {
+                                    if let groupItems = notificationGroups[dateGroup] {
+                                        VStack(spacing: 0) {
+                                            ForEach(Array(groupItems.enumerated()), id: \.element.id) { index, notification in
+                                                let pos: GroupPosition = {
+                                                    if groupItems.count == 1 { return .single }
+                                                    if index == 0 { return .first }
+                                                    if index == groupItems.count - 1 { return .last }
+                                                    return .middle
+                                                }()
+
+                                                VStack(spacing: 0) {
+                                                    NotificationRowView(
+                                                        notification: notification,
+                                                        position: pos,
+                                                        onActorTap: {
+                                                            if let actorId = notification.actorId {
+                                                                navigator.navigate(to: .profile)
+                                                            }
+                                                        }
+                                                    )
+                                                    .contentShape(Rectangle())
+                                                    .onTapGesture {
+                                                        if !notification.isRead {
+                                                            viewModel.markAsRead(notification.id)
+                                                        }
+                                                        handleTargetNavigation(notification: notification)
+                                                    }
+
+                                                    if index < groupItems.count - 1 {
+                                                        Divider()
+                                                            .padding(.horizontal, 16)
+                                                            .background(Color(uiColor: .tertiarySystemGroupedBackground))
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        .padding(.horizontal, 16)
+                                        .padding(.bottom, 12)
                                     }
-                                    // Optionally handle navigation based on notification.targetId here
                                 }
+                            }
                         }
                     }
-                    .listStyle(.plain)
                     .refreshable {
                         await viewModel.loadNotifications()
                     }
@@ -80,6 +116,31 @@ struct NotificationsView: View {
                     }
                 }
             }
+        }
+    }
+
+    private func sectionHeaderView(title: String) -> some View {
+        HStack {
+            Text(title)
+                .font(.footnote)
+                .fontWeight(.bold)
+                .foregroundColor(.accentColor)
+            Spacer()
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(uiColor: .systemBackground))
+    }
+
+    private func handleTargetNavigation(notification: NotificationItem) {
+        if let targetPost = notification.target as? shared.NotificationTargetPost {
+            navigator.navigate(to: .home)
+        } else if let targetComment = notification.target as? shared.NotificationTargetComment {
+            navigator.navigate(to: .home)
+        } else if let targetProfile = notification.target as? shared.NotificationTargetProfile {
+            navigator.navigate(to: .profile)
+        } else if let targetId = notification.targetId, !targetId.isEmpty {
+            navigator.navigate(to: .home)
         }
     }
 }

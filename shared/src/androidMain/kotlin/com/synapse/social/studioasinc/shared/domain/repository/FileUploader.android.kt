@@ -10,10 +10,12 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.InputStream
 
-actual class FileUploader(private val context: Context) {
+actual class FileUploader(private val context: Context? = null) {
+
+    actual constructor() : this(null)
 
     actual fun getFileSize(path: String): Long {
-        if (path.startsWith("content://")) {
+        if (path.startsWith("content://") && context != null) {
             val uri = Uri.parse(path)
             try {
                 context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
@@ -43,7 +45,7 @@ actual class FileUploader(private val context: Context) {
     }
 
     actual fun getFileName(path: String): String {
-        if (path.startsWith("content://")) {
+        if (path.startsWith("content://") && context != null) {
             val uri = Uri.parse(path)
             var result: String? = null
             if (uri.scheme == "content") {
@@ -74,7 +76,7 @@ actual class FileUploader(private val context: Context) {
     }
 
     actual suspend fun readFile(path: String, offset: Long): ByteReadChannel {
-        return if (path.startsWith("content://")) {
+        return if (path.startsWith("content://") && context != null) {
             val uri = Uri.parse(path)
             val pfd = context.contentResolver.openFileDescriptor(uri, "r")
                 ?: throw Exception("Failed to open file descriptor for $path")

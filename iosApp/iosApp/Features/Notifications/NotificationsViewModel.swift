@@ -12,6 +12,16 @@ struct NotificationItem: Identifiable, Hashable {
     let timestamp: String
     let isRead: Bool
     let targetId: String?
+    let target: shared.NotificationTarget
+
+    static func == (lhs: NotificationItem, rhs: NotificationItem) -> Bool {
+        return lhs.id == rhs.id && lhs.isRead == rhs.isRead
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
+        hasher.combine(isRead)
+    }
 }
 
 @MainActor
@@ -35,7 +45,8 @@ final class NotificationsViewModel: ObservableObject {
         do {
             for try await result in getNotificationsUseCase.invoke() {
                 if let data = result.getOrNull() as? [shared.Notification] {
-                    self.notifications = data.map { self.mapDomainToUI($0) }
+                    let filtered = data.filter { isEligibleNotification($0) }
+                    self.notifications = filtered.map { self.mapDomainToUI($0) }
                 } else if let error = result.exceptionOrNull() {
                     self.errorMessage = error.message ?? "Failed to fetch notifications"
                 }
@@ -47,18 +58,25 @@ final class NotificationsViewModel: ObservableObject {
         }
     }
 
+    private func isEligibleNotification(_ notification: shared.Notification) -> Bool {
+        let upper = notification.type.uppercased()
+        return upper != "NEW_MESSAGE" && upper != "MESSAGE" && upper != "CHAT"
+    }
+
     func markAsRead(_ id: String) {
         if let index = notifications.firstIndex(where: { $0.id == id }) {
+            let item = notifications[index]
             notifications[index] = NotificationItem(
-                id: notifications[index].id,
-                type: notifications[index].type,
-                actorId: notifications[index].actorId,
-                actorName: notifications[index].actorName,
-                actorAvatar: notifications[index].actorAvatar,
-                message: notifications[index].message,
-                timestamp: notifications[index].timestamp,
+                id: item.id,
+                type: item.type,
+                actorId: item.actorId,
+                actorName: item.actorName,
+                actorAvatar: item.actorAvatar,
+                message: item.message,
+                timestamp: item.timestamp,
                 isRead: true,
-                targetId: notifications[index].targetId
+                targetId: item.targetId,
+                target: item.target
             )
         }
 
@@ -66,18 +84,19 @@ final class NotificationsViewModel: ObservableObject {
             do {
                 try await markNotificationAsReadUseCase.invoke(notificationId: id)
             } catch {
-                // Revert optimistic update on failure
                 if let index = notifications.firstIndex(where: { $0.id == id }) {
+                    let item = notifications[index]
                     notifications[index] = NotificationItem(
-                        id: notifications[index].id,
-                        type: notifications[index].type,
-                        actorId: notifications[index].actorId,
-                        actorName: notifications[index].actorName,
-                        actorAvatar: notifications[index].actorAvatar,
-                        message: notifications[index].message,
-                        timestamp: notifications[index].timestamp,
+                        id: item.id,
+                        type: item.type,
+                        actorId: item.actorId,
+                        actorName: item.actorName,
+                        actorAvatar: item.actorAvatar,
+                        message: item.message,
+                        timestamp: item.timestamp,
                         isRead: false,
-                        targetId: notifications[index].targetId
+                        targetId: item.targetId,
+                        target: item.target
                     )
                 }
                 self.errorMessage = error.localizedDescription
@@ -100,9 +119,8 @@ final class NotificationsViewModel: ObservableObject {
             messageText = "You have a new notification"
         }
 
-        let actorNameText = notification.actorName ?? "Someone"
+        let actorNameText = notification.actorName ?? "New Activity"
 
-        // Simple relative time approximation
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         var relativeTime = notification.timestamp
@@ -121,7 +139,8 @@ final class NotificationsViewModel: ObservableObject {
             message: messageText,
             timestamp: relativeTime,
             isRead: notification.isRead,
-            targetId: notification.targetId
+            targetId: notification.targetId,
+            target: notification.target
         )
     }
 }

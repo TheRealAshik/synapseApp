@@ -11,6 +11,13 @@ enum class NotificationMessageType {
     FALLBACK
 }
 
+sealed interface NotificationTarget {
+    data class Post(val postId: String) : NotificationTarget
+    data class Comment(val postId: String, val commentId: String) : NotificationTarget
+    data class Profile(val userId: String) : NotificationTarget
+    data object Unknown : NotificationTarget
+}
+
 data class Notification(
     val id: String,
     val type: String,
@@ -21,5 +28,6 @@ data class Notification(
     val messageType: NotificationMessageType,
     val timestamp: String,
     val isRead: Boolean,
-    val targetId: String?
+    val targetId: String?,
+    val target: NotificationTarget = NotificationTarget.Unknown
 )

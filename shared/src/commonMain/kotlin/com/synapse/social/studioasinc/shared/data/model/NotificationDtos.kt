@@ -27,6 +27,7 @@ data class NotificationDto(
 @Serializable
 data class NotificationActorDto(
     @SerialName("display_name") val displayName: String? = null,
+    @SerialName("username") val username: String? = null,
     @SerialName("avatar") val avatar: String? = null
 )
 

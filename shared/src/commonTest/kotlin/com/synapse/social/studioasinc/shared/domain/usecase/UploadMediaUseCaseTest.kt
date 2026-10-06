@@ -48,12 +48,15 @@ class UploadMediaUseCaseTest {
             config: StorageConfig,
             bucketName: String?,
             onProgress: (Float) -> Unit
-        ): Result<String> {
+        ): Result<com.synapse.social.studioasinc.shared.domain.model.UploadResult> {
             attemptedProviders.add(provider)
-            return uploadHandler(filePath, provider, bucketName)
+            return uploadHandler(filePath, provider, bucketName).map { url ->
+                com.synapse.social.studioasinc.shared.domain.model.UploadResult(url = url)
+            }
         }
 
         override fun deleteFile(filePath: String) {}
+        override suspend fun deleteImgBbImages(deleteUrls: List<String>) {}
     }
 
     private class FakeSettingsRepository : SettingsRepository {
@@ -124,7 +127,7 @@ class UploadMediaUseCaseTest {
         override suspend fun clearUserSettings() {}
         override suspend fun clearAllSettings() {}
         override suspend fun restoreDefaults() {}
-        override suspend fun checkForUpdates(): Result<Nothing?> = Result.success(null)
+        override suspend fun checkForUpdates(): Result<com.synapse.social.studioasinc.shared.domain.model.update.AppUpdateInfo?> = Result.success(null)
         override suspend fun setHideProfilePicSuggestion(hide: Boolean) {}
         override suspend fun setIncreaseContrastEnabled(enabled: Boolean) {}
         override suspend fun setHighContrastTextEnabled(enabled: Boolean) {}
@@ -187,7 +190,7 @@ class UploadMediaUseCaseTest {
         val result = useCase(filePath = "test.jpg", mediaType = MediaType.PHOTO, onProgress = {})
 
         assertTrue(result.isSuccess)
-        assertEquals("https://example.com/supabase_image.jpg", result.getOrNull())
+        assertEquals("https://example.com/supabase_image.jpg", result.getOrNull()?.url)
         assertEquals(listOf(StorageProvider.SUPABASE), uploadRepo.attemptedProviders)
     }
 

@@ -58,13 +58,14 @@ class NotificationsViewModel @Inject constructor(
 
             getNotificationsUseCase().collect { result ->
                 result.onSuccess { notifications ->
-                    val uiNotifications = notifications.map { mapDomainToUi(it) }
+                    val filteredNotifications = notifications.filter { isEligibleNotification(it) }
+                    val uiNotifications = filteredNotifications.map { mapDomainToUi(it) }
                     _uiState.update {
                         it.copy(
                             notifications = uiNotifications,
                             isLoading = false,
-                            unreadCount = uiNotifications.count { !it.isRead },
-                            groupedNotifications = uiNotifications.groupBy { formatDateHeader(it.timestamp) }
+                            unreadCount = uiNotifications.count { notification -> !notification.isRead },
+                            groupedNotifications = uiNotifications.groupBy { notification -> formatDateHeader(notification.timestamp) }
                         )
                     }
                 }.onFailure { error ->
@@ -86,12 +87,13 @@ class NotificationsViewModel @Inject constructor(
         realtimeJob = viewModelScope.launch {
             try {
                 subscribeToNotificationsUseCase().collect { notification ->
+                    if (!isEligibleNotification(notification)) return@collect
                     val newNotification = mapDomainToUi(notification)
                     _uiState.update { state ->
-                        val newNotifications = listOf(newNotification) + state.notifications
+                        val newNotifications = listOf(newNotification) + state.notifications.filter { it.id != newNotification.id }
                         state.copy(
                             notifications = newNotifications,
-                            unreadCount = state.unreadCount + 1,
+                            unreadCount = newNotifications.count { !it.isRead },
                             groupedNotifications = newNotifications.groupBy { formatDateHeader(it.timestamp) }
                         )
                     }
@@ -100,6 +102,11 @@ class NotificationsViewModel @Inject constructor(
                 Napier.e("Realtime error", e)
             }
         }
+    }
+
+    private fun isEligibleNotification(notification: Notification): Boolean {
+        val upperType = notification.type.uppercase()
+        return upperType != "NEW_MESSAGE" && upperType != "MESSAGE" && upperType != "CHAT"
     }
 
     private fun mapDomainToUi(notification: Notification): UiNotification {
@@ -118,7 +125,8 @@ class NotificationsViewModel @Inject constructor(
             message = message,
             timestamp = TimeUtils.getTimeAgo(notification.timestamp),
             isRead = notification.isRead,
-            targetId = notification.targetId
+            targetId = notification.targetId,
+            target = notification.target
         )
     }
 

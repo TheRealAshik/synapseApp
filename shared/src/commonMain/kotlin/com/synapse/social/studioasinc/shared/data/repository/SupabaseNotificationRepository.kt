@@ -48,7 +48,7 @@ class SupabaseNotificationRepository(
         }
         return try {
             supabase.postgrest.from("notifications")
-                .select(Columns.raw("*, actor:sender_id(display_name, avatar)")) {
+                .select(Columns.raw("*, actor:sender_id(display_name, username, avatar)")) {
                     filter {
                         eq("recipient_id", userId)
                     }

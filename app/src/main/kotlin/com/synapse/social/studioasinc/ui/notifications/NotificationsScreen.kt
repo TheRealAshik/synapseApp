@@ -1,14 +1,13 @@
 package com.synapse.social.studioasinc.ui.notifications
 
-import androidx.compose.foundation.background
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.core.util.UiText
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.res.stringResource
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -17,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -35,13 +36,13 @@ fun NotificationHeader(date: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
             .padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
     ) {
         Text(
             text = date,
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }
@@ -123,15 +124,46 @@ fun NotificationsScreen(
                         contentPadding = contentPadding
                     ) {
                         groupedNotifications.forEach { (date, notifications) ->
-                            item {
+                            item(key = "header_${date.hashCode()}") {
                                 NotificationHeader(date.asString())
                             }
-                            itemsIndexed(notifications, key = { index, it -> "${it.id}_${index}" }) { index, notification ->
-                                NotificationItem(
-                                    notification = notification,
-                                    onNotificationClick = handleNotificationClick,
-                                    onUserClick = handleUserClick
-                                )
+                            itemsIndexed(
+                                items = notifications,
+                                key = { index, notification -> "${notification.id}_$index" }
+                            ) { index, notification ->
+                                val position = when {
+                                    notifications.size == 1 -> NotificationGroupPosition.SINGLE
+                                    index == 0 -> NotificationGroupPosition.FIRST
+                                    index == notifications.lastIndex -> NotificationGroupPosition.LAST
+                                    else -> NotificationGroupPosition.MIDDLE
+                                }
+
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    NotificationItem(
+                                        notification = notification,
+                                        position = position,
+                                        onNotificationClick = handleNotificationClick,
+                                        onUserClick = handleUserClick
+                                    )
+                                    if (index < notifications.lastIndex) {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(horizontal = Spacing.Medium)
+                                                .background(
+                                                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                                )
+                                        ) {
+                                            HorizontalDivider(
+                                                modifier = Modifier.padding(horizontal = Spacing.Medium),
+                                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                                thickness = 0.5.dp
+                                            )
+                                        }
+                                    } else {
+                                        Spacer(modifier = Modifier.height(Spacing.Small))
+                                    }
+                                }
                             }
                         }
                     }

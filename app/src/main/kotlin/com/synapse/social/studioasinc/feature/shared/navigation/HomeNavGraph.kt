@@ -96,7 +96,24 @@ fun HomeNavGraph(
 
         composable<HomeDestinations.Notifications> {
              NotificationsScreen(
-                 onNotificationClick = { notification -> },
+                 onNotificationClick = { notification ->
+                     when (val target = notification.target) {
+                         is com.synapse.social.studioasinc.shared.domain.model.NotificationTarget.Post -> {
+                             navController.navigate(HomeDestinations.PostDetail(postId = target.postId))
+                         }
+                         is com.synapse.social.studioasinc.shared.domain.model.NotificationTarget.Comment -> {
+                             navController.navigate(HomeDestinations.PostDetail(postId = target.postId, commentId = target.commentId))
+                         }
+                         is com.synapse.social.studioasinc.shared.domain.model.NotificationTarget.Profile -> {
+                             onNavigateToProfile(target.userId)
+                         }
+                         is com.synapse.social.studioasinc.shared.domain.model.NotificationTarget.Unknown -> {
+                             notification.targetId?.takeIf { it.isNotBlank() }?.let { id ->
+                                 navController.navigate(HomeDestinations.PostDetail(postId = id))
+                             }
+                         }
+                     }
+                 },
                  onUserClick = { userId -> onNavigateToProfile(userId) },
                  contentPadding = PaddingValues(bottom = bottomPadding)
              )
