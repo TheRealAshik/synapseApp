@@ -2231,4 +2231,20 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="uploading_image">Uploading image...</string>
     <string name="retry_upload">Retry upload</string>
 
+    <!-- Social & Links Screen -->
+    <string name="social_links_title">Social &amp; Links</string>
+    <string name="social_profiles_section">Social profiles</string>
+    <string name="public_contact_section">Public contact</string>
+    <string name="public_email_title">Public email</string>
+    <string name="public_email_subtitle">Visible on your public profile for contact</string>
+    <string name="github_title">GitHub</string>
+    <string name="github_subtitle">GitHub profile or username</string>
+    <string name="discord_title">Discord</string>
+    <string name="discord_subtitle">Discord username or tag</string>
+    <string name="website_title">Personal website</string>
+    <string name="website_subtitle">Your blog or portfolio URL</string>
+    <string name="edit_field_dialog_title">Edit %1$s</string>
+    <string name="field_value_hint">Enter %1$s</string>
+    <string name="error_loading_social_links">Failed to load social &amp; links</string>
+
 </resources>

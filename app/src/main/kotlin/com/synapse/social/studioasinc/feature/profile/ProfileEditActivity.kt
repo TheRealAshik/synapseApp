@@ -15,6 +15,7 @@ import com.synapse.social.studioasinc.presentation.editprofile.EditProfileScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileViewModel
 import com.synapse.social.studioasinc.feature.profile.editprofile.media.ProfileMediaScreen
 import com.synapse.social.studioasinc.feature.profile.personalinfo.PersonalInformationScreen
+import com.synapse.social.studioasinc.presentation.editprofile.social.SocialLinksScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoHistoryScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoType
 import com.synapse.social.studioasinc.feature.profile.editprofile.interestsskills.InterestsSkillsScreen
@@ -61,6 +62,9 @@ class ProfileEditActivity : AppCompatActivity() {
                                 },
                                 onNavigateToPersonalInfo = {
                                     navController.navigate("personal_information")
+                                },
+                                onNavigateToSocialLinks = {
+                                    navController.navigate("edit_profile_social_links")
                                 }
                             )
                         }
@@ -88,6 +92,12 @@ class ProfileEditActivity : AppCompatActivity() {
 
                         composable("personal_information") {
                             PersonalInformationScreen(
+                                onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable("edit_profile_social_links") {
+                            SocialLinksScreen(
                                 onNavigateBack = { navController.popBackStack() }
                             )
                         }

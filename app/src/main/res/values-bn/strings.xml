@@ -1826,4 +1826,21 @@
     <string name="interests_save_success">Interests saved successfully</string>
     <string name="interests_save">Save</string>
     <string name="back_content_description">Back</string>
+    <!-- Social & Links Screen -->
+    <string name="social_links_title">সোশ্যাল ও লিঙ্কসমূহ</string>
+    <string name="social_profiles_section">সোশ্যাল প্রোফাইল</string>
+    <string name="public_contact_section">পাবলিক যোগাযোগ</string>
+    <string name="public_email_title">পাবলিক ইমেল</string>
+    <string name="public_email_subtitle">যোগাযোগের জন্য আপনার পাবলিক প্রোফাইলে দৃশ্যমান</string>
+    <string name="github_title">GitHub</string>
+    <string name="github_subtitle">GitHub প্রোফাইল বা ইউজারনেম</string>
+    <string name="discord_title">Discord</string>
+    <string name="discord_subtitle">Discord ইউজারনেম বা ট্যাগ</string>
+    <string name="website_title">ব্যক্তিগত ওয়েবসাইট</string>
+    <string name="website_subtitle">আপনার ব্লগ বা পোর্টফোলিও লিঙ্ক</string>
+    <string name="not_set">সেট করা নেই</string>
+    <string name="edit_field_dialog_title">%1$s সম্পাদনা করুন</string>
+    <string name="field_value_hint">%1$s লিখুন</string>
+    <string name="error_loading_social_links">সোশ্যাল ও লিঙ্কসমূহ লোড করতে ব্যর্থ হয়েছে</string>
+
 </resources>

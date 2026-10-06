@@ -23,6 +23,18 @@ import com.synapse.social.studioasinc.ui.settings.SettingsItemPosition
 import com.synapse.social.studioasinc.ui.settings.SettingsNavigationItem
 import com.synapse.social.studioasinc.ui.settings.SettingsSpacing
 
+enum class ProfileCategoryType {
+    PROFILE_MEDIA,
+    PERSONAL_INFO,
+    WORK_EDUCATION,
+    SOCIAL_LINKS,
+    INTERESTS_SKILLS,
+    PROFESSIONAL_PROFILE,
+    PROFILE_APPEARANCE,
+    PROFILE_LAYOUT,
+    FEATURED_CONTENT
+}
+
 @Composable
 fun ProfileCategorySection(
     selectedRegion: String?,
@@ -30,7 +42,7 @@ fun ProfileCategorySection(
     onNavigateToCoverHistory: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
     onNavigateToPersonalInfo: () -> Unit,
-    onCategoryClick: (String) -> Unit,
+    onCategoryClick: (ProfileCategoryType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -45,7 +57,7 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_profile_media),
                 subtitle = stringResource(R.string.nav_profile_media_sub),
                 imageVector = Icons.Filled.PermMedia,
-                onClick = { onCategoryClick("Profile Media") },
+                onClick = { onCategoryClick(ProfileCategoryType.PROFILE_MEDIA) },
                 position = SettingsItemPosition.Top
             )
 
@@ -72,7 +84,7 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_work_education),
                 subtitle = stringResource(R.string.nav_work_education_sub),
                 imageVector = Icons.Filled.Work,
-                onClick = { onCategoryClick("Work & Education") },
+                onClick = { onCategoryClick(ProfileCategoryType.WORK_EDUCATION) },
                 position = SettingsItemPosition.Middle
             )
 
@@ -81,7 +93,7 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_social_links),
                 subtitle = stringResource(R.string.nav_social_links_sub),
                 imageVector = Icons.Filled.Language,
-                onClick = { onCategoryClick("Social & Links") },
+                onClick = { onCategoryClick(ProfileCategoryType.SOCIAL_LINKS) },
                 position = SettingsItemPosition.Middle
             )
 
@@ -90,7 +102,7 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_interests_skills),
                 subtitle = stringResource(R.string.nav_interests_skills_sub),
                 imageVector = Icons.Filled.Star,
-                onClick = { onCategoryClick("Interests & Skills") },
+                onClick = { onCategoryClick(ProfileCategoryType.INTERESTS_SKILLS) },
                 position = SettingsItemPosition.Bottom
             )
         }
@@ -99,7 +111,7 @@ fun ProfileCategorySection(
 
 @Composable
 fun ProfessionalCategorySection(
-    onCategoryClick: (String) -> Unit,
+    onCategoryClick: (ProfileCategoryType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -113,7 +125,7 @@ fun ProfessionalCategorySection(
                 title = stringResource(R.string.nav_professional_profile),
                 subtitle = stringResource(R.string.nav_professional_profile_sub),
                 imageVector = Icons.Filled.BusinessCenter,
-                onClick = { onCategoryClick("Professional Profile") },
+                onClick = { onCategoryClick(ProfileCategoryType.PROFESSIONAL_PROFILE) },
                 position = SettingsItemPosition.Single
             )
         }
@@ -122,7 +134,7 @@ fun ProfessionalCategorySection(
 
 @Composable
 fun CustomizationCategorySection(
-    onCategoryClick: (String) -> Unit,
+    onCategoryClick: (ProfileCategoryType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -137,7 +149,7 @@ fun CustomizationCategorySection(
                 title = stringResource(R.string.nav_profile_appearance),
                 subtitle = stringResource(R.string.nav_profile_appearance_sub),
                 imageVector = Icons.Filled.Palette,
-                onClick = { onCategoryClick("Profile Appearance") },
+                onClick = { onCategoryClick(ProfileCategoryType.PROFILE_APPEARANCE) },
                 position = SettingsItemPosition.Top
             )
 
@@ -146,7 +158,7 @@ fun CustomizationCategorySection(
                 title = stringResource(R.string.nav_profile_layout),
                 subtitle = stringResource(R.string.nav_profile_layout_sub),
                 imageVector = Icons.Filled.ViewQuilt,
-                onClick = { onCategoryClick("Profile Layout") },
+                onClick = { onCategoryClick(ProfileCategoryType.PROFILE_LAYOUT) },
                 position = SettingsItemPosition.Middle
             )
 
@@ -155,7 +167,7 @@ fun CustomizationCategorySection(
                 title = stringResource(R.string.nav_featured_content),
                 subtitle = stringResource(R.string.nav_featured_content_sub),
                 imageVector = Icons.Filled.AutoAwesome,
-                onClick = { onCategoryClick("Featured Content") },
+                onClick = { onCategoryClick(ProfileCategoryType.FEATURED_CONTENT) },
                 position = SettingsItemPosition.Bottom
             )
         }

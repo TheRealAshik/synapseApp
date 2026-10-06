@@ -23,6 +23,7 @@ fun EditProfileContent(
     onNavigateToRegionSelection: (String) -> Unit,
     onNavigateToProfileMedia: () -> Unit,
     onNavigateToPersonalInfo: () -> Unit,
+    onNavigateToSocialLinks: () -> Unit,
     onEvent: (EditProfileEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -89,15 +90,13 @@ fun EditProfileContent(
                 onNavigateToCoverHistory = { onEvent(EditProfileEvent.CoverHistoryClicked) },
                 onNavigateToRegionSelection = onNavigateToRegionSelection,
                 onNavigateToPersonalInfo = onNavigateToPersonalInfo,
-                onCategoryClick = { categoryName ->
-                    if (categoryName == "Profile Media") {
-                        onEvent(EditProfileEvent.ProfileMediaClicked)
-                    } else if (categoryName == "Interests & Skills") {
-                        onEvent(EditProfileEvent.InterestsSkillsClicked)
-                    } else if (categoryName == "Work & Education") {
-                        onEvent(EditProfileEvent.WorkEducationClicked)
-                    } else {
-                        Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                onCategoryClick = { categoryType ->
+                    when (categoryType) {
+                        ProfileCategoryType.PROFILE_MEDIA -> onEvent(EditProfileEvent.ProfileMediaClicked)
+                        ProfileCategoryType.INTERESTS_SKILLS -> onEvent(EditProfileEvent.InterestsSkillsClicked)
+                        ProfileCategoryType.WORK_EDUCATION -> onEvent(EditProfileEvent.WorkEducationClicked)
+                        ProfileCategoryType.SOCIAL_LINKS -> onNavigateToSocialLinks()
+                        else -> Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryType.name), Toast.LENGTH_SHORT).show()
                     }
                 }
             )
