@@ -42,6 +42,7 @@ import com.synapse.social.studioasinc.shared.data.source.remote.CloudinaryUpload
 import com.synapse.social.studioasinc.shared.data.source.remote.ImgBBUploadService
 import com.synapse.social.studioasinc.shared.data.source.remote.R2UploadService
 import com.synapse.social.studioasinc.shared.data.source.remote.SupabaseUploadService
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService
 import com.synapse.social.studioasinc.shared.domain.repository.AppRepository
 import com.synapse.social.studioasinc.shared.domain.repository.AuthRepository
 import com.synapse.social.studioasinc.shared.domain.repository.BusinessRepository
@@ -348,6 +349,14 @@ object ChatModule {
         chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
     ): com.synapse.social.studioasinc.shared.domain.usecase.chat.GetSharedContentSummaryUseCase {
         return com.synapse.social.studioasinc.shared.domain.usecase.chat.GetSharedContentSummaryUseCase(chatRepository)
+    }
+    @Provides
+    @Singleton
+    fun provideVoiceUploadService(
+        imgBBUploadService: ImgBBUploadService,
+        @ApplicationContext context: Context
+    ): VoiceUploadService {
+        return VoiceUploadService(imgBBUploadService, context)
     }
 
 }

@@ -9,17 +9,21 @@ import com.synapse.social.studioasinc.feature.inbox.inbox.models.ChatListItem
 import com.synapse.social.studioasinc.shared.domain.model.User
 import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageReaction
 import com.synapse.social.studioasinc.shared.domain.model.chat.TypingStatus
+import com.synapse.social.studioasinc.shared.domain.model.ReactionType
 import com.synapse.social.studioasinc.shared.domain.repository.FileUploader
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.*
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserActiveStatusUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.user.GetUserProfileUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.GetStorageConfigUseCase
 import com.synapse.social.studioasinc.shared.util.TimestampFormatter
 import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService
 import java.io.File
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -61,6 +65,7 @@ class ChatViewModel @Inject constructor(
     private val setDisappearingModeUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SetDisappearingModeUseCase,
     private val getDisappearingModeUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.GetDisappearingModeUseCase,
     private val voiceUploadService: VoiceUploadService,
+    private val getStorageConfigUseCase: GetStorageConfigUseCase,
     private val mediaCompressor: com.synapse.social.studioasinc.shared.domain.service.MediaCompressor? = null
 ) : ViewModel() {
 
@@ -472,8 +477,8 @@ class ChatViewModel @Inject constructor(
         }
     }
 
-    private fun handleIncomingReaction(reaction: com.synapse.social.studioasinc.shared.domain.model.chat.MessageReaction) {
-        val reactionType = com.synapse.social.studioasinc.shared.domain.model.ReactionType.values()
+    private fun handleIncomingReaction(reaction: MessageReaction) {
+        val reactionType = ReactionType.values()
             .find { it.emoji == reaction.reactionEmoji } ?: return
         messagingDelegate._messages.update { current ->
             with(messagingDelegate) {
@@ -580,16 +585,24 @@ class ChatViewModel @Inject constructor(
         settingsDelegate.setDisappearingMode(mode)
     }
     fun uploadVoiceMessage(audioFile: File) {
-        try {
-            uploadAndSendMedia(
-                filePath = audioFile.absolutePath,
-                fileName = audioFile.name,
-                contentType = "audio/mp4",
-                messageType = "audio",
-                caption = null
+        viewModelScope.launch {
+            ensureActive()
+            val storageConfig: com.synapse.social.studioasinc.shared.domain.model.StorageConfig
+            try {
+                storageConfig = getStorageConfigUseCase().first()
+            } catch (e: Exception) {
+                _error.value = "Storage config unavailable: ${e.message}"
+                return@launch
+            }
+            mediaDelegate.uploadAndSendVoiceMessage(
+                audioFile = audioFile,
+                storageConfig = storageConfig,
+                voiceUploadService = voiceUploadService,
+                sendMessageUseCase = sendMessageUseCase,
+                currentUserIdProvider = { currentUserId },
+                chatIdProvider = { currentChatId },
+                viewModelScope = viewModelScope
             )
-        } catch (e: Exception) {
-            _error.value = "Upload error: ${e.message}"
         }
     }
 

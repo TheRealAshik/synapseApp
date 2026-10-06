@@ -11,6 +11,7 @@ import com.synapse.social.studioasinc.shared.domain.service.MediaCompressor
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.UploadMediaUseCase
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.util.UUID
@@ -30,6 +31,56 @@ class ChatMediaDelegate(
     private val onError: (String?) -> Unit,
     private val mediaCompressor: MediaCompressor? = null
 ) {
+
+    fun uploadAndSendVoiceMessage(
+        audioFile: java.io.File,
+        storageConfig: com.synapse.social.studioasinc.shared.domain.model.StorageConfig,
+        voiceUploadService: com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService,
+        sendMessageUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase,
+        currentUserIdProvider: () -> String?,
+        chatIdProvider: () -> String?,
+        viewModelScope: kotlinx.coroutines.CoroutineScope
+    ) {
+        val chatId = chatIdProvider() ?: return
+        val currentUserId = currentUserIdProvider() ?: return
+
+        viewModelScope.launch {
+            // Optimistic message
+            val tempId = UUID.randomUUID().toString()
+            val optimisticMessage = Message(
+                id = tempId,
+                chatId = chatId,
+                senderId = currentUserId,
+                content = "Sending voice message...",
+                messageType = MessageType.AUDIO,
+                deliveryStatus = DeliveryStatus.SENT,
+                createdAt = Instant.now().toString()
+            )
+            onOptimisticMessageAdded(optimisticMessage, tempId)
+
+            // Upload voice message using VoiceUploadService (encodes audio into PNG carrier for ImgBB)
+            val uploadResult = voiceUploadService.upload(audioFile, storageConfig)
+
+            uploadResult.onSuccess { mediaUrl ->
+                // Check if coroutine is still active before proceeding
+                if (!coroutineContext[Job]?.isActive!!) return@onSuccess
+                // Send the actual message with the uploaded media URL
+                // For voice messages, content should be empty (or a localized label), not the filename
+                sendMessageUseCase(
+                    chatId = chatId,
+                    content = "", // Voice messages have no text content
+                    mediaUrl = mediaUrl,
+                    messageType = MessageType.AUDIO.name.lowercase()
+                ).onSuccess { actualMessage ->
+                    onOptimisticMessageSuccess(tempId, actualMessage)
+                }.onFailure { e ->
+                    onOptimisticMessageFailed(tempId, "Failed to send: ${e.message}")
+                }
+            }.onFailure { e ->
+                onOptimisticMessageFailed(tempId, "Voice upload failed: ${e.message}")
+            }
+        }
+    }
 
     fun sendMediaMessage(
         mediaUrl: String,
