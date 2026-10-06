@@ -19,6 +19,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
@@ -39,10 +44,14 @@ internal fun ThemePicker(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
+            .padding(
+                horizontal = SettingsSpacing.itemHorizontalPadding,
+                vertical = SettingsSpacing.itemVerticalPadding
+            ),
         horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
     ) {
         themes.forEach { theme ->
+            val isSelected = theme == selectedTheme
             val color = when (theme) {
                 ChatThemePreset.DEFAULT -> MaterialTheme.colorScheme.primary
                 ChatThemePreset.OCEAN -> AccentBlue
@@ -51,36 +60,49 @@ internal fun ThemePicker(
                 ChatThemePreset.MONOCHROME -> StatusOffline
             }
 
+            val themeName = theme.displayName()
+            val themeDescription = if (isSelected) "Selected $themeName theme" else "$themeName theme"
+
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onThemeSelected(theme) }
+                modifier = Modifier
+                    .clickable(
+                        role = Role.RadioButton,
+                        onClick = { onThemeSelected(theme) }
+                    )
+                    .semantics(mergeDescendants = true) {
+                        role = Role.RadioButton
+                        contentDescription = themeDescription
+                    }
+                    .padding(vertical = Spacing.ExtraSmall)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(Sizes.IconGiant)
+                        .size(48.dp)
                         .clip(CircleShape)
                         .background(color)
                         .border(
-                            width = if (theme == selectedTheme) Sizes.BorderSelected else Spacing.None,
-                            color = if (theme == selectedTheme) MaterialTheme.colorScheme.onSurface else Color.Transparent,
+                            width = if (isSelected) 3.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                             shape = CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
-                    if (theme == selectedTheme) {
+                    if (isSelected) {
+                        val iconTint = if (color.luminance() > 0.5f) Color.Black else Color.White
                         Icon(
                             imageVector = Icons.Default.Check,
-                            contentDescription = "Selected",
-                            tint = MaterialTheme.colorScheme.surface,
-                            modifier = Modifier.size(Sizes.IconLarge)
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(Spacing.Large)
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                Spacer(modifier = Modifier.height(Spacing.Small))
                 Text(
-                    text = theme.displayName(),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (theme == selectedTheme) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    text = themeName,
+                    style = SettingsTypography.itemSubtitle,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -96,18 +118,35 @@ internal fun WallpaperPicker(
     blurIntensity: Float,
     onBlurIntensityChanged: (Float) -> Unit
 ) {
-    Column {
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
         WallpaperTypeSelector(selectedWallpaper, onWallpaperSelected)
 
         if (selectedWallpaper == WallpaperType.SOLID_COLOR) {
+            HorizontalDivider(
+                color = SettingsColors.divider,
+                thickness = Sizes.BorderThin,
+                modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+            )
             SolidColorSelector(selectedWallpaperValue, onWallpaperValueSelected)
         }
 
         if (selectedWallpaper == WallpaperType.PATTERN || selectedWallpaper == WallpaperType.PRESET_IMAGE) {
+            HorizontalDivider(
+                color = SettingsColors.divider,
+                thickness = Sizes.BorderThin,
+                modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+            )
             PatternSelector(selectedWallpaper, selectedWallpaperValue, onWallpaperValueSelected)
         }
 
         if (selectedWallpaper == WallpaperType.PATTERN || selectedWallpaper == WallpaperType.PRESET_IMAGE || selectedWallpaper == WallpaperType.DEFAULT) {
+            HorizontalDivider(
+                color = SettingsColors.divider,
+                thickness = Sizes.BorderThin,
+                modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+            )
             BlurSlider(blurIntensity, onBlurIntensityChanged)
         }
     }
@@ -119,51 +158,75 @@ internal fun WallpaperTypeSelector(
     onWallpaperSelected: (WallpaperType) -> Unit
 ) {
     val wallpapers = WallpaperType.entries.toList()
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            .padding(vertical = SettingsSpacing.itemVerticalPadding)
     ) {
-        wallpapers.forEach { wallpaper ->
-            val isSelected = wallpaper == selectedWallpaper
-            val bgColor = when(wallpaper) {
-                WallpaperType.SOLID_COLOR -> MaterialTheme.colorScheme.surfaceContainerHigh
-                else -> MaterialTheme.colorScheme.surfaceVariant
-            }
+        Text(
+            text = stringResource(R.string.settings_chat_background_title),
+            style = SettingsTypography.itemTitle,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+        )
+        Spacer(modifier = Modifier.height(Spacing.SmallMedium))
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = SettingsSpacing.itemHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
+        ) {
+            wallpapers.forEach { wallpaper ->
+                val isSelected = wallpaper == selectedWallpaper
+                val wallpaperName = wallpaper.name.lowercase().replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { onWallpaperSelected(wallpaper) }
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(width = Sizes.WidthLarge, height = Sizes.WidthExtraLarge)
-                        .clip(RoundedCornerShape(Sizes.CornerMedium))
-                        .background(bgColor)
-                        .border(
-                            width = if (isSelected) Sizes.BorderSelected else Spacing.None,
-                            color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                            shape = RoundedCornerShape(Sizes.CornerMedium)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isSelected) {
-                        Icon(
-                            imageVector = Icons.Default.Check,
-                            contentDescription = "Selected",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(Sizes.IconLarge)
-                        )
-                    }
+                val bgColor = when {
+                    isSelected -> MaterialTheme.colorScheme.primaryContainer
+                    wallpaper == WallpaperType.SOLID_COLOR -> SettingsColors.iconContainerBackground
+                    else -> MaterialTheme.colorScheme.surfaceVariant
                 }
-                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-                Text(
-                    text = wallpaper.name.lowercase().replace("_", " ").replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier
+                        .clickable(
+                            role = Role.RadioButton,
+                            onClick = { onWallpaperSelected(wallpaper) }
+                        )
+                        .semantics(mergeDescendants = true) {
+                            role = Role.RadioButton
+                            contentDescription = if (isSelected) "Selected $wallpaperName" else wallpaperName
+                        }
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 64.dp, height = 80.dp)
+                            .clip(SettingsShapes.inputShape)
+                            .background(bgColor)
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                shape = SettingsShapes.inputShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (isSelected) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(Spacing.Large)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                    Text(
+                        text = wallpaperName,
+                        style = SettingsTypography.itemSubtitle,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
         }
     }
@@ -181,41 +244,55 @@ internal fun SolidColorSelector(
         "#FFE0B2", "#FFCCBC", "#D7CCC8", "#F5F5F5", "#CFD8DC"
     )
 
-    Text(
-        text = stringResource(R.string.settings_select_color),
-        modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-        style = MaterialTheme.typography.labelLarge
-    )
-
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+            .padding(vertical = SettingsSpacing.itemVerticalPadding)
     ) {
-        colors.forEach { colorHex ->
-            val isSelected = colorHex == selectedColor
-            Box(
-                modifier = Modifier
-                    .size(Sizes.WidthLarge)
-                    .clip(CircleShape)
-                    .background(Color(android.graphics.Color.parseColor(colorHex)))
-                    .clickable { onColorSelected(colorHex) }
-                    .border(
-                        width = if (isSelected) Sizes.BorderSelected else Spacing.None,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = CircleShape
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                if (isSelected) {
-                    Icon(
-                        imageVector = Icons.Default.Check,
-                        contentDescription = "Selected",
-                        tint = if (Color(android.graphics.Color.parseColor(colorHex)).luminance() > 0.5f) Color.Black else Color.White,
-                        modifier = Modifier.size(Sizes.IconMedium)
-                    )
+        Text(
+            text = stringResource(R.string.settings_select_color),
+            style = SettingsTypography.itemTitle,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+        )
+
+        Spacer(modifier = Modifier.height(Spacing.SmallMedium))
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = SettingsSpacing.itemHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+        ) {
+            colors.forEach { colorHex ->
+                val isSelected = colorHex == selectedColor
+                val color = Color(android.graphics.Color.parseColor(colorHex))
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .clickable(
+                            role = Role.RadioButton,
+                            onClick = { onColorSelected(colorHex) }
+                        )
+                        .border(
+                            width = if (isSelected) 3.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        val iconTint = if (color.luminance() > 0.5f) Color.Black else Color.White
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            tint = iconTint,
+                            modifier = Modifier.size(Spacing.Large)
+                        )
+                    }
                 }
             }
         }
@@ -245,47 +322,78 @@ internal fun PatternSelector(
         }
     }
 
-    Text(stringResource(R.string.label_select_resource), modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small), style = MaterialTheme.typography.labelLarge)
-
-    Row(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+            .padding(vertical = SettingsSpacing.itemVerticalPadding)
     ) {
-        items.forEach { item ->
-            val isSelected = item == selectedWallpaperValue
+        Text(
+            text = stringResource(R.string.label_select_resource),
+            style = SettingsTypography.itemTitle,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+        )
 
-            val resId = context.resources.getIdentifier(item, "raw", context.packageName)
+        Spacer(modifier = Modifier.height(Spacing.SmallMedium))
 
-            Box(
-                modifier = Modifier
-                    .size(Sizes.WidthLarge)
-                    .clip(RoundedCornerShape(Sizes.CornerMedium))
-                    .clickable { onWallpaperValueSelected(item) }
-                    .border(
-                        width = if (isSelected) Sizes.BorderSelected else Spacing.None,
-                        color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                        shape = RoundedCornerShape(Sizes.CornerMedium)
-                    )
-            ) {
-                if (resId != 0) {
-                    AsyncImage(
-                        model = coil.request.ImageRequest.Builder(LocalContext.current)
-                            .data(resId)
-                            .apply {
-                                if (isPattern) {
-                                    decoderFactory(coil.decode.SvgDecoder.Factory())
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = SettingsSpacing.itemHorizontalPadding),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.SmallMedium)
+        ) {
+            items.forEach { item ->
+                val isSelected = item == selectedWallpaperValue
+                val resId = context.resources.getIdentifier(item, "raw", context.packageName)
+
+                Box(
+                    modifier = Modifier
+                        .size(width = 64.dp, height = 64.dp)
+                        .clip(SettingsShapes.inputShape)
+                        .clickable(
+                            role = Role.RadioButton,
+                            onClick = { onWallpaperValueSelected(item) }
+                        )
+                        .border(
+                            width = if (isSelected) 3.dp else 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            shape = SettingsShapes.inputShape
+                        )
+                ) {
+                    if (resId != 0) {
+                        AsyncImage(
+                            model = ImageRequest.Builder(LocalContext.current)
+                                .data(resId)
+                                .apply {
+                                    if (isPattern) {
+                                        decoderFactory(SvgDecoder.Factory())
+                                    }
                                 }
-                            }
-                            .build(),
-                        contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                     Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant))
+                                .build(),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.surfaceVariant))
+                    }
+
+                    if (isSelected) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(Spacing.Large)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -297,82 +405,46 @@ internal fun BlurSlider(
     blurIntensity: Float,
     onBlurIntensityChanged: (Float) -> Unit
 ) {
-    Text(
-        text = stringResource(R.string.settings_blur_intensity, (blurIntensity * 100).toInt()),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurface,
-        modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
-    )
     var localBlur by remember(blurIntensity) { mutableStateOf(blurIntensity) }
-    Slider(
-        value = localBlur,
-        onValueChange = { localBlur = it },
-        onValueChangeFinished = { onBlurIntensityChanged(localBlur) },
-        valueRange = 0f..1.0f,
-        modifier = Modifier.padding(horizontal = Spacing.Medium)
-    )
-}
 
-@Composable
-internal fun ChatListViewPicker(
-    selectedLayout: ChatListLayout,
-    onLayoutSelected: (ChatListLayout) -> Unit
-) {
-    Column(modifier = Modifier.padding(vertical = Spacing.ExtraSmall)) {
-        ChatListLayout.entries.forEach { layout ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onLayoutSelected(layout) }
-                    .padding(horizontal = Spacing.Medium, vertical = Spacing.SmallMedium),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = layout == selectedLayout,
-                    onClick = { onLayoutSelected(layout) }
-                )
-                Spacer(modifier = Modifier.width(Spacing.Medium))
-                Column {
-                    Text(
-                        text = if (layout == ChatListLayout.DOUBLE_LINE) "Two Lines" else "One Line",
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = if (layout == ChatListLayout.DOUBLE_LINE) "Shows a snippet of the last message." else "More compact, fits more chats.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                horizontal = SettingsSpacing.itemHorizontalPadding,
+                vertical = SettingsSpacing.itemVerticalPadding
+            )
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Blur Intensity",
+                style = SettingsTypography.itemTitle,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = "${(localBlur * 100).toInt()}%",
+                style = SettingsTypography.itemSubtitle,
+                color = MaterialTheme.colorScheme.primary
+            )
         }
-    }
-}
 
-@Composable
-internal fun SwipeGesturePicker(
-    selectedGesture: ChatSwipeGesture,
-    onGestureSelected: (ChatSwipeGesture) -> Unit
-) {
-    Column(modifier = Modifier.padding(vertical = Spacing.ExtraSmall)) {
-        ChatSwipeGesture.entries.forEach { gesture ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onGestureSelected(gesture) }
-                    .padding(horizontal = Spacing.Medium, vertical = Spacing.SmallMedium),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                RadioButton(
-                    selected = gesture == selectedGesture,
-                    onClick = { onGestureSelected(gesture) }
-                )
-                Spacer(modifier = Modifier.width(Spacing.Medium))
-                Text(
-                    text = gesture.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() },
-                    style = MaterialTheme.typography.bodyLarge
-                )
-            }
-        }
+        Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+
+        Slider(
+            value = localBlur,
+            onValueChange = { localBlur = it },
+            onValueChangeFinished = { onBlurIntensityChanged(localBlur) },
+            valueRange = 0f..1.0f,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        )
     }
 }
 

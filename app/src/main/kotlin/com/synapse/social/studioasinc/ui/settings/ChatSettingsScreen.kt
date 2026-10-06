@@ -1,45 +1,42 @@
 package com.synapse.social.studioasinc.ui.settings
 
-import androidx.compose.foundation.background
-import com.synapse.social.studioasinc.R
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.ui.res.stringResource
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.ui.unit.dp
-import com.synapse.social.studioasinc.shared.domain.model.settings.ChatThemePreset
-import com.synapse.social.studioasinc.shared.domain.model.settings.WallpaperType
-
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.decode.SvgDecoder
 import coil.request.ImageRequest
-import androidx.compose.ui.platform.LocalContext
-
-import com.synapse.social.studioasinc.feature.shared.theme.*
-import com.synapse.social.studioasinc.feature.shared.theme.Sizes
-import com.synapse.social.studioasinc.feature.shared.theme.Spacing
-
+import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.GroupPosition
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.MessageBubble
+import com.synapse.social.studioasinc.feature.shared.theme.Sizes
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
-import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
+import com.synapse.social.studioasinc.shared.domain.model.settings.ChatListLayout
+import com.synapse.social.studioasinc.shared.domain.model.settings.ChatSwipeGesture
+import com.synapse.social.studioasinc.shared.domain.model.settings.ChatThemePreset
+import com.synapse.social.studioasinc.shared.domain.model.settings.WallpaperType
 import kotlinx.datetime.Clock
 
 private const val MAX_BLUR_RADIUS = 50f
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,22 +48,30 @@ fun ChatSettingsScreen(
     val chatMessageCornerRadius by viewModel.chatMessageCornerRadius.collectAsState()
     val chatThemePreset by viewModel.chatThemePreset.collectAsState()
     val chatWallpaperType by viewModel.chatWallpaperType.collectAsState()
+    val chatWallpaperValue by viewModel.chatWallpaperValue.collectAsState()
+    val chatWallpaperBlur by viewModel.chatWallpaperBlur.collectAsState()
     val chatListLayout by viewModel.chatListLayout.collectAsState()
     val chatSwipeGesture by viewModel.chatSwipeGesture.collectAsState()
 
+    val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+
     Scaffold(
+        containerColor = SettingsColors.screenBackground,
         topBar = {
-            TopAppBar(
+            MediumTopAppBar(
                 title = { Text(stringResource(R.string.settings_chat_title)) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.settings_back_button))
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.settings_back_button)
+                        )
                     }
                 },
+                scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -74,10 +79,11 @@ fun ChatSettingsScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                .padding(paddingValues),
-            contentPadding = PaddingValues(vertical = Spacing.Medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+                .nestedScroll(scrollBehavior.nestedScrollConnection)
+                .padding(paddingValues)
+                .padding(horizontal = SettingsSpacing.screenPadding),
+            contentPadding = PaddingValues(bottom = Spacing.ExtraLarge),
+            verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing)
         ) {
             item {
                 ChatLivePreview(
@@ -85,86 +91,117 @@ fun ChatSettingsScreen(
                     cornerRadius = chatMessageCornerRadius,
                     themePreset = chatThemePreset,
                     wallpaperType = chatWallpaperType,
-                    wallpaperValue = viewModel.chatWallpaperValue.collectAsState().value,
-                    blurIntensity = viewModel.chatWallpaperBlur.collectAsState().value
+                    wallpaperValue = chatWallpaperValue,
+                    blurIntensity = chatWallpaperBlur
                 )
             }
 
             item {
-                SettingsBlock(title = stringResource(R.string.settings_chat_font_size_title)) {
-                    Text(
-                        text = stringResource(R.string.settings_chat_font_size_value, (16 * chatFontScale).toInt()),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
-                    )
-                    Slider(
+                SettingsSection(title = stringResource(R.string.settings_appearance_settings_title)) {
+                    val fontSizeLabel = stringResource(R.string.settings_chat_font_size_value, (16 * chatFontScale).toInt())
+                    SettingsSliderItem(
+                        title = stringResource(R.string.settings_chat_font_size_title),
                         value = chatFontScale,
-                        onValueChange = { viewModel.updateChatFontScale(it) },
                         valueRange = 0.75f..1.875f,
                         steps = 8,
-                        modifier = Modifier.padding(horizontal = Spacing.Medium)
+                        onValueChange = { viewModel.updateChatFontScale(it) },
+                        valueLabel = { fontSizeLabel },
+                        position = SettingsItemPosition.Top
                     )
-                }
-            }
 
-            item {
-                SettingsBlock(title = stringResource(R.string.settings_chat_color_theme_title)) {
-                    ThemePicker(
-                        selectedTheme = chatThemePreset,
-                        onThemeSelected = { viewModel.updateChatThemePreset(it) }
-                    )
-                }
-            }
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = SettingsItemPosition.Middle.getShape(),
+                        color = SettingsColors.cardBackground
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = SettingsSpacing.itemVerticalPadding)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.settings_chat_color_theme_title),
+                                style = SettingsTypography.itemTitle,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+                            )
+                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                            ThemePicker(
+                                selectedTheme = chatThemePreset,
+                                onThemeSelected = { viewModel.updateChatThemePreset(it) }
+                            )
+                        }
+                    }
 
-            item {
-                SettingsBlock(title = stringResource(R.string.settings_chat_message_corners_title)) {
-                    Text(
-                        text = stringResource(R.string.settings_chat_message_corners_radius_value, chatMessageCornerRadius),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
-                    )
-                    Slider(
+                    val cornersLabel = stringResource(R.string.settings_chat_message_corners_radius_value, chatMessageCornerRadius)
+                    SettingsSliderItem(
+                        title = stringResource(R.string.settings_chat_message_corners_title),
                         value = chatMessageCornerRadius.toFloat(),
-                        onValueChange = { viewModel.updateChatMessageCornerRadius(it.toInt()) },
                         valueRange = 0f..24f,
                         steps = 23,
-                        modifier = Modifier.padding(horizontal = Spacing.Medium)
-                    )
-                }
-            }
-
-
-            item {
-                SettingsBlock(title = stringResource(R.string.settings_chat_background_title)) {
-                    WallpaperPicker(
-                        selectedWallpaper = chatWallpaperType,
-                        onWallpaperSelected = { viewModel.updateChatWallpaperType(it) },
-                        selectedWallpaperValue = viewModel.chatWallpaperValue.collectAsState().value,
-                        onWallpaperValueSelected = { viewModel.updateChatWallpaperValue(it) },
-                        blurIntensity = viewModel.chatWallpaperBlur.collectAsState().value,
-                        onBlurIntensityChanged = { viewModel.updateChatWallpaperBlur(it) }
-                    )
-                }
-            }
-
-
-            item {
-                SettingsBlock(title = stringResource(R.string.settings_chat_list_view_title)) {
-                    ChatListViewPicker(
-                        selectedLayout = chatListLayout,
-                        onLayoutSelected = { viewModel.updateChatListLayout(it) }
+                        onValueChange = { viewModel.updateChatMessageCornerRadius(it.toInt()) },
+                        valueLabel = { cornersLabel },
+                        position = SettingsItemPosition.Bottom
                     )
                 }
             }
 
             item {
-                SettingsBlock(title = stringResource(R.string.settings_chat_swipe_gestures_title)) {
-                    SwipeGesturePicker(
-                        selectedGesture = chatSwipeGesture,
-                        onGestureSelected = { viewModel.updateChatSwipeGesture(it) }
+                SettingsSection(title = stringResource(R.string.settings_chat_background_title)) {
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = SettingsItemPosition.Single.getShape(),
+                        color = SettingsColors.cardBackground
+                    ) {
+                        WallpaperPicker(
+                            selectedWallpaper = chatWallpaperType,
+                            onWallpaperSelected = { viewModel.updateChatWallpaperType(it) },
+                            selectedWallpaperValue = chatWallpaperValue,
+                            onWallpaperValueSelected = { viewModel.updateChatWallpaperValue(it) },
+                            blurIntensity = chatWallpaperBlur,
+                            onBlurIntensityChanged = { viewModel.updateChatWallpaperBlur(it) }
+                        )
+                    }
+                }
+            }
+
+            item {
+                SettingsSection(title = stringResource(R.string.settings_chat_list_view_title)) {
+                    ChatRadioItem(
+                        title = "One Line",
+                        subtitle = "More compact, fits more chats.",
+                        selected = chatListLayout == ChatListLayout.SINGLE_LINE,
+                        onClick = { viewModel.updateChatListLayout(ChatListLayout.SINGLE_LINE) },
+                        position = SettingsItemPosition.Top
                     )
+                    ChatRadioItem(
+                        title = "Two Lines",
+                        subtitle = "Shows a snippet of the last message.",
+                        selected = chatListLayout == ChatListLayout.DOUBLE_LINE,
+                        onClick = { viewModel.updateChatListLayout(ChatListLayout.DOUBLE_LINE) },
+                        position = SettingsItemPosition.Bottom
+                    )
+                }
+            }
+
+            item {
+                SettingsSection(title = stringResource(R.string.settings_chat_swipe_gestures_title)) {
+                    val gestures = ChatSwipeGesture.entries.toList()
+                    gestures.forEachIndexed { index, gesture ->
+                        val position = when {
+                            gestures.size == 1 -> SettingsItemPosition.Single
+                            index == 0 -> SettingsItemPosition.Top
+                            index == gestures.lastIndex -> SettingsItemPosition.Bottom
+                            else -> SettingsItemPosition.Middle
+                        }
+                        val gestureTitle = gesture.name.lowercase().replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+                        ChatRadioItem(
+                            title = gestureTitle,
+                            selected = gesture == chatSwipeGesture,
+                            onClick = { viewModel.updateChatSwipeGesture(gesture) },
+                            position = position
+                        )
+                    }
                 }
             }
         }
@@ -203,9 +240,8 @@ private fun ChatLivePreview(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = Spacing.Medium)
-            .height(Sizes.HeightExtraLarge)
-            .clip(RoundedCornerShape(Sizes.CornerLarge))
+            .height(180.dp)
+            .clip(SettingsShapes.cardShape)
             .background(backgroundColor)
     ) {
         if (wallpaperType == WallpaperType.DEFAULT) {
@@ -213,7 +249,9 @@ private fun ChatLivePreview(
             AsyncImage(
                 model = mContext.resources.getIdentifier("pattern_11", "raw", mContext.packageName),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize().blur(radius = (blurIntensity * MAX_BLUR_RADIUS).dp),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(radius = (blurIntensity * MAX_BLUR_RADIUS).dp),
                 contentScale = ContentScale.Crop,
                 alpha = 0.5f
             )
@@ -221,7 +259,7 @@ private fun ChatLivePreview(
             val context = LocalContext.current
             val resId = context.resources.getIdentifier(wallpaperValue.substringBeforeLast("."), "raw", context.packageName)
             if (resId != 0) {
-                 AsyncImage(
+                AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(resId)
                         .apply {
@@ -231,17 +269,20 @@ private fun ChatLivePreview(
                         }
                         .build(),
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize().blur(radius = (blurIntensity * MAX_BLUR_RADIUS).dp),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(radius = (blurIntensity * MAX_BLUR_RADIUS).dp),
                     contentScale = ContentScale.Crop
-                 )
+                )
             }
         }
 
         Column(
-            modifier = Modifier.fillMaxSize().padding(Spacing.Medium),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(SettingsSpacing.itemHorizontalPadding),
             verticalArrangement = Arrangement.spacedBy(Spacing.SmallMedium)
         ) {
-            // Their message
             MessageBubble(
                 message = Message(
                     id = "preview_1",
@@ -259,7 +300,6 @@ private fun ChatLivePreview(
                 themePreset = themePreset
             )
 
-            // My message
             MessageBubble(
                 message = Message(
                     id = "preview_2",
@@ -277,27 +317,5 @@ private fun ChatLivePreview(
                 themePreset = themePreset
             )
         }
-    }
-}
-
-@Composable
-private fun SettingsBlock(
-    title: String,
-    content: @Composable
-ColumnScope.() -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(vertical = Spacing.SmallMedium)
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = Spacing.Medium, end = Spacing.Medium, bottom = Spacing.Small)
-        )
-        content()
     }
 }
