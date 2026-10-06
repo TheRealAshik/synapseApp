@@ -26,6 +26,7 @@ import com.synapse.social.studioasinc.ui.settings.SettingsSpacing
 enum class ProfileCategoryType {
     PROFILE_MEDIA,
     PERSONAL_INFO,
+    LOCATION,
     WORK_EDUCATION,
     SOCIAL_LINKS,
     INTERESTS_SKILLS,
@@ -42,6 +43,7 @@ fun ProfileCategorySection(
     onNavigateToCoverHistory: () -> Unit,
     onNavigateToRegionSelection: (String) -> Unit,
     onNavigateToPersonalInfo: () -> Unit,
+    onNavigateToLocation: () -> Unit = {},
     onCategoryClick: (ProfileCategoryType) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -75,7 +77,7 @@ fun ProfileCategorySection(
                 title = stringResource(R.string.nav_location),
                 subtitle = selectedRegion?.ifBlank { null } ?: stringResource(R.string.nav_location_sub),
                 imageVector = Icons.Filled.LocationOn,
-                onClick = { onNavigateToRegionSelection(selectedRegion ?: "") },
+                onClick = { onCategoryClick(ProfileCategoryType.LOCATION) },
                 position = SettingsItemPosition.Middle
             )
 

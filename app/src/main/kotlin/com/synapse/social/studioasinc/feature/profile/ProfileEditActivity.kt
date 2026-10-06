@@ -45,9 +45,8 @@ class ProfileEditActivity : AppCompatActivity() {
                             EditProfileScreen(
                                 viewModel = viewModel,
                                 onNavigateBack = { finish() },
-                                onNavigateToRegionSelection = { currentRegion ->
-                                    val encodedRegion = java.net.URLEncoder.encode(currentRegion, "UTF-8")
-                                    navController.navigate("select_region?currentRegion=$encodedRegion")
+                                onNavigateToRegionSelection = { _ ->
+                                    navController.navigate("edit_profile_location")
                                 },
                                 onNavigateToProfileMedia = {
                                     navController.navigate("profile_media")
@@ -88,6 +87,29 @@ class ProfileEditActivity : AppCompatActivity() {
                         composable("profile_appearance") {
                             ProfileAppearanceScreen(
                                 onNavigateBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable("edit_profile_location") {
+                            val locationViewModel: com.synapse.social.studioasinc.feature.profile.editprofile.location.LocationViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+
+                            val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+                            val selectedRegion = savedStateHandle?.get<String>("selected_region")
+
+                            androidx.compose.runtime.LaunchedEffect(selectedRegion) {
+                                selectedRegion?.let { region ->
+                                    locationViewModel.onEvent(com.synapse.social.studioasinc.feature.profile.editprofile.location.LocationEvent.RegionSelected(region))
+                                    savedStateHandle.remove<String>("selected_region")
+                                }
+                            }
+
+                            com.synapse.social.studioasinc.feature.profile.editprofile.location.LocationScreen(
+                                viewModel = locationViewModel,
+                                onNavigateBack = { navController.popBackStack() },
+                                onNavigateToRegionSelection = { currentRegion ->
+                                    val encodedRegion = java.net.URLEncoder.encode(currentRegion, "UTF-8")
+                                    navController.navigate("select_region?currentRegion=$encodedRegion")
+                                }
                             )
                         }
 
@@ -137,7 +159,7 @@ class ProfileEditActivity : AppCompatActivity() {
                             SelectRegionScreen(
                                 currentRegion = currentRegion,
                                 onRegionSelected = { region ->
-                                    viewModel.onEvent(EditProfileEvent.RegionSelected(region))
+                                    navController.previousBackStackEntry?.savedStateHandle?.set("selected_region", region)
                                     navController.popBackStack()
                                 },
                                 onBackClick = {

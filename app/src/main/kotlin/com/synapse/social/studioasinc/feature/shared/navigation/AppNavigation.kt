@@ -342,21 +342,11 @@ fun NavGraphBuilder.profileGraph(
             composable<AppDestination.EditProfile> {
                 val viewModel: EditProfileViewModel = hiltViewModel()
 
-                val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
-                val selectedRegion = savedStateHandle?.get<String>("selected_region")
-
-                LaunchedEffect(selectedRegion) {
-                    selectedRegion?.let { region ->
-                        viewModel.onEvent(EditProfileEvent.RegionSelected(region))
-                        savedStateHandle.remove<String>("selected_region")
-                    }
-                }
-
                 EditProfileScreen(
                     viewModel = viewModel,
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToRegionSelection = { _ ->
-                        navController.navigate(AppDestination.RegionSelection)
+                        navController.navigate(AppDestination.Location)
                     },
                     onNavigateToProfileMedia = {
                         navController.navigate(AppDestination.ProfileMedia)
@@ -417,6 +407,27 @@ fun NavGraphBuilder.profileGraph(
             composable<AppDestination.PersonalInformation> {
                 PersonalInformationScreen(
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable<AppDestination.Location> {
+                val viewModel: com.synapse.social.studioasinc.feature.profile.editprofile.location.LocationViewModel = hiltViewModel()
+
+                val savedStateHandle = navController.currentBackStackEntry?.savedStateHandle
+                val selectedRegion = savedStateHandle?.get<String>("selected_region")
+
+                LaunchedEffect(selectedRegion) {
+                    selectedRegion?.let { region ->
+                        viewModel.onEvent(com.synapse.social.studioasinc.feature.profile.editprofile.location.LocationEvent.RegionSelected(region))
+                        savedStateHandle.remove<String>("selected_region")
+                    }
+                }
+
+                com.synapse.social.studioasinc.feature.profile.editprofile.location.LocationScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToRegionSelection = {
+                        navController.navigate(AppDestination.RegionSelection)
+                    }
                 )
             }
             composable<AppDestination.RegionSelection> {

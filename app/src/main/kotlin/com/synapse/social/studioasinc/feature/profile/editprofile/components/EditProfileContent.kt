@@ -94,6 +94,7 @@ fun EditProfileContent(
                 onCategoryClick = { categoryType ->
                     when (categoryType) {
                         ProfileCategoryType.PROFILE_MEDIA -> onEvent(EditProfileEvent.ProfileMediaClicked)
+                        ProfileCategoryType.LOCATION -> onNavigateToRegionSelection(uiState.selectedRegion ?: "")
                         ProfileCategoryType.INTERESTS_SKILLS -> onEvent(EditProfileEvent.InterestsSkillsClicked)
                         ProfileCategoryType.WORK_EDUCATION -> onEvent(EditProfileEvent.WorkEducationClicked)
                         ProfileCategoryType.SOCIAL_LINKS -> onNavigateToSocialLinks()
