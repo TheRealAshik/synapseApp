@@ -2083,6 +2083,53 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="media_quality_hd_selected">HD quality selected</string>
     <string name="media_quality_standard_selected">Standard quality selected</string>
 
+    <!-- Edit Profile Redesign Strings -->
+    <string name="cd_cover_photo">Cover photo</string>
+    <string name="cd_edit_cover_photo">Edit cover photo</string>
+    <string name="cd_edit_profile_picture">Edit profile picture</string>
+    <string name="profile_completeness_title">Profile completeness</string>
+    <string name="complete_your_profile">Complete your profile</string>
+    <string name="improvements_recommended">%1$d recommended improvements →</string>
+    <string name="section_basic_information">BASIC INFORMATION</string>
+    <string name="section_profile">PROFILE</string>
+    <string name="section_professional">PROFESSIONAL</string>
+    <string name="section_customize">CUSTOMIZE</string>
+    <string name="nav_profile_media">Profile Media</string>
+    <string name="nav_profile_media_sub">Photos, banner and avatar history</string>
+    <string name="nav_personal_info">Personal Information</string>
+    <string name="nav_personal_info_sub">Birthday, pronouns, gender, etc.</string>
+    <string name="nav_location">Location</string>
+    <string name="nav_location_sub">Region, city and hometown</string>
+    <string name="nav_work_education">Work &amp; Education</string>
+    <string name="nav_work_education_sub">Occupation, workplace, education</string>
+    <string name="nav_social_links">Social &amp; Links</string>
+    <string name="nav_social_links_sub">Website, GitHub, social accounts</string>
+    <string name="nav_interests_skills">Interests &amp; Skills</string>
+    <string name="nav_interests_skills_sub">Interests, skills and languages</string>
+    <string name="nav_professional_profile">Professional Profile</string>
+    <string name="nav_professional_profile_sub">Account type and professional profile information</string>
+    <string name="nav_profile_appearance">Profile Appearance</string>
+    <string name="nav_profile_appearance_sub">Theme, accent, background</string>
+    <string name="nav_profile_layout">Profile Layout</string>
+    <string name="nav_profile_layout_sub">Tabs and section arrangement</string>
+    <string name="nav_featured_content">Featured Content</string>
+    <string name="nav_featured_content_sub">Posts, media, highlights</string>
+    <string name="no_bio_provided">No bio provided</string>
+    <string name="no_photo_picker_found">No photo picker app found. Please install a file manager.</string>
+    <string name="profile_complete">Profile complete!</string>
+    <string name="complete_missing_details">Complete missing details below</string>
+    <string name="category_coming_soon">%1$s screen coming soon</string>
+    <string name="nav_cover_photo_history">Cover Photo History</string>
+    <string name="nav_cover_photo_history_sub">View and restore previous cover photos</string>
+    <string name="completeness_item_avatar">Avatar photo</string>
+    <string name="completeness_item_cover">Cover photo</string>
+    <string name="completeness_item_name">Display name</string>
+    <string name="completeness_item_username">Username</string>
+    <string name="completeness_item_bio">Bio</string>
+    <string name="completeness_item_gender">Gender</string>
+    <string name="completeness_item_location">Location</string>
+    <string name="completeness_item_work_links">Work or Links</string>
+
     <!-- Chat Info Screen -->
     <string name="chat_info_title">Chat info</string>
     <string name="chat_info_action_message">Message</string>
@@ -2132,4 +2179,5 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="chat_info_msg_cleared">Chat history cleared</string>
     <string name="unmuted">Unmuted</string>
     <string name="user">User</string>
+
 </resources>

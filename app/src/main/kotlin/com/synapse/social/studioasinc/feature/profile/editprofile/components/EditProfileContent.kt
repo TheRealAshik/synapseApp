@@ -1,19 +1,17 @@
 package com.synapse.social.studioasinc.presentation.editprofile.components
 
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileEvent
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileUiState
-import com.synapse.social.studioasinc.feature.shared.theme.Spacing
-import com.synapse.social.studioasinc.ui.settings.SettingsCard
-import com.synapse.social.studioasinc.ui.settings.SettingsNavigationItem
 import com.synapse.social.studioasinc.ui.settings.SettingsSpacing
 
 @Composable
@@ -25,6 +23,8 @@ fun EditProfileContent(
     onNavigateToRegionSelection: (String) -> Unit,
     onEvent: (EditProfileEvent) -> Unit
 ) {
+    val context = LocalContext.current
+
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(
@@ -35,12 +35,16 @@ fun EditProfileContent(
         ),
         verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing)
     ) {
-
+        // 1. Top Identity Preview
         item {
-            ProfileImageSection(
+            ProfileIdentityPreview(
                 coverUrl = uiState.coverUrl,
                 avatarUrl = uiState.avatarUrl,
+                nickname = uiState.nickname,
+                username = uiState.username,
+                bio = uiState.bio,
                 pendingAvatarUri = uiState.pendingAvatarUri,
+                pendingCoverUri = uiState.pendingCoverUri,
                 avatarUploadState = uiState.avatarUploadState,
                 coverUploadState = uiState.coverUploadState,
                 onCoverClick = onCoverClick,
@@ -50,87 +54,60 @@ fun EditProfileContent(
             )
         }
 
+        // 2. Compact Profile Completion Summary
         item {
-            ProfileFormFields(
-                username = uiState.username,
-                onUsernameChange = { onEvent(EditProfileEvent.UsernameChanged(it)) },
-                usernameValidation = uiState.usernameValidation,
+            ProfileCompletionCard(
+                uiState = uiState,
+                onClick = {
+                    Toast.makeText(context, context.getString(R.string.complete_missing_details), Toast.LENGTH_SHORT).show()
+                }
+            )
+        }
+
+        // 3. Basic Information Section
+        item {
+            BasicInformationSection(
                 nickname = uiState.nickname,
                 onNicknameChange = { onEvent(EditProfileEvent.NicknameChanged(it)) },
                 nicknameError = uiState.nicknameError,
+                username = uiState.username,
+                onUsernameChange = { onEvent(EditProfileEvent.UsernameChanged(it)) },
+                usernameValidation = uiState.usernameValidation,
                 bio = uiState.bio,
                 onBiographyChange = { onEvent(EditProfileEvent.BiographyChanged(it)) },
                 bioError = uiState.bioError
             )
         }
 
+        // 4. Category Navigation: PROFILE
         item {
-            LocationFields(
-                currentCity = uiState.currentCity,
-                onCurrentCityChange = { onEvent(EditProfileEvent.CurrentCityChanged(it)) },
-                hometown = uiState.hometown,
-                onHometownChange = { onEvent(EditProfileEvent.HometownChanged(it)) }
+            ProfileCategorySection(
+                selectedRegion = uiState.selectedRegion,
+                onNavigateToProfileHistory = { onEvent(EditProfileEvent.ProfileHistoryClicked) },
+                onNavigateToCoverHistory = { onEvent(EditProfileEvent.CoverHistoryClicked) },
+                onNavigateToRegionSelection = onNavigateToRegionSelection,
+                onCategoryClick = { categoryName ->
+                    Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                }
             )
         }
 
+        // 5. Category Navigation: PROFESSIONAL
         item {
-            WorkAndEducationFields(
-                occupation = uiState.occupation,
-                onOccupationChange = { onEvent(EditProfileEvent.OccupationChanged(it)) },
-                workplace = uiState.workplace,
-                onWorkplaceChange = { onEvent(EditProfileEvent.WorkplaceChanged(it)) },
-                education = uiState.education,
-                onEducationChange = { onEvent(EditProfileEvent.EducationChanged(it)) }
+            ProfessionalCategorySection(
+                onCategoryClick = { categoryName ->
+                    Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                }
             )
         }
 
+        // 6. Category Navigation: CUSTOMIZE
         item {
-            SocialLinksFields(
-                discordTag = uiState.discordTag,
-                onDiscordTagChange = { onEvent(EditProfileEvent.DiscordTagChanged(it)) },
-                githubProfile = uiState.githubProfile,
-                onGithubProfileChange = { onEvent(EditProfileEvent.GithubProfileChanged(it)) },
-                personalWebsite = uiState.personalWebsite,
-                onPersonalWebsiteChange = { onEvent(EditProfileEvent.PersonalWebsiteChanged(it)) }
+            CustomizationCategorySection(
+                onCategoryClick = { categoryName ->
+                    Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                }
             )
-        }
-
-        item {
-            GenderSelector(
-                selectedGender = uiState.selectedGender,
-                onGenderSelected = { onEvent(EditProfileEvent.GenderSelected(it)) }
-            )
-        }
-
-        item {
-            SettingsCard {
-                SettingsNavigationItem(
-                    title = "Region",
-                    subtitle = uiState.selectedRegion ?: "Not set",
-                    imageVector = Icons.Filled.LocationOn,
-                    onClick = {
-                        onNavigateToRegionSelection(uiState.selectedRegion ?: "")
-                    }
-                )
-            }
-        }
-
-        item {
-            SettingsCard {
-                SettingsNavigationItem(
-                    title = "Profile Photo History",
-                    subtitle = "View and restore previous photos",
-                    onClick = { onEvent(EditProfileEvent.ProfileHistoryClicked) }
-                )
-
-                com.synapse.social.studioasinc.ui.settings.SettingsDivider()
-
-                SettingsNavigationItem(
-                    title = "Cover Photo History",
-                    subtitle = "View and restore previous covers",
-                    onClick = { onEvent(EditProfileEvent.CoverHistoryClicked) }
-                )
-            }
         }
     }
 }

@@ -122,7 +122,7 @@ fun EditProfileScreen(
         try {
             avatarPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         } catch (e: android.content.ActivityNotFoundException) {
-            Toast.makeText(context, "No photo picker app found. Please install a file manager.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.no_photo_picker_found), Toast.LENGTH_LONG).show()
         }
     }
 
@@ -130,7 +130,7 @@ fun EditProfileScreen(
         try {
             coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         } catch (e: android.content.ActivityNotFoundException) {
-            Toast.makeText(context, "No photo picker app found. Please install a file manager.", Toast.LENGTH_LONG).show()
+            Toast.makeText(context, context.getString(R.string.no_photo_picker_found), Toast.LENGTH_LONG).show()
         }
     }
 
