@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -481,26 +482,40 @@ fun SettingsSliderItem(
                     vertical = SettingsSpacing.itemVerticalPadding
                 )
         ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = SettingsTypography.itemTitle,
+                        color = if (enabled) MaterialTheme.colorScheme.onSurface
+                               else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                    )
 
-            Text(
-                text = title,
-                style = SettingsTypography.itemTitle,
-                color = if (enabled) MaterialTheme.colorScheme.onSurface
-                       else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            )
+                    if (subtitle != null) {
+                        Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                        Text(
+                            text = subtitle,
+                            style = SettingsTypography.itemSubtitle,
+                            color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
+                                   else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                        )
+                    }
+                }
 
-            if (subtitle != null) {
-                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                Spacer(modifier = Modifier.width(Spacing.Medium))
+
                 Text(
-                    text = subtitle,
-                    style = SettingsTypography.itemSubtitle,
-                    color = if (enabled) MaterialTheme.colorScheme.onSurfaceVariant
-                           else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                    text = valueLabel(value),
+                    style = SettingsTypography.itemSubtitle.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.primary
                 )
             }
 
-            Spacer(modifier = Modifier.height(Spacing.SmallMedium))
-
+            Spacer(modifier = Modifier.height(Spacing.Small))
 
             Slider(
                 value = value,
@@ -511,18 +526,8 @@ fun SettingsSliderItem(
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
                     activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceVariant
+                    inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest
                 )
-            )
-
-            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-
-
-            Text(
-                text = valueLabel(value),
-                style = SettingsTypography.itemSubtitle,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
     }

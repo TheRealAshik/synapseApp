@@ -4,7 +4,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,30 +21,25 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.RadioButtonChecked
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Videocam
 import androidx.compose.material.icons.outlined.Key
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LargeTopAppBar
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
@@ -68,7 +62,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
-import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
 import com.synapse.social.studioasinc.shared.domain.model.StorageProvider
 import kotlinx.coroutines.launch
@@ -96,12 +89,15 @@ fun StorageProviderScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = stringResource(R.string.cd_back_button)
+                        )
                     }
                 },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background,
+                    containerColor = SettingsColors.screenBackground,
                     scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 )
             )
@@ -146,74 +142,48 @@ private fun AssignProvidersTab(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.Medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+        contentPadding = PaddingValues(
+            horizontal = SettingsSpacing.screenPadding,
+            vertical = Spacing.Medium
+        ),
+        verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing)
     ) {
         item {
-            MediaProviderCard(
-                title = stringResource(R.string.storage_provider_photos),
-                icon = Icons.Default.Image,
-                selectedProvider = storageConfig.photoProvider,
-                isConfigured = storageConfig.isProviderConfigured(storageConfig.photoProvider),
-                onProviderSelect = { viewModel.updatePhotoProvider(it) }
-            )
-        }
-        item {
-            MediaProviderCard(
-                title = stringResource(R.string.storage_provider_videos),
-                icon = Icons.Default.Videocam,
-                selectedProvider = storageConfig.videoProvider,
-                isConfigured = storageConfig.isProviderConfigured(storageConfig.videoProvider),
-                onProviderSelect = { viewModel.updateVideoProvider(it) }
-            )
-        }
-        item {
-            MediaProviderCard(
-                title = stringResource(R.string.storage_provider_other_files),
-                icon = Icons.Default.CloudUpload,
-                selectedProvider = storageConfig.otherProvider,
-                isConfigured = storageConfig.isProviderConfigured(storageConfig.otherProvider),
-                onProviderSelect = { viewModel.updateOtherProvider(it) }
-            )
+            SettingsSection(title = stringResource(R.string.storage_tab_assign)) {
+                SettingsCard {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        MediaAssignmentRow(
+                            title = stringResource(R.string.storage_provider_photos),
+                            icon = Icons.Default.Image,
+                            selectedProvider = storageConfig.photoProvider,
+                            onProviderSelect = { viewModel.updatePhotoProvider(it) }
+                        )
+                        SettingsDivider()
+                        MediaAssignmentRow(
+                            title = stringResource(R.string.storage_provider_videos),
+                            icon = Icons.Default.Videocam,
+                            selectedProvider = storageConfig.videoProvider,
+                            onProviderSelect = { viewModel.updateVideoProvider(it) }
+                        )
+                        SettingsDivider()
+                        MediaAssignmentRow(
+                            title = stringResource(R.string.storage_provider_other_files),
+                            icon = Icons.Default.CloudUpload,
+                            selectedProvider = storageConfig.otherProvider,
+                            onProviderSelect = { viewModel.updateOtherProvider(it) }
+                        )
+                    }
+                }
+            }
         }
 
         item {
-            Spacer(modifier = Modifier.height(Spacing.Medium))
-            Text(
-                text = stringResource(R.string.storage_upload_preferences),
-                style = SettingsTypography.sectionHeader,
-                color = SettingsColors.sectionTitle,
-                modifier = Modifier.padding(horizontal = Spacing.Small)
-            )
-            Spacer(modifier = Modifier.height(Spacing.Small))
-        }
-
-        item {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = SettingsShapes.itemShape,
-                colors = CardDefaults.cardColors(containerColor = SettingsColors.cardBackground)
-            ) {
-                ListItem(
-                    headlineContent = {
-                        Text(
-                            stringResource(R.string.storage_high_quality_uploads),
-                            style = SettingsTypography.itemTitle
-                        )
-                    },
-                    supportingContent = {
-                        Text(
-                            stringResource(R.string.storage_high_quality_uploads_desc),
-                            style = SettingsTypography.itemSubtitle
-                        )
-                    },
-                    trailingContent = {
-                        Switch(
-                            checked = !storageConfig.compressImages,
-                            onCheckedChange = { viewModel.updateCompression(!it) }
-                        )
-                    },
-                    colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+            SettingsSection(title = stringResource(R.string.storage_upload_preferences)) {
+                SettingsToggleItem(
+                    title = stringResource(R.string.storage_high_quality_uploads),
+                    subtitle = stringResource(R.string.storage_high_quality_uploads_desc),
+                    checked = !storageConfig.compressImages,
+                    onCheckedChange = { viewModel.updateCompression(!it) }
                 )
             }
         }
@@ -222,79 +192,51 @@ private fun AssignProvidersTab(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun MediaProviderCard(
+private fun MediaAssignmentRow(
     title: String,
     icon: ImageVector,
     selectedProvider: StorageProvider,
-    isConfigured: Boolean,
     onProviderSelect: (String) -> Unit
 ) {
     var showSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
     val selectedDisplayName = stringResource(selectedProvider.toDisplayNameRes())
 
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { showSheet = true },
-        shape = SettingsShapes.cardShape,
-        colors = CardDefaults.cardColors(containerColor = SettingsColors.cardBackground)
+            .clickable { showSheet = true }
+            .padding(
+                horizontal = SettingsSpacing.itemHorizontalPadding,
+                vertical = SettingsSpacing.itemVerticalPadding
+            ),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .padding(Spacing.Medium)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Surface(
-                modifier = Modifier.size(Sizes.AvatarLarge),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(Spacing.Large)
-                    )
-                }
-            }
+        SettingsIconBadge(imageVector = icon)
 
-            Spacer(modifier = Modifier.width(Spacing.Medium))
+        Spacer(modifier = Modifier.width(SettingsSpacing.iconTextSpacing))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = SettingsTypography.itemTitle,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-                AssistChip(
-                    onClick = { showSheet = true },
-                    label = { Text(selectedDisplayName) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = if (isConfigured) Icons.Default.CheckCircle else Icons.Outlined.Key,
-                            contentDescription = null,
-                            modifier = Modifier.size(AssistChipDefaults.IconSize),
-                            tint = if (isConfigured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
-                    ),
-                    border = null,
-                    shape = SettingsShapes.chipShape
-                )
-            }
-
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowRight,
-                contentDescription = null,
-                tint = SettingsColors.chevronIcon
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = SettingsTypography.itemTitle,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+            Text(
+                text = selectedDisplayName,
+                style = SettingsTypography.itemSubtitle,
+                color = MaterialTheme.colorScheme.primary
             )
         }
+
+        Spacer(modifier = Modifier.width(Spacing.Medium))
+
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = SettingsColors.chevronIcon
+        )
     }
 
     if (showSheet) {
@@ -304,6 +246,7 @@ private fun MediaProviderCard(
             containerColor = SettingsColors.cardBackgroundElevated
         ) {
             ProviderSelectionList(
+                title = title,
                 selectedProvider = selectedProvider,
                 onProviderSelect = {
                     onProviderSelect(it)
@@ -316,6 +259,7 @@ private fun MediaProviderCard(
 
 @Composable
 private fun ProviderSelectionList(
+    title: String,
     selectedProvider: StorageProvider,
     onProviderSelect: (String) -> Unit
 ) {
@@ -333,27 +277,38 @@ private fun ProviderSelectionList(
             .padding(bottom = Spacing.Huge)
     ) {
         Text(
-            text = stringResource(R.string.storage_provider_selection),
+            text = stringResource(R.string.storage_provider_selection) + " - $title",
             style = SettingsTypography.sectionHeader,
-            modifier = Modifier.padding(Spacing.Medium)
+            modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.SmallMedium)
         )
 
-        providers.forEach { provider ->
+        providers.forEachIndexed { index, provider ->
             val displayName = stringResource(provider.toDisplayNameRes())
-            ListItem(
-                headlineContent = { Text(displayName) },
-                trailingContent = {
-                    if (provider == selectedProvider) {
-                        Icon(
-                            imageVector = Icons.Default.CheckCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                    }
-                },
-                modifier = Modifier.clickable { onProviderSelect(displayName) },
-                colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
-            )
+            val isSelected = provider == selectedProvider
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onProviderSelect(displayName) }
+                    .padding(horizontal = Spacing.Medium, vertical = Spacing.Medium),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = displayName,
+                    style = SettingsTypography.itemTitle,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                )
+
+                Icon(
+                    imageVector = if (isSelected) Icons.Default.RadioButtonChecked else Icons.Default.RadioButtonUnchecked,
+                    contentDescription = if (isSelected) "Selected" else "Not selected",
+                    tint = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (index < providers.size - 1) {
+                SettingsDivider()
+            }
         }
     }
 }
@@ -372,36 +327,51 @@ private fun ProviderSetupTab(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(Spacing.Medium),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+        contentPadding = PaddingValues(
+            horizontal = SettingsSpacing.screenPadding,
+            vertical = Spacing.Medium
+        ),
+        verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing)
     ) {
-        items(providers) { provider ->
-            val photosLabel = stringResource(R.string.storage_provider_photos)
-            val videosLabel = stringResource(R.string.storage_provider_videos)
-            val filesLabel = stringResource(R.string.storage_provider_other_files)
+        item {
+            SettingsSection(title = stringResource(R.string.storage_provider_config)) {
+                SettingsCard {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        providers.forEachIndexed { index, provider ->
+                            val photosLabel = stringResource(R.string.storage_provider_photos)
+                            val videosLabel = stringResource(R.string.storage_provider_videos)
+                            val filesLabel = stringResource(R.string.storage_provider_other_files)
 
-            val usage = remember(storageConfig, photosLabel, videosLabel, filesLabel) {
-                val usages = mutableListOf<String>()
-                if (storageConfig.photoProvider == provider) usages.add(photosLabel)
-                if (storageConfig.videoProvider == provider) usages.add(videosLabel)
-                if (storageConfig.otherProvider == provider) usages.add(filesLabel)
-                usages.joinToString(", ")
+                            val usage = remember(storageConfig, photosLabel, videosLabel, filesLabel) {
+                                val usages = mutableListOf<String>()
+                                if (storageConfig.photoProvider == provider) usages.add(photosLabel)
+                                if (storageConfig.videoProvider == provider) usages.add(videosLabel)
+                                if (storageConfig.otherProvider == provider) usages.add(filesLabel)
+                                usages.joinToString(", ")
+                            }
+
+                            ProviderRow(
+                                provider = provider,
+                                isConfigured = storageConfig.isProviderConfigured(provider),
+                                usage = usage,
+                                storageConfig = storageConfig,
+                                viewModel = viewModel
+                            )
+
+                            if (index < providers.size - 1) {
+                                SettingsDivider()
+                            }
+                        }
+                    }
+                }
             }
-
-            ProviderDashboardTile(
-                provider = provider,
-                isConfigured = storageConfig.isProviderConfigured(provider),
-                usage = usage,
-                storageConfig = storageConfig,
-                viewModel = viewModel
-            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProviderDashboardTile(
+private fun ProviderRow(
     provider: StorageProvider,
     isConfigured: Boolean,
     usage: String,
@@ -412,74 +382,62 @@ private fun ProviderDashboardTile(
     val sheetState = rememberModalBottomSheetState()
     val displayName = stringResource(provider.toDisplayNameRes())
 
-    Card(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { showSheet = true },
-        shape = SettingsShapes.itemShape,
-        colors = CardDefaults.cardColors(containerColor = SettingsColors.cardBackground)
+            .clickable { showSheet = true }
+            .padding(
+                horizontal = SettingsSpacing.itemHorizontalPadding,
+                vertical = SettingsSpacing.itemVerticalPadding
+            ),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        ListItem(
-            headlineContent = {
+        SettingsIconBadge(
+            imageVector = if (isConfigured) Icons.Default.CheckCircle else Icons.Outlined.Key
+        )
+
+        Spacer(modifier = Modifier.width(SettingsSpacing.iconTextSpacing))
+
+        Column(modifier = Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = displayName,
-                    style = SettingsTypography.itemTitle
+                    style = SettingsTypography.itemTitle,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
-            },
-            supportingContent = {
-                Column {
-                    AnimatedContent(
-                        targetState = isConfigured,
-                        transitionSpec = { fadeIn() togetherWith fadeOut() },
-                        label = "statusBadge"
-                    ) { configured ->
-                        Surface(
-                            shape = SettingsShapes.chipShape,
-                            color = if (configured) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-                                    else MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
-                            modifier = Modifier.padding(vertical = Spacing.ExtraSmall)
-                        ) {
-                            Text(
-                                text = if (configured) stringResource(R.string.storage_ready_to_use)
-                                       else stringResource(R.string.storage_requires_setup),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (configured) MaterialTheme.colorScheme.onPrimaryContainer
-                                        else MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Tiny)
-                            )
-                        }
-                    }
-                    if (usage.isNotEmpty()) {
-                        Text(
-                            text = stringResource(R.string.storage_used_for, usage),
-                            style = SettingsTypography.itemSubtitle
-                        )
-                    }
-                }
-            },
-            leadingContent = {
+                Spacer(modifier = Modifier.width(Spacing.Small))
                 Surface(
-                    shape = SettingsShapes.itemShape,
-                    color = if (isConfigured) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.size(Sizes.AvatarDefault)
+                    shape = SettingsShapes.chipShape,
+                    color = if (isConfigured) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+                            else MaterialTheme.colorScheme.surfaceVariant
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (isConfigured) Icons.Default.CheckCircle else Icons.Outlined.Key,
-                            contentDescription = null,
-                            tint = if (isConfigured) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
+                    Text(
+                        text = if (isConfigured) stringResource(R.string.storage_ready_to_use)
+                               else stringResource(R.string.storage_requires_setup),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isConfigured) MaterialTheme.colorScheme.onPrimaryContainer
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Tiny)
+                    )
                 }
-            },
-            trailingContent = {
-                Icon(
-                    imageVector = Icons.Default.KeyboardArrowRight,
-                    contentDescription = null,
-                    tint = SettingsColors.chevronIcon
+            }
+
+            if (usage.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                Text(
+                    text = stringResource(R.string.storage_used_for, usage),
+                    style = SettingsTypography.itemSubtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            },
-            colors = androidx.compose.material3.ListItemDefaults.colors(containerColor = androidx.compose.ui.graphics.Color.Transparent)
+            }
+        }
+
+        Spacer(modifier = Modifier.width(Spacing.Medium))
+
+        Icon(
+            imageVector = Icons.Default.KeyboardArrowRight,
+            contentDescription = null,
+            tint = SettingsColors.chevronIcon
         )
     }
 
