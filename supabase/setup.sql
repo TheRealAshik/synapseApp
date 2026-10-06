@@ -89,6 +89,7 @@ CREATE TABLE IF NOT EXISTS public.user_settings (
 CREATE TABLE IF NOT EXISTS public.user_presence (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id         TEXT UNIQUE NOT NULL REFERENCES public.users(uid) ON DELETE CASCADE DEFERRABLE INITIALLY DEFERRED,
+    status          TEXT DEFAULT 'offline',
     is_online       BOOLEAN DEFAULT false,
     last_seen       TIMESTAMPTZ DEFAULT NOW(),
     activity_status TEXT DEFAULT 'offline',
@@ -1155,6 +1156,31 @@ DROP TRIGGER IF EXISTS set_uid_on_insert ON public.users;
 CREATE TRIGGER set_uid_on_insert
   BEFORE INSERT ON public.users
   FOR EACH ROW EXECUTE FUNCTION public.set_user_uid();
+
+-- Sync legacy and canonical columns on user_presence
+CREATE OR REPLACE FUNCTION public.sync_user_presence_legacy_columns()
+RETURNS TRIGGER LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NEW.status IS NOT NULL THEN
+    NEW.is_online := (NEW.status = 'online');
+    NEW.activity_status := NEW.status;
+  ELSIF NEW.is_online IS NOT NULL THEN
+    IF NEW.is_online THEN
+      NEW.status := 'online';
+    ELSE
+      NEW.status := 'offline';
+    END IF;
+    NEW.activity_status := NEW.status;
+  END IF;
+  NEW.last_seen := COALESCE(NEW.last_seen, NOW());
+  NEW.updated_at := NOW();
+  RETURN NEW;
+END;
+$$;
+DROP TRIGGER IF EXISTS trg_sync_user_presence ON public.user_presence;
+CREATE TRIGGER trg_sync_user_presence
+  BEFORE INSERT OR UPDATE ON public.user_presence
+  FOR EACH ROW EXECUTE FUNCTION public.sync_user_presence_legacy_columns();
 
 -- Auto-create user_settings + user_presence when a user row is inserted
 CREATE OR REPLACE FUNCTION public.handle_new_user()

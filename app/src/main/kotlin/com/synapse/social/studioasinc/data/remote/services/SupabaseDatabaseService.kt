@@ -341,12 +341,13 @@ class SupabaseDatabaseService : IDatabaseService {
     suspend fun updatePresence(userId: String, isOnline: Boolean): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
-
                 val timestamp = java.time.Instant.now().toString()
+                val statusStr = if (isOnline) "online" else "offline"
                 val presenceData = kotlinx.serialization.json.buildJsonObject {
                     put("user_id", kotlinx.serialization.json.JsonPrimitive(userId))
-                    put("is_online", kotlinx.serialization.json.JsonPrimitive(isOnline))
+                    put("status", kotlinx.serialization.json.JsonPrimitive(statusStr))
                     put("last_seen", kotlinx.serialization.json.JsonPrimitive(timestamp))
+                    put("updated_at", kotlinx.serialization.json.JsonPrimitive(timestamp))
                 }
                 client.from("user_presence").upsert(presenceData)
                 Result.success(Unit)

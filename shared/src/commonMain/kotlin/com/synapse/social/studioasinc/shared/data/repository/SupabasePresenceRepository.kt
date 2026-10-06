@@ -1,8 +1,7 @@
 package com.synapse.social.studioasinc.shared.data.repository
-import com.synapse.social.studioasinc.shared.core.util.AppDispatchers
-import kotlinx.coroutines.Dispatchers
 
 import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
+import com.synapse.social.studioasinc.shared.core.util.AppDispatchers
 import com.synapse.social.studioasinc.shared.domain.repository.PresenceRepository
 import io.github.aakira.napier.Napier
 import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
@@ -12,7 +11,6 @@ import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Clock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -24,6 +22,7 @@ class SupabasePresenceRepository(
 ) : PresenceRepository {
     
     private var heartbeatJob: Job? = null
+    private var activeChatId: String? = null
     private val presenceChannel by lazy { client.realtime.channel("presence") }
     
     override suspend fun updatePresence(isOnline: Boolean, currentChatId: String?): Result<Unit> = runCatching {
@@ -36,19 +35,27 @@ class SupabasePresenceRepository(
             return Result.failure(Exception("No user ID"))
         }
         
+        if (!isOnline) {
+            activeChatId = null
+        } else if (currentChatId != null) {
+            activeChatId = currentChatId
+        }
+        val chatIdToSave = if (isOnline) (currentChatId ?: activeChatId) else null
+
         withContext(AppDispatchers.IO) {
             try {
+                val now = Clock.System.now().toString()
+                val statusStr = if (isOnline) "online" else "offline"
                 client.postgrest.from("user_presence").upsert(
                     buildJsonObject {
                         put("user_id", userId)
-                        put("is_online", isOnline)
-                        put("last_seen", Clock.System.now().toString())
-                        put("activity_status", if (isOnline) "online" else "offline")
-                        put("updated_at", Clock.System.now().toString())
-                        put("current_chat_id", currentChatId)
+                        put("status", statusStr)
+                        put("last_seen", now)
+                        put("updated_at", now)
+                        put("current_chat_id", chatIdToSave)
                     }
                 )
-                Napier.d("✅ Presence updated: userId=$userId, isOnline=$isOnline, status=${if (isOnline) "online" else "offline"}")
+                Napier.d("✅ Presence updated: userId=$userId, isOnline=$isOnline, status=$statusStr, currentChatId=$chatIdToSave")
             } catch (e: Exception) {
                 Napier.e("❌ Failed to update presence: ${e.message}", e)
                 throw e
@@ -106,6 +113,7 @@ class SupabasePresenceRepository(
     override suspend fun stopPresenceTracking() {
         Napier.d("Stopping presence tracking")
         heartbeatJob?.cancel()
+        activeChatId = null
         updatePresence(false).onFailure {
             Napier.e("Failed to update presence on stop", it)
         }
@@ -119,20 +127,24 @@ class SupabasePresenceRepository(
     override fun observeUserPresence(userId: String): Flow<Boolean> {
         return kotlinx.coroutines.flow.flow {
             while (true) {
-                val isActive = runCatching {
-                    val response = client.postgrest.from("user_presence")
+                val response = try {
+                    client.postgrest.from("user_presence")
                         .select {
                             filter {
                                 eq("user_id", userId)
                             }
                         }
-                        .decodeSingle<UserPresenceDto>()
-                    
-                    // User is active if last_seen is within 2 minutes (more reliable than is_online flag)
-                    isWithinActiveWindow(response.lastSeen, windowMinutes = 2)
-                }.getOrElse { error ->
-                    Napier.w("Failed to fetch presence for user $userId: ${error.message}")
+                        .decodeSingleOrNull<UserPresenceDto>()
+                } catch (e: Exception) {
+                    Napier.e("❌ Error fetching presence for user $userId: ${e.message}", e)
+                    throw e
+                }
+
+                val isActive = if (response == null) {
                     false
+                } else {
+                    val isStatusOnline = response.status == null || response.status.lowercase() == "online"
+                    isStatusOnline && isWithinActiveWindow(response.lastSeen, windowMinutes = 2)
                 }
                 emit(isActive)
                 delay(10_000) // Poll every 10 seconds
@@ -141,21 +153,27 @@ class SupabasePresenceRepository(
     }
     
     override suspend fun isUserInChat(userId: String, chatId: String): Boolean {
-        return runCatching {
-            val response = client.postgrest.from("user_presence")
+        val response = try {
+            client.postgrest.from("user_presence")
                 .select {
                     filter {
                         eq("user_id", userId)
                     }
                 }
-                .decodeSingle<UserPresenceDto>()
-            
-            response.currentChatId == chatId && 
-            isWithinActiveWindow(response.lastSeen, windowMinutes = 2)
-        }.getOrDefault(false)
+                .decodeSingleOrNull<UserPresenceDto>()
+        } catch (e: Exception) {
+            Napier.e("❌ Error checking if user $userId is in chat $chatId: ${e.message}", e)
+            throw e
+        }
+
+        if (response == null) return false
+
+        val isStatusOnline = response.status == null || response.status.lowercase() == "online"
+        val isOnline = isStatusOnline && isWithinActiveWindow(response.lastSeen, windowMinutes = 2)
+        return response.currentChatId == chatId && isOnline
     }
     
-    private fun isWithinActiveWindow(lastSeen: String?, windowMinutes: Long = 5): Boolean {
+    fun isWithinActiveWindow(lastSeen: String?, windowMinutes: Long = 5): Boolean {
         if (lastSeen == null) return false
         return try {
             val lastSeenInstant = kotlinx.datetime.Instant.parse(lastSeen)
@@ -169,8 +187,10 @@ class SupabasePresenceRepository(
 }
 
 @Serializable
-private data class UserPresenceDto(
-    @SerialName("is_online") val isOnline: Boolean,
-    @SerialName("last_seen") val lastSeen: String?,
-    @SerialName("current_chat_id") val currentChatId: String? = null
+data class UserPresenceDto(
+    @SerialName("user_id") val userId: String? = null,
+    @SerialName("status") val status: String? = null,
+    @SerialName("last_seen") val lastSeen: String? = null,
+    @SerialName("current_chat_id") val currentChatId: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null
 )
