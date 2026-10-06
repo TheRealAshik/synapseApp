@@ -190,8 +190,10 @@ fun SettingsHeroCardsSection(
                 modifier = Modifier.width(280.dp),
                 shape = SettingsShapes.cardShape,
                 colors = CardDefaults.cardColors(
-                    containerColor = if (card.backgroundColor != null) Color(android.graphics.Color.parseColor(card.backgroundColor))
-                                   else MaterialTheme.colorScheme.primaryContainer
+                    containerColor = com.synapse.social.studioasinc.feature.shared.theme.safeParseColorHex(
+                        card.backgroundColor,
+                        MaterialTheme.colorScheme.primaryContainer
+                    )
                 )
             ) {
                 Column(modifier = Modifier.padding(Spacing.Medium)) {

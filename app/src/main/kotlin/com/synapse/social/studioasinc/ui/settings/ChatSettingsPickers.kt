@@ -449,15 +449,7 @@ internal fun BlurSlider(
 }
 
 internal fun String?.toColor(): Color {
-    return try {
-        if (this != null && this.startsWith("#")) {
-            Color(android.graphics.Color.parseColor(this))
-        } else {
-            Gray200
-        }
-    } catch (e: Exception) {
-        Gray200
-    }
+    return safeParseColorHex(this, LightSurfaceVariant)
 }
 
 internal fun Color.luminance(): Float {

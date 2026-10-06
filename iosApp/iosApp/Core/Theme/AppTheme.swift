@@ -14,9 +14,10 @@ extension Color {
 }
 
 struct AppTheme {
-    static let primaryColor = Color(hex: shared.SynapseTheme.RoyalBlue)
-    static let onlineColor = Color.green
-    static let errorColor = Color.red
+    static let primaryColor = Color(hex: shared.SynapseColors.shared.Light.primary)
+    static let secondaryColor = Color(hex: shared.SynapseColors.shared.Light.secondary)
+    static let onlineColor = Color(hex: shared.SynapseColors.shared.Light.statusOnline)
+    static let errorColor = Color(hex: shared.SynapseColors.shared.Light.error)
 
     struct AmbientBackground: View {
         @StateObject private var atmosphere = UiAtmosphereState.shared
@@ -34,12 +35,11 @@ struct AppTheme {
             .ignoresSafeArea()
         }
     }
-    static let secondaryColor = Color.gray
 
     struct Spacing {
-        static let small = CGFloat(shared.SynapseTheme.SpacingSmall)
-        static let medium = CGFloat(shared.SynapseTheme.SpacingMedium)
-        static let large = CGFloat(shared.SynapseTheme.SpacingLarge)
+        static let small = CGFloat(shared.SynapseTheme.shared.SpacingSmall)
+        static let medium = CGFloat(shared.SynapseTheme.shared.SpacingMedium)
+        static let large = CGFloat(shared.SynapseTheme.shared.SpacingLarge)
     }
 
     struct Fonts {

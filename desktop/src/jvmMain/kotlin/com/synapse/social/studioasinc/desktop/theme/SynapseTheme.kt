@@ -42,9 +42,9 @@ private fun SynapseColorScheme.toComposeColorScheme(): ColorScheme {
         surfaceContainerLow = Color(this.surfaceContainerLow),
         surfaceContainerHigh = Color(this.surfaceContainerHigh),
         surfaceContainerHighest = Color(this.surfaceContainerHighest),
-        surfaceContainerLowest = Color(this.surface), // Fallback
-        surfaceDim = Color(this.surface), // Fallback
-        surfaceBright = Color(this.surface) // Fallback
+        surfaceContainerLowest = Color(this.surfaceContainerLowest),
+        surfaceDim = Color(this.surfaceContainerLow),
+        surfaceBright = Color(this.surfaceContainerHigh)
     )
 }
 

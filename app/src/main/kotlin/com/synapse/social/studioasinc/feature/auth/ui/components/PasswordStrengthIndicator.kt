@@ -3,13 +3,20 @@ package com.synapse.social.studioasinc.feature.auth.ui.components
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -22,13 +29,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
-import com.synapse.social.studioasinc.feature.shared.theme.Spacing
-import com.synapse.social.studioasinc.feature.shared.theme.Sizes
-import com.synapse.social.studioasinc.shared.domain.model.PasswordStrength
 import com.synapse.social.studioasinc.feature.auth.ui.util.AnimationUtil
-import com.synapse.social.studioasinc.feature.shared.theme.AccentOrange
-import com.synapse.social.studioasinc.feature.shared.theme.LightError
-import com.synapse.social.studioasinc.feature.shared.theme.InteractionRepostActive
+import com.synapse.social.studioasinc.feature.shared.theme.DarkSuccess
+import com.synapse.social.studioasinc.feature.shared.theme.DarkWarning
+import com.synapse.social.studioasinc.feature.shared.theme.LightSuccess
+import com.synapse.social.studioasinc.feature.shared.theme.LightWarning
+import com.synapse.social.studioasinc.feature.shared.theme.Sizes
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.shared.domain.model.PasswordStrength
 
 @Composable
 fun PasswordStrengthIndicator(
@@ -36,6 +44,13 @@ fun PasswordStrengthIndicator(
     modifier: Modifier = Modifier
 ) {
     val reducedMotion = AnimationUtil.rememberReducedMotion()
+    val isDark = isSystemInDarkTheme()
+
+    val targetColor = when (strength) {
+        PasswordStrength.Weak -> MaterialTheme.colorScheme.error
+        PasswordStrength.Fair -> if (isDark) DarkWarning else LightWarning
+        PasswordStrength.Strong -> if (isDark) DarkSuccess else LightSuccess
+    }
 
     val animatedProgress by animateFloatAsState(
         targetValue = strength.progress,
@@ -44,10 +59,16 @@ fun PasswordStrengthIndicator(
     )
 
     val animatedColor by animateColorAsState(
-        targetValue = strength.color,
+        targetValue = targetColor,
         animationSpec = tween(durationMillis = if (reducedMotion) 0 else 300),
         label = "Color Animation"
     )
+
+    val strengthIcon = when (strength) {
+        PasswordStrength.Weak -> Icons.Default.Warning
+        PasswordStrength.Fair -> Icons.Default.Info
+        PasswordStrength.Strong -> Icons.Default.CheckCircle
+    }
 
     Column(modifier = modifier.fillMaxWidth()) {
         Row(
@@ -56,6 +77,13 @@ fun PasswordStrengthIndicator(
                 .padding(bottom = Spacing.ExtraSmall),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Icon(
+                imageVector = strengthIcon,
+                contentDescription = null,
+                tint = animatedColor,
+                modifier = Modifier.size(Sizes.IconSmall)
+            )
+            Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
             Text(
                 text = stringResource(id = R.string.password_strength),
                 style = MaterialTheme.typography.bodySmall,
@@ -80,14 +108,6 @@ fun PasswordStrengthIndicator(
         )
     }
 }
-
-// Extension properties for mapping Shared Domain Model to UI
-val PasswordStrength.color: Color
-    get() = when(this) {
-        PasswordStrength.Weak -> LightError
-        PasswordStrength.Fair -> AccentOrange
-        PasswordStrength.Strong -> InteractionRepostActive
-    }
 
 val PasswordStrength.labelResId: Int
     get() = when(this) {

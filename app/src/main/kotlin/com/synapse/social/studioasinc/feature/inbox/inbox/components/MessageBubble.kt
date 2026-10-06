@@ -270,7 +270,7 @@ fun MessageBubble(
             ChatThemePreset.OCEAN -> if (isDark) OceanDarkContainer else OceanLightContainer
             ChatThemePreset.FOREST -> if (isDark) ForestDarkContainer else ForestLightContainer
             ChatThemePreset.SUNSET -> if (isDark) SunsetDarkContainer else SunsetLightContainer
-            ChatThemePreset.MONOCHROME -> if (isDark) Gray700 else Gray200
+            ChatThemePreset.MONOCHROME -> if (isDark) MonochromeDarkContainer else MonochromeLightContainer
         }
     } else {
         MaterialTheme.colorScheme.surfaceContainerHigh
@@ -282,7 +282,7 @@ fun MessageBubble(
             ChatThemePreset.OCEAN -> if (isDark) OceanDarkOnContainer else OceanLightOnContainer
             ChatThemePreset.FOREST -> if (isDark) ForestDarkOnContainer else ForestLightOnContainer
             ChatThemePreset.SUNSET -> if (isDark) SunsetDarkOnContainer else SunsetLightOnContainer
-            ChatThemePreset.MONOCHROME -> if (isDark) Gray200 else Gray900
+            ChatThemePreset.MONOCHROME -> if (isDark) MonochromeDarkOnContainer else MonochromeLightOnContainer
         }
     } else {
         MaterialTheme.colorScheme.onSurface

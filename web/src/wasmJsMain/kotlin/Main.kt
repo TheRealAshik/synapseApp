@@ -1,18 +1,63 @@
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeViewport
 import com.synapse.social.studioasinc.shared.di.commentModule
 import com.synapse.social.studioasinc.shared.di.storageModule
+import com.synapse.social.studioasinc.shared.theme.SynapseColorScheme
+import com.synapse.social.studioasinc.shared.theme.SynapseTheme as SharedTheme
 import com.synapse.social.studioasinc.web.di.webModule
 import com.synapse.social.studioasinc.web.ui.WebAuthScreen
 import com.synapse.social.studioasinc.web.ui.WebFeedScreen
 import kotlinx.browser.document
 import org.koin.core.context.startKoin
+
+private fun SynapseColorScheme.toComposeColorScheme(): ColorScheme {
+    return ColorScheme(
+        primary = Color(this.primary),
+        onPrimary = Color(this.onPrimary),
+        primaryContainer = Color(this.primaryContainer),
+        onPrimaryContainer = Color(this.onPrimaryContainer),
+        secondary = Color(this.secondary),
+        onSecondary = Color(this.onSecondary),
+        secondaryContainer = Color(this.secondaryContainer),
+        onSecondaryContainer = Color(this.onSecondaryContainer),
+        tertiary = Color(this.tertiary),
+        onTertiary = Color(this.onTertiary),
+        tertiaryContainer = Color(this.tertiaryContainer),
+        onTertiaryContainer = Color(this.onTertiaryContainer),
+        error = Color(this.error),
+        onError = Color(this.onError),
+        errorContainer = Color(this.errorContainer),
+        onErrorContainer = Color(this.onErrorContainer),
+        background = Color(this.background),
+        onBackground = Color(this.onBackground),
+        surface = Color(this.surface),
+        onSurface = Color(this.onSurface),
+        surfaceVariant = Color(this.surfaceVariant),
+        onSurfaceVariant = Color(this.onSurfaceVariant),
+        outline = Color(this.outline),
+        outlineVariant = Color(this.outlineVariant),
+        scrim = Color(this.scrim),
+        inverseSurface = Color(this.inverseSurface),
+        inverseOnSurface = Color(this.inverseOnSurface),
+        inversePrimary = Color(this.inversePrimary),
+        surfaceTint = Color(this.surfaceTint),
+        surfaceContainer = Color(this.surfaceContainer),
+        surfaceContainerLow = Color(this.surfaceContainerLow),
+        surfaceContainerHigh = Color(this.surfaceContainerHigh),
+        surfaceContainerHighest = Color(this.surfaceContainerHighest),
+        surfaceContainerLowest = Color(this.surfaceContainerLowest),
+        surfaceDim = Color(this.surfaceContainerLow),
+        surfaceBright = Color(this.surfaceContainerHigh)
+    )
+}
 
 enum class WebScreen {
     Landing, Login, Feed
@@ -25,7 +70,10 @@ fun main() {
     }
 
     ComposeViewport(document.body!!) {
-        MaterialTheme {
+        val darkTheme = isSystemInDarkTheme()
+        val colorScheme = if (darkTheme) SharedTheme.colors.Dark.toComposeColorScheme() else SharedTheme.colors.Light.toComposeColorScheme()
+
+        MaterialTheme(colorScheme = colorScheme) {
             Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                 var currentScreen by remember { mutableStateOf(WebScreen.Landing) }
 

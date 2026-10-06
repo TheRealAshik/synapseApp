@@ -129,7 +129,7 @@ class MarkdownRenderer private constructor(private val markwon: Markwon) {
                         }
                     }
                     override fun updateDrawState(ds: TextPaint) {
-                        ds.color = Color.parseColor("#445E91")
+                        ds.color = ContextCompat.getColor(textView.context, R.color.primary)
                         ds.isUnderlineText = false
                         ds.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
                     }
@@ -140,7 +140,7 @@ class MarkdownRenderer private constructor(private val markwon: Markwon) {
                         IntentUtils.openUrl(ctx, "synapse://hashtag/$tag")
                     }
                     override fun updateDrawState(ds: TextPaint) {
-                        ds.color = Color.parseColor("#445E91")
+                        ds.color = ContextCompat.getColor(textView.context, R.color.primary)
                         ds.isUnderlineText = false
                         ds.typeface = android.graphics.Typeface.create(android.graphics.Typeface.DEFAULT, android.graphics.Typeface.BOLD)
                     }
