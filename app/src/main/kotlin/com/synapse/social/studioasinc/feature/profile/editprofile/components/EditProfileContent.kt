@@ -24,6 +24,7 @@ fun EditProfileContent(
     onNavigateToProfileMedia: () -> Unit,
     onNavigateToPersonalInfo: () -> Unit,
     onNavigateToSocialLinks: () -> Unit,
+    onNavigateToProfileAppearance: () -> Unit = {},
     onEvent: (EditProfileEvent) -> Unit
 ) {
     val context = LocalContext.current
@@ -114,8 +115,11 @@ fun EditProfileContent(
         // 6. Category Navigation: CUSTOMIZE
         item {
             CustomizationCategorySection(
-                onCategoryClick = { categoryName ->
-                    Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryName), Toast.LENGTH_SHORT).show()
+                onCategoryClick = { categoryType ->
+                    when (categoryType) {
+                        ProfileCategoryType.PROFILE_APPEARANCE -> onNavigateToProfileAppearance()
+                        else -> Toast.makeText(context, context.getString(R.string.category_coming_soon, categoryType.name), Toast.LENGTH_SHORT).show()
+                    }
                 }
             )
         }

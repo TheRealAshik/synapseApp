@@ -1843,6 +1843,25 @@
     <string name="interests_save_success">Interests saved successfully</string>
     <string name="interests_save">Save</string>
     <string name="back_content_description">Back</string>
+    <!-- Profile Appearance Screen -->
+    <string name="profile_appearance_title">প্রোফাইল অ্যাপিয়ারেন্স</string>
+    <string name="profile_appearance_subtitle">আপনার প্রোফাইল কীভাবে প্রদর্শিত হবে তা কাস্টমাইজ করুন</string>
+    <string name="section_profile_background">প্রোফাইল ব্যাকগ্রাউন্ড</string>
+    <string name="action_change_background">কভার ব্যাকগ্রাউন্ড পরিবর্তন করুন</string>
+    <string name="action_remove_background">কভার ব্যাকগ্রাউন্ড মুছে ফেলুন</string>
+    <string name="action_reset_background">পরিবর্তনগুলো রিসেট করুন</string>
+    <string name="action_apply_changes">প্রয়োগ করুন</string>
+    <string name="live_preview_label">লাইভ প্রিভিউ</string>
+    <string name="section_appearance_info">অ্যাপিয়ারেন্স সুবিধাসমূহ</string>
+    <string name="appearance_capabilities_info">কভার ব্যাকগ্রাউন্ড কাস্টমাইজেশন সম্পূর্ণরূপে সমর্থিত এবং আপনার প্রোফাইলে সংরক্ষিত হয়। সিস্টেম থিম এবং ফন্ট শৈলী অ্যাপ সেটিংস → অ্যাপিয়ারেন্স এর অধীনে পরিচালিত হয়।</string>
+    <string name="dialog_unsaved_changes_title">অসংরক্ষিত পরিবর্তনগুলো বাতিল করবেন?</string>
+    <string name="dialog_unsaved_changes_body">আপনার প্রোফাইল ব্যাকগ্রাউন্ডে অসংরক্ষিত পরিবর্তন রয়েছে। এখন চলে গেলে এই পরিবর্তনগুলো বাতিল হয়ে যাবে।</string>
+    <string name="dialog_discard">বাতিল করুন</string>
+    <string name="dialog_remove_background_title">প্রোফাইল ব্যাকগ্রাউন্ড মুছে ফেলবেন?</string>
+    <string name="dialog_remove_background_body">আপনি কি নিশ্চিত যে আপনার প্রোফাইল কভার ব্যাকগ্রাউন্ড মুছে ফেলতে চান?</string>
+    <string name="profile_background_updated">প্রোফাইল ব্যাকগ্রাউন্ড সফলভাবে আপডেট করা হয়েছে</string>
+    <string name="profile_background_removed">প্রোফাইল ব্যাকগ্রাউন্ড সফলভাবে মুছে ফেলা হয়েছে</string>
+
     <!-- Social & Links Screen -->
     <string name="social_links_title">সোশ্যাল ও লিঙ্কসমূহ</string>
     <string name="social_profiles_section">সোশ্যাল প্রোফাইল</string>

@@ -2248,6 +2248,25 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="uploading_image">Uploading image...</string>
     <string name="retry_upload">Retry upload</string>
 
+    <!-- Profile Appearance Screen -->
+    <string name="profile_appearance_title">Profile Appearance</string>
+    <string name="profile_appearance_subtitle">Customize how your profile is presented</string>
+    <string name="section_profile_background">PROFILE BACKGROUND</string>
+    <string name="action_change_background">Change Cover Background</string>
+    <string name="action_remove_background">Remove Cover Background</string>
+    <string name="action_reset_background">Reset Changes</string>
+    <string name="action_apply_changes">Apply</string>
+    <string name="live_preview_label">Live Preview</string>
+    <string name="section_appearance_info">APPEARANCE CAPABILITIES</string>
+    <string name="appearance_capabilities_info">Cover background customization is fully supported and saved to your profile. System theme mode and typography are managed under App Settings → Appearance.</string>
+    <string name="dialog_unsaved_changes_title">Discard Unsaved Changes?</string>
+    <string name="dialog_unsaved_changes_body">You have pending changes to your profile background. Leaving now will discard these changes.</string>
+    <string name="dialog_discard">Discard</string>
+    <string name="dialog_remove_background_title">Remove Profile Background?</string>
+    <string name="dialog_remove_background_body">Are you sure you want to remove your profile cover background?</string>
+    <string name="profile_background_updated">Profile background updated successfully</string>
+    <string name="profile_background_removed">Profile background removed successfully</string>
+
     <!-- Social & Links Screen -->
     <string name="social_links_title">Social &amp; Links</string>
     <string name="social_profiles_section">Social profiles</string>

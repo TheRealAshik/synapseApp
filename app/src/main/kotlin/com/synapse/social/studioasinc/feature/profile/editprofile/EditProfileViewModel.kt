@@ -154,6 +154,9 @@ class EditProfileViewModel @Inject constructor(
             EditProfileEvent.WorkEducationClicked -> {
                 viewModelScope.launch { _navigationEvents.emit(EditProfileNavigation.NavigateToWorkEducation) }
             }
+            EditProfileEvent.ProfileAppearanceClicked -> {
+                viewModelScope.launch { _navigationEvents.emit(EditProfileNavigation.NavigateToProfileAppearance) }
+            }
             is EditProfileEvent.CurrentCityChanged -> _uiState.update { it.copy(currentCity = event.city, hasChanges = true) }
             is EditProfileEvent.HometownChanged -> _uiState.update { it.copy(hometown = event.hometown, hasChanges = true) }
             is EditProfileEvent.OccupationChanged -> _uiState.update { it.copy(occupation = event.occupation, hasChanges = true) }

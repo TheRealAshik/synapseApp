@@ -18,6 +18,7 @@ import com.synapse.social.studioasinc.feature.profile.personalinfo.PersonalInfor
 import com.synapse.social.studioasinc.presentation.editprofile.social.SocialLinksScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoHistoryScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoType
+import com.synapse.social.studioasinc.feature.profile.editprofile.appearance.ProfileAppearanceScreen
 import com.synapse.social.studioasinc.feature.profile.editprofile.interestsskills.InterestsSkillsScreen
 import com.synapse.social.studioasinc.ui.settings.SelectRegionScreen
 import com.synapse.social.studioasinc.feature.shared.theme.SynapseTheme
@@ -65,6 +66,12 @@ class ProfileEditActivity : AppCompatActivity() {
                                 },
                                 onNavigateToSocialLinks = {
                                     navController.navigate("edit_profile_social_links")
+                                },
+                                onNavigateToProfileAppearance = {
+                                    navController.navigate("profile_appearance")
+                                },
+                                onNavigateToProfessionalProfile = {
+                                    navController.navigate("professional_profile")
                                 }
                             )
                         }
@@ -74,10 +81,13 @@ class ProfileEditActivity : AppCompatActivity() {
                                 onNavigateBack = { navController.popBackStack() },
                                 onNavigateToPhotoHistory = { type ->
                                     navController.navigate("photo_history/$type")
-                                },
-                                onNavigateToProfessionalProfile = {
-                                    navController.navigate("professional_profile")
                                 }
+                            )
+                        }
+
+                        composable("profile_appearance") {
+                            ProfileAppearanceScreen(
+                                onNavigateBack = { navController.popBackStack() }
                             )
                         }
 
