@@ -235,7 +235,16 @@ class ChatViewModel @Inject constructor(
         onOptimisticMessageFailed = { tempId, errorMessage ->
             messagingDelegate.pendingTempIds.update { it - tempId }
             _error.value = errorMessage
-            messagingDelegate._messages.update { current -> current.filter { it.id != tempId } }
+            messagingDelegate._messages.update { current ->
+                with(messagingDelegate) {
+                    current.updateById(tempId) {
+                        it.copy(
+                            deliveryStatus = com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.FAILED,
+                            failureReason = errorMessage
+                        )
+                    }
+                }
+            }
         },
         onError = { _error.value = it },
         mediaCompressor = mediaCompressor
@@ -567,6 +576,12 @@ class ChatViewModel @Inject constructor(
 
     fun deleteMessageForMe(messageId: String) {
         messagingDelegate.deleteMessageForMe(messageId)
+    }
+
+    fun retrySendMessage(message: Message) {
+        messagingDelegate.retrySendMessage(message) { err ->
+            _error.value = err
+        }
     }
 
     fun isChatLocked(): Boolean {

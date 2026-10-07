@@ -54,6 +54,7 @@ internal fun ChatMessageList(
     onSingleTap: (Message) -> Unit,
     onToggleSelection: (String) -> Unit,
     onSwipeToReply: (Message) -> Unit,
+    onRetryClick: (Message) -> Unit = {},
     onReactionSelected: (String, SharedReactionType) -> Unit,
     onNavigateToProfile: (String) -> Unit,
     onOpenBatchGallery: (Message) -> Unit = {},
@@ -136,6 +137,7 @@ internal fun ChatMessageList(
                             }
                         },
                         onSwipeToReply = { onSwipeToReply(message) },
+                        onRetryClick = { onRetryClick(message) },
                         replyToMessage = message.replyToId?.let { messagesMap[it] },
                         onLongClick = {
                             if (selectedMessageIds.isNotEmpty()) {

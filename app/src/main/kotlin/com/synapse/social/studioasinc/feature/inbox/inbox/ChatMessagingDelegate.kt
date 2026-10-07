@@ -1,6 +1,7 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox
 
 import com.synapse.social.studioasinc.feature.inbox.inbox.models.ChatListItem
+import com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
@@ -8,8 +9,10 @@ import com.synapse.social.studioasinc.shared.domain.usecase.chat.BulkDeleteMessa
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.DeleteMessageForMeUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.DeleteMessageUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.EditMessageUseCase
-import com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.PopulateMessageReactionsUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase
+import com.synapse.social.studioasinc.shared.data.mapper.ChatMapper.mergeMonotonic
+import com.synapse.social.studioasinc.shared.util.TimeProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,7 +22,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.util.UUID
 
 class ChatMessagingDelegate(
@@ -45,7 +47,13 @@ class ChatMessagingDelegate(
     suspend fun setMessages(messages: List<Message>) {
         val populated = populateMessageReactionsUseCase(messages)
         _messages.update { current ->
-            (current + populated).distinctBy { it.id }.sortedBy { it.createdAt } // oldest first for UI
+            val messageMap = current.associateBy { it.id }.toMutableMap()
+            populated.forEach { freshMsg ->
+                val existing = messageMap[freshMsg.id]
+                val merged = if (existing != null) existing.mergeMonotonic(freshMsg) else freshMsg
+                messageMap[freshMsg.id] = merged
+            }
+            messageMap.values.sortedBy { it.createdAt }
         }
     }
 
@@ -66,19 +74,20 @@ class ChatMessagingDelegate(
         onError: (String?) -> Unit
     ) {
         viewModelScope.launch {
-            // Optimistic update
             val tempId = UUID.randomUUID().toString()
-            // Register this temp ID so the realtime handler knows to replace it
             pendingTempIds.update { it + tempId }
 
+            val nowStr = TimeProvider.nowInstant().toString()
             val newMessage = Message(
                 id = tempId,
                 chatId = chatId,
                 senderId = currentUserIdProvider() ?: "",
                 content = text,
                 messageType = MessageType.TEXT,
-                deliveryStatus = DeliveryStatus.SENT,
-                createdAt = Instant.now().toString(),
+                deliveryStatus = DeliveryStatus.SENDING,
+                contentStatus = ContentStatus.ACTIVE,
+                createdAt = nowStr,
+                sentAt = nowStr,
                 expiresAt = expiresAt,
                 replyToId = replyToId
             )
@@ -86,7 +95,6 @@ class ChatMessagingDelegate(
                 (current + newMessage).distinctBy { it.id }.sortedBy { msg -> msg.createdAt }
             }
 
-            // Actual send
             sendMessageUseCase(
                 chatId = chatId,
                 content = text,
@@ -94,42 +102,57 @@ class ChatMessagingDelegate(
                 expiresAt = expiresAt,
                 replyToId = replyToId
             ).onSuccess { actualMessage ->
-                // Only replace if the temp message hasn't already been swapped by the realtime handler
                 pendingTempIds.update { it - tempId }
                 _messages.update { current ->
                     val hasTempMessage = current.any { it.id == tempId }
                     val hasActualMessage = current.any { it.id == actualMessage.id }
                     when {
                         hasTempMessage && !hasActualMessage -> {
-                            // Normal case: realtime hasn't arrived yet, replace temp with actual
                             current.updateById(tempId) { tempMsg ->
-                                if (tempMsg.content !in ENCRYPTED_PLACEHOLDERS &&
+                                val updated = if (tempMsg.content !in ENCRYPTED_PLACEHOLDERS &&
                                     actualMessage.content in ENCRYPTED_PLACEHOLDERS) {
                                     actualMessage.copy(content = tempMsg.content)
                                 } else {
                                     actualMessage
                                 }
+                                tempMsg.mergeMonotonic(updated)
                             }.sortedBy { msg -> msg.createdAt }
                         }
                         hasTempMessage && hasActualMessage -> {
-                            // Realtime arrived but didn't match to our temp — remove duplicate temp
                             current.filter { it.id != tempId }
                                 .sortedBy { msg -> msg.createdAt }
                         }
-                        else -> {
-                            // Realtime already replaced the temp message, nothing to do
-                            current
-                        }
+                        else -> current
                     }
                 }
-                // Notification is sent by the repository
             }.onFailure { e ->
                 pendingTempIds.update { it - tempId }
                 onError(e.message)
-                // Remove optimistic message on failure
-                _messages.update { current -> current.filter { it.id != tempId } }
+                _messages.update { current ->
+                    current.updateById(tempId) { tempMsg ->
+                        tempMsg.copy(
+                            deliveryStatus = DeliveryStatus.FAILED,
+                            failureReason = e.message
+                        )
+                    }
+                }
             }
         }
+    }
+
+    fun retrySendMessage(
+        message: Message,
+        onError: (String?) -> Unit
+    ) {
+        if (message.deliveryStatus != DeliveryStatus.FAILED) return
+        performSendMessage(
+            chatId = message.chatId,
+            text = message.content,
+            expiresAt = message.expiresAt,
+            replyToId = message.replyToId,
+            onError = onError
+        )
+        _messages.update { current -> current.filter { it.id != message.id } }
     }
 
     fun saveEdit(
@@ -138,22 +161,25 @@ class ChatMessagingDelegate(
         onError: (String?) -> Unit,
         onSuccess: () -> Unit
     ) {
-        val messageId = message.id ?: return
+        val messageId = message.id.takeIf { it.isNotBlank() } ?: return
 
         viewModelScope.launch {
-            // Optimistic update
+            val nowStr = TimeProvider.nowInstant().toString()
             _messages.update { current ->
                 current.updateById(messageId) {
-                    it.copy(content = newContent, isEdited = true)
+                    it.copy(
+                        content = newContent,
+                        isEdited = true,
+                        contentStatus = ContentStatus.EDITED,
+                        editedAt = nowStr
+                    )
                 }
             }
 
             editMessageUseCase(messageId, newContent).onSuccess {
                 onSuccess()
-                // Notification handled by repository if needed
             }.onFailure { e ->
                 onError(e.message)
-                // Revert optimistic update
                 _messages.update { current ->
                     current.replaceById(messageId, message)
                 }
@@ -169,6 +195,16 @@ class ChatMessagingDelegate(
 
     fun deleteMessage(messageId: String) {
         viewModelScope.launch {
+            val nowStr = TimeProvider.nowInstant().toString()
+            _messages.update { current ->
+                current.updateById(messageId) {
+                    it.copy(
+                        isDeleted = true,
+                        contentStatus = ContentStatus.DELETED,
+                        deletedAt = nowStr
+                    )
+                }
+            }
             deleteMessageUseCase(messageId)
         }
     }
@@ -188,16 +224,12 @@ class ChatMessagingDelegate(
         if (selectedIds.isEmpty()) return
 
         viewModelScope.launch {
-            // Optimistic UI update
             _messages.update { current ->
                 current.filter { it.id !in selectedIds }
             }
 
             bulkDeleteMessagesForMeUseCase(selectedIds).onFailure { e ->
                 onError(e.message)
-                // Note: Reverting optimistic update for multiple messages is complex
-                // because we don't know which ones failed. For simplicity, we just show an error.
-                // A better approach would be to refresh the whole message list.
                 onRequiresRefresh()
             }
         }

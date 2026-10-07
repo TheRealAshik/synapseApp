@@ -10,10 +10,17 @@ data class Message(
     val content: String,
     val messageType: MessageType,
     val mediaUrl: String? = null,
-    val deliveryStatus: DeliveryStatus,
+    val deliveryStatus: DeliveryStatus = DeliveryStatus.SENT,
+    val contentStatus: ContentStatus = ContentStatus.ACTIVE,
     val isDeleted: Boolean = false,
     val isEdited: Boolean = false,
     val replyToId: String? = null,
+    val sentAt: String? = null,
+    val deliveredAt: String? = null,
+    val readAt: String? = null,
+    val editedAt: String? = null,
+    val deletedAt: String? = null,
+    val failureReason: String? = null,
     val createdAt: String,
     val updatedAt: String? = null,
     val readBy: List<String> = emptyList(),
@@ -40,5 +47,15 @@ data class Message(
 }
 
 enum class DeliveryStatus {
-    SENT, DELIVERED, READ
+    SENDING,
+    SENT,
+    DELIVERED,
+    READ,
+    FAILED
+}
+
+enum class ContentStatus {
+    ACTIVE,
+    EDITED,
+    DELETED
 }

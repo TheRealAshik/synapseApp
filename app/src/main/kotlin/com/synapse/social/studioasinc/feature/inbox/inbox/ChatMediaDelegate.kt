@@ -53,7 +53,7 @@ class ChatMediaDelegate(
                 senderId = currentUserId,
                 content = "Sending voice message...",
                 messageType = MessageType.AUDIO,
-                deliveryStatus = DeliveryStatus.SENT,
+                deliveryStatus = DeliveryStatus.SENDING,
                 createdAt = Instant.now().toString()
             )
             onOptimisticMessageAdded(optimisticMessage, tempId)
@@ -104,7 +104,7 @@ class ChatMediaDelegate(
                 senderId = currentUserIdProvider() ?: "",
                 content = "Sending...",
                 messageType = type,
-                deliveryStatus = DeliveryStatus.SENT,
+                deliveryStatus = DeliveryStatus.SENDING,
                 createdAt = Instant.now().toString()
             )
             onOptimisticMessageAdded(newMessage, tempId)
@@ -167,7 +167,7 @@ class ChatMediaDelegate(
                 senderId = currentUserIdProvider() ?: "",
                 content = "Uploading...",
                 messageType = type,
-                deliveryStatus = DeliveryStatus.SENT,
+                deliveryStatus = DeliveryStatus.SENDING,
                 createdAt = Instant.now().toString()
             )
             onOptimisticMessageAdded(newMessage, tempId)
@@ -249,7 +249,7 @@ class ChatMediaDelegate(
                 senderId = currentUserIdProvider() ?: "",
                 content = if (!caption.isNullOrBlank()) caption else "",
                 messageType = MessageType.MEDIA_GROUP,
-                deliveryStatus = DeliveryStatus.SENT,
+                deliveryStatus = DeliveryStatus.SENDING,
                 createdAt = Instant.now().toString(),
                 attachments = currentAttachments,
                 mediaGroupId = batchMediaGroupId

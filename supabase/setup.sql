@@ -608,14 +608,18 @@ CREATE TABLE IF NOT EXISTS public.messages (
     media_url       TEXT,
     delivery_status TEXT DEFAULT 'sent',
     message_state   TEXT DEFAULT 'sent',
+    content_state   TEXT DEFAULT 'active',
     is_deleted      BOOLEAN DEFAULT false,
     is_edited       BOOLEAN DEFAULT false,
     reply_to_id     UUID REFERENCES public.messages(id) ON DELETE SET NULL,
     read_by         JSONB DEFAULT '[]',
     expires_at      TIMESTAMPTZ,
+    sent_at         TIMESTAMPTZ DEFAULT NOW(),
     edited_at       TIMESTAMPTZ,
     delivered_at    TIMESTAMPTZ,
     read_at         TIMESTAMPTZ,
+    deleted_at      TIMESTAMPTZ,
+    failure_reason  TEXT,
     attachments     JSONB,
     deleted_for_users JSONB DEFAULT '[]',
     created_at      TIMESTAMPTZ DEFAULT NOW(),
@@ -1240,6 +1244,54 @@ CREATE TRIGGER trg_sync_post_hashtags
 -- ============================================================
 -- FUNCTIONS
 -- ============================================================
+
+CREATE OR REPLACE FUNCTION public.mark_messages_as_read(p_chat_id UUID, p_user_id TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    UPDATE public.chat_participants
+    SET last_read_at = v_now
+    WHERE chat_id = p_chat_id AND user_id = p_user_id;
+
+    UPDATE public.messages
+    SET read_at = v_now,
+        delivered_at = COALESCE(delivered_at, v_now),
+        delivery_status = 'read',
+        read_by = CASE
+            WHEN read_by IS NULL THEN jsonb_build_array(p_user_id)
+            WHEN NOT (read_by @> jsonb_build_array(p_user_id)) THEN read_by || jsonb_build_array(p_user_id)
+            ELSE read_by
+        END,
+        updated_at = v_now
+    WHERE chat_id = p_chat_id
+      AND sender_id != p_user_id
+      AND (delivery_status IS NULL OR delivery_status != 'read');
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.mark_messages_as_delivered(p_chat_id UUID, p_user_id TEXT)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_now TIMESTAMPTZ := NOW();
+BEGIN
+    UPDATE public.messages
+    SET delivered_at = COALESCE(delivered_at, v_now),
+        delivery_status = 'delivered',
+        updated_at = v_now
+    WHERE chat_id = p_chat_id
+      AND sender_id != p_user_id
+      AND (delivery_status IS NULL OR delivery_status IN ('sending', 'sent'));
+END;
+$$;
 
 CREATE OR REPLACE FUNCTION public.increment_hashtag_usage(hashtag_tag TEXT)
 RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$

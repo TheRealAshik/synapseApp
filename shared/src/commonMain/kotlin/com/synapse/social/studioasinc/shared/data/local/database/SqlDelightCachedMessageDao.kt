@@ -1,16 +1,17 @@
 package com.synapse.social.studioasinc.shared.data.local.database
-import com.synapse.social.studioasinc.shared.core.util.AppDispatchers
 
+import com.synapse.social.studioasinc.shared.core.util.AppDispatchers
 import com.synapse.social.studioasinc.shared.data.database.CachedMessage
 import com.synapse.social.studioasinc.shared.data.database.StorageDatabase
-import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
-import com.synapse.social.studioasinc.shared.domain.model.chat.Message
-import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
 import com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto
 import com.synapse.social.studioasinc.shared.data.mapper.ChatMapper
-import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
 import com.synapse.social.studioasinc.shared.domain.model.ReactionType
-import kotlinx.coroutines.Dispatchers
+import com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus
+import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
+import com.synapse.social.studioasinc.shared.domain.model.chat.Message
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
+import com.synapse.social.studioasinc.shared.util.TimeProvider
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
 import kotlinx.serialization.json.Json
@@ -58,8 +59,10 @@ class SqlDelightCachedMessageDao(
 
     override suspend fun updateContent(id: String, content: String) {
         withContext(AppDispatchers.IO) {
+            val nowStr = TimeProvider.nowInstant().toString()
             db.cachedMessageQueries.updateContent(
                 content = content,
+                editedAt = nowStr,
                 id = id
             )
         }
@@ -67,15 +70,23 @@ class SqlDelightCachedMessageDao(
 
     override suspend fun markDeleted(id: String) {
         withContext(AppDispatchers.IO) {
-            db.cachedMessageQueries.markDeleted(id)
+            val nowStr = TimeProvider.nowInstant().toString()
+            db.cachedMessageQueries.markDeleted(
+                deletedAt = nowStr,
+                id = id
+            )
         }
     }
 
     override suspend fun markDeleted(ids: List<String>) {
         withContext(AppDispatchers.IO) {
+            val nowStr = TimeProvider.nowInstant().toString()
             db.transaction {
                 ids.forEach { id ->
-                    db.cachedMessageQueries.markDeleted(id)
+                    db.cachedMessageQueries.markDeleted(
+                        deletedAt = nowStr,
+                        id = id
+                    )
                 }
             }
         }
@@ -101,6 +112,7 @@ class SqlDelightCachedMessageDao(
 
     override suspend fun markRead(chatId: String, userId: String) {
         withContext(AppDispatchers.IO) {
+            val nowStr = TimeProvider.nowInstant().toString()
             val allMessages = db.cachedMessageQueries.selectByChatId(chatId, 500).executeAsList()
             db.transaction {
                 allMessages.forEach { cached ->
@@ -109,6 +121,7 @@ class SqlDelightCachedMessageDao(
                         readBy.add(userId)
                         db.cachedMessageQueries.updateReadBy(
                             read_by = readBy.joinToString(","),
+                            readAt = nowStr,
                             id = cached.id
                         )
                     }
@@ -140,12 +153,19 @@ class SqlDelightCachedMessageDao(
             message_type = domain.messageType.name,
             media_url = mediaUrlValue,
             delivery_status = domain.deliveryStatus.name,
+            content_status = domain.contentStatus.name,
             read_by = domain.readBy.joinToString(separator = ",").takeIf { it.isNotEmpty() },
             created_at = domain.createdAt,
+            sent_at = domain.sentAt ?: domain.createdAt,
+            delivered_at = domain.deliveredAt,
+            read_at = domain.readAt,
+            edited_at = domain.editedAt,
+            deleted_at = domain.deletedAt,
             expires_at = domain.expiresAt,
             reply_to_id = domain.replyToId,
-            is_deleted = if (domain.isDeleted) 1L else 0L,
-            is_edited = if (domain.isEdited) 1L else 0L,
+            failure_reason = domain.failureReason,
+            is_deleted = if (domain.isDeleted || domain.contentStatus == ContentStatus.DELETED) 1L else 0L,
+            is_edited = if (domain.isEdited || domain.contentStatus == ContentStatus.EDITED) 1L else 0L,
             cached_at = cachedAt
         )
     }
@@ -154,13 +174,21 @@ class SqlDelightCachedMessageDao(
         val messageType = try {
             MessageType.valueOf(cached.message_type)
         } catch (e: Exception) {
-            MessageType.TEXT // fallback
+            MessageType.TEXT
         }
 
         val deliveryStatus = try {
             DeliveryStatus.valueOf(cached.delivery_status)
         } catch (e: Exception) {
-            DeliveryStatus.SENT // fallback
+            DeliveryStatus.SENT
+        }
+
+        val contentStatus = try {
+            ContentStatus.valueOf(cached.content_status)
+        } catch (e: Exception) {
+            if (cached.is_deleted == 1L) ContentStatus.DELETED
+            else if (cached.is_edited == 1L) ContentStatus.EDITED
+            else ContentStatus.ACTIVE
         }
 
         var attachmentsList = emptyList<MessageAttachment>()
@@ -189,9 +217,16 @@ class SqlDelightCachedMessageDao(
             messageType = finalMessageType,
             mediaUrl = resolvedMediaUrl,
             deliveryStatus = deliveryStatus,
-            isDeleted = cached.is_deleted == 1L,
-            isEdited = cached.is_edited == 1L,
+            contentStatus = contentStatus,
+            isDeleted = cached.is_deleted == 1L || contentStatus == ContentStatus.DELETED,
+            isEdited = cached.is_edited == 1L || contentStatus == ContentStatus.EDITED,
             replyToId = cached.reply_to_id,
+            sentAt = cached.sent_at ?: cached.created_at,
+            deliveredAt = cached.delivered_at,
+            readAt = cached.read_at,
+            editedAt = cached.edited_at,
+            deletedAt = cached.deleted_at,
+            failureReason = cached.failure_reason,
             createdAt = cached.created_at,
             expiresAt = cached.expires_at,
             readBy = cached.read_by?.split(",") ?: emptyList(),

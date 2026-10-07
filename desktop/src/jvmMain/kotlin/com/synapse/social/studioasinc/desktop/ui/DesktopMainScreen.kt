@@ -757,6 +757,22 @@ fun MessageItem(message: Message, currentUserId: String?) {
                 if (isMe) {
                     Spacer(modifier = Modifier.width(4.dp))
                     when (message.deliveryStatus) {
+                        com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.SENDING -> {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Sending",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
+                        com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.FAILED -> {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Failed",
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(14.dp)
+                            )
+                        }
                         com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.SENT -> {
                             Icon(
                                 imageVector = Icons.Default.Check,
