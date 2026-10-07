@@ -19,6 +19,7 @@ import com.synapse.social.studioasinc.data.repository.SettingsRepositoryImpl
 import com.synapse.social.studioasinc.feature.shared.theme.ThemeManager
 import com.synapse.social.studioasinc.shared.domain.repository.NotificationRepository
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.StartPresenceTrackingUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.StopPresenceTrackingUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.UpdatePresenceUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,10 +59,20 @@ class SynapseApplication : Application(), ImageLoaderFactory {
     }
 
     @Inject lateinit var startPresenceTrackingUseCase: StartPresenceTrackingUseCase
+    @Inject lateinit var stopPresenceTrackingUseCase: StopPresenceTrackingUseCase
     @Inject lateinit var updatePresenceUseCase: UpdatePresenceUseCase
     private lateinit var mediaCacheCleanupManager: MediaCacheCleanupManager
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+
+    @Volatile
+    private var isAppInForeground = false
+
+    @Volatile
+    private var isAuthenticated = false
+
+    @Volatile
+    private var isTracking = false
 
     override fun onCreate() {
         super.onCreate()
@@ -85,6 +96,8 @@ class SynapseApplication : Application(), ImageLoaderFactory {
 
         SupabaseAuthenticationService.initialize(this)
 
+        setupAuthSessionObserver()
+
 
         initializeMaintenanceServices()
 
@@ -100,32 +113,51 @@ class SynapseApplication : Application(), ImageLoaderFactory {
     private fun setupLifecycleObserver() {
         ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
             override fun onStart(owner: LifecycleOwner) {
-                // App moved to foreground
-                applicationScope.launch(Dispatchers.IO) {
-                    try {
-                        val authService = SupabaseAuthenticationService.getInstance(this@SynapseApplication)
-                        if (authService.getCurrentUserId() != null) {
-                            updatePresenceUseCase(true)
-                            Napier.d("App foreground: Presence set to online")
-                        }
-                    } catch (e: Exception) {
-                        Napier.e("Failed to update presence on foreground", e)
-                    }
-                }
+                isAppInForeground = true
+                managePresenceTracking()
             }
 
             override fun onStop(owner: LifecycleOwner) {
-                // App moved to background
-                applicationScope.launch(Dispatchers.IO) {
-                    try {
-                        updatePresenceUseCase(false)
-                        Napier.d("App background: Presence set to offline")
-                    } catch (e: Exception) {
-                        Napier.e("Failed to update presence on background", e)
-                    }
-                }
+                isAppInForeground = false
+                managePresenceTracking()
             }
         })
+    }
+
+    private fun managePresenceTracking() {
+        val shouldTrack = isAppInForeground && isAuthenticated
+        Napier.d(
+            "Presence tracking decision: shouldTrack=$shouldTrack, " +
+                "isAppInForeground=$isAppInForeground, " +
+                "isAuthenticated=$isAuthenticated, " +
+                "isTracking=$isTracking",
+            tag = "PresenceTracker"
+        )
+        if (shouldTrack && !isTracking) {
+            isTracking = true
+            applicationScope.launch(Dispatchers.IO) {
+                try {
+                    startPresenceTrackingUseCase()
+                    Napier.d("✅ Presence tracking started (foreground + authenticated)", tag = "PresenceTracker")
+                } catch (e: Exception) {
+                    Napier.e("❌ Failed to start presence tracking", e, tag = "PresenceTracker")
+                    isTracking = false
+                }
+            }
+        } else if (!shouldTrack && isTracking) {
+            isTracking = false
+            applicationScope.launch(Dispatchers.IO) {
+                try {
+                    stopPresenceTrackingUseCase()
+                    Napier.d("🛑 Presence tracking stopped (background or unauthenticated)", tag = "PresenceTracker")
+                } catch (e: Exception) {
+                    Napier.e("❌ Failed to stop presence tracking", e, tag = "PresenceTracker")
+                    isTracking = true
+                }
+            }
+        } else {
+            Napier.d("No presence tracking transition needed: shouldTrack=$shouldTrack, isTracking=$isTracking", tag = "PresenceTracker")
+        }
     }
 
     private fun initializeOneSignal() {
@@ -195,34 +227,16 @@ class SynapseApplication : Application(), ImageLoaderFactory {
             } catch (e: Exception) {
                 android.util.Log.e("OneSignal", "❌ App startup OneSignal registration failed", e)
             }
-            
-            // Start presence tracking
-            try {
-                val authService = SupabaseAuthenticationService.getInstance(this@SynapseApplication)
-                if (authService.getCurrentUserId() != null) {
-                    kotlinx.coroutines.withContext(Dispatchers.IO) {
-                        // First set online status
-                        updatePresenceUseCase(true)
-                        Napier.d("Initial presence set to online")
-                        // Then start heartbeat tracking
-                        startPresenceTrackingUseCase()
-                        Napier.d("Presence tracking started")
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("SynapseApplication", "Failed to start presence tracking", e)
-                Napier.e("Failed to start presence tracking", e)
-            }
         }
+    }
 
-        // Observe Supabase Auth changes to sync with OneSignal and manage Realtime connection
+    private fun setupAuthSessionObserver() {
         applicationScope.launch(Dispatchers.IO) {
             try {
                 if (!SupabaseClient.isConfigured()) {
-                    Napier.w("Supabase not configured, skipping realtime/auth session observer", tag = "SynapseApplication")
+                    Napier.w("Supabase not configured, skipping auth session observer", tag = "SynapseApplication")
                     return@launch
                 }
-                // Wait for Supabase to be initialized via service
                 SupabaseAuthenticationService.getInstance(this@SynapseApplication)
                 
                 SupabaseClient.client.auth.sessionStatus.collect { status ->
@@ -230,8 +244,15 @@ class SynapseApplication : Application(), ImageLoaderFactory {
                         is SessionStatus.Authenticated -> {
                             val userId = status.session.user?.id
                             if (userId != null) {
+                                isAuthenticated = true
+                                Napier.d(
+                                    "Auth state: Authenticated (user=$userId, " +
+                                        "isAppInForeground=$isAppInForeground, isTracking=$isTracking)",
+                                    tag = "PresenceTracker"
+                                )
+                                managePresenceTracking()
+
                                 try {
-                                    // Connect to realtime when authenticated
                                     val rt = io.github.jan.supabase.realtime.Realtime
                                     SupabaseClient.client.pluginManager.getPlugin(rt).connect()
                                     Napier.d("✅ Supabase Realtime connected globally for user: $userId")
@@ -239,44 +260,68 @@ class SynapseApplication : Application(), ImageLoaderFactory {
                                     Napier.e("❌ Failed to connect to Supabase Realtime", e)
                                 }
 
-                                withContext(Dispatchers.Main) {
-                                    android.util.Log.d("OneSignal", "Syncing identity for authenticated user: $userId")
-                                    OneSignal.login(userId)
-                                    OneSignal.User.pushSubscription.optIn()
-                                    
-                                    val subId = OneSignal.User.pushSubscription.id
-                                    if (subId != null) {
-                                        applicationScope.launch(Dispatchers.IO) {
-                                            try {
-                                                notificationRepository.updateOneSignalPlayerId(userId, subId)
-                                                android.util.Log.d("SynapseApplication", "✅ Session sync: OneSignal ID updated")
-                                            } catch (e: Exception) {
-                                                android.util.Log.e("SynapseApplication", "❌ Session sync: Failed to update OneSignal ID", e)
+                                if (isOneSignalConfigured()) {
+                                    withContext(Dispatchers.Main) {
+                                        try {
+                                            android.util.Log.d("OneSignal", "Syncing identity for authenticated user: $userId")
+                                            OneSignal.login(userId)
+                                            OneSignal.User.pushSubscription.optIn()
+                                            
+                                            val subId = OneSignal.User.pushSubscription.id
+                                            if (subId != null) {
+                                                applicationScope.launch(Dispatchers.IO) {
+                                                    try {
+                                                        notificationRepository.updateOneSignalPlayerId(userId, subId)
+                                                        android.util.Log.d("SynapseApplication", "✅ Session sync: OneSignal ID updated")
+                                                    } catch (e: Exception) {
+                                                        android.util.Log.e("SynapseApplication", "❌ Session sync: Failed to update OneSignal ID", e)
+                                                    }
+                                                }
                                             }
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("OneSignal", "❌ OneSignal identity sync failed", e)
                                         }
                                     }
                                 }
                             }
                         }
                         is SessionStatus.NotAuthenticated -> {
+                            isAuthenticated = false
+                            Napier.d(
+                                "Auth state: NotAuthenticated (isAppInForeground=$isAppInForeground, isTracking=$isTracking)",
+                                tag = "PresenceTracker"
+                            )
+                            managePresenceTracking()
+
                             try {
                                 val rt = io.github.jan.supabase.realtime.Realtime
                                 SupabaseClient.client.pluginManager.getPlugin(rt).disconnect()
-                                Napier.d("Supabase Realtime disconnected on logout")
+                                Napier.d("Supabase Realtime disconnected on logout", tag = "SynapseApplication")
                             } catch (e: Exception) {}
 
-                            withContext(Dispatchers.Main) {
-                                android.util.Log.d("OneSignal", "User logged out, logging out from OneSignal")
-                                OneSignal.logout()
+                            if (isOneSignalConfigured()) {
+                                withContext(Dispatchers.Main) {
+                                    try {
+                                        android.util.Log.d("OneSignal", "User logged out, logging out from OneSignal")
+                                        OneSignal.logout()
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("OneSignal", "❌ OneSignal logout failed", e)
+                                    }
+                                }
                             }
                         }
                         else -> {}
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SynapseApplication", "Error in OneSignal session listener", e)
+                android.util.Log.e("SynapseApplication", "Error in auth session observer", e)
             }
         }
+    }
+
+    private fun isOneSignalConfigured(): Boolean {
+        val appId = NotificationConfig.ONESIGNAL_APP_ID
+        return appId.isNotBlank() && appId != "YOUR_ONESIGNAL_APP_ID_HERE"
     }
 
     private fun applyThemeOnStartup() {
@@ -300,7 +345,6 @@ class SynapseApplication : Application(), ImageLoaderFactory {
 
     override fun onTerminate() {
         super.onTerminate()
-
 
         if (::mediaCacheCleanupManager.isInitialized) {
             mediaCacheCleanupManager.shutdown()

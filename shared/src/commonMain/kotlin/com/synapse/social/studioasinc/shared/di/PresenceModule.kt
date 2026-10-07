@@ -4,6 +4,7 @@ import com.synapse.social.studioasinc.shared.data.repository.SupabasePresenceRep
 import com.synapse.social.studioasinc.shared.domain.repository.PresenceRepository
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserPresenceUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.StartPresenceTrackingUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.StopPresenceTrackingUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.UpdatePresenceUseCase
 import org.koin.dsl.module
 
@@ -11,5 +12,6 @@ val presenceModule = module {
     single<PresenceRepository> { SupabasePresenceRepository() }
     single { UpdatePresenceUseCase(get()) }
     single { StartPresenceTrackingUseCase(get()) }
+    single { StopPresenceTrackingUseCase(get()) }
     single { ObserveUserPresenceUseCase(get()) }
 }

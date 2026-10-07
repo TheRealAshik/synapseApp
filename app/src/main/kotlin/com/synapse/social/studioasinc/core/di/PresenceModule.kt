@@ -5,6 +5,7 @@ import com.synapse.social.studioasinc.shared.domain.repository.PresenceRepositor
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserActiveStatusUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserPresenceUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.StartPresenceTrackingUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.StopPresenceTrackingUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.UpdatePresenceUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.presence.UpdateCurrentChatUseCase
 import dagger.Module
@@ -28,6 +29,10 @@ object PresenceModule {
     @Provides
     @Singleton
     fun provideStartPresenceTrackingUseCase(repository: PresenceRepository) = StartPresenceTrackingUseCase(repository)
+    
+    @Provides
+    @Singleton
+    fun provideStopPresenceTrackingUseCase(repository: PresenceRepository) = StopPresenceTrackingUseCase(repository)
     
     @Provides
     @Singleton
