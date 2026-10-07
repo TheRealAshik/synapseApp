@@ -35,10 +35,15 @@ import com.synapse.social.studioasinc.ui.createpost.CreatePostScreen
 import com.synapse.social.studioasinc.ui.createpost.CreatePostViewModel
 import com.synapse.social.studioasinc.ui.settings.SettingsScreen
 import com.synapse.social.studioasinc.feature.profile.editprofile.media.ProfileMediaScreen
+import com.synapse.social.studioasinc.feature.profile.editprofile.interestsskills.InterestsSkillsScreen
+import com.synapse.social.studioasinc.feature.profile.editprofile.appearance.ProfileAppearanceScreen
+import com.synapse.social.studioasinc.feature.profile.editprofile.featured.FeaturedContentScreen
+import com.synapse.social.studioasinc.feature.profile.editprofile.workeducation.WorkEducationScreen
 import com.synapse.social.studioasinc.feature.profile.personalinfo.PersonalInformationScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileScreen
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileViewModel
 import com.synapse.social.studioasinc.presentation.editprofile.EditProfileEvent
+import com.synapse.social.studioasinc.presentation.editprofile.social.SocialLinksScreen
 import com.synapse.social.studioasinc.feature.profile.editprofile.RegionSelectionScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoHistoryScreen
 import com.synapse.social.studioasinc.presentation.editprofile.photohistory.PhotoType
@@ -357,6 +362,21 @@ fun NavGraphBuilder.profileGraph(
                     onNavigateToPhotoHistory = { type ->
                         navController.navigate(AppDestination.PhotoHistory(type))
                     },
+                    onNavigateToInterestsSkills = {
+                        navController.navigate(AppDestination.InterestsSkills)
+                    },
+                    onNavigateToWorkEducation = {
+                        navController.navigate(AppDestination.WorkEducation)
+                    },
+                    onNavigateToSocialLinks = {
+                        navController.navigate(AppDestination.SocialLinks)
+                    },
+                    onNavigateToProfileAppearance = {
+                        navController.navigate(AppDestination.ProfileAppearance)
+                    },
+                    onNavigateToFeaturedContent = {
+                        navController.navigate(AppDestination.FeaturedContent)
+                    },
                     onNavigateToProfessionalProfile = {
                         navController.navigate(AppDestination.ProfessionalProfile)
                     }
@@ -448,12 +468,37 @@ fun NavGraphBuilder.profileGraph(
                     return@composable
                 }
 
-                PhotoHistoryScreen(
+                 PhotoHistoryScreen(
                     type = photoType,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
-    composable<AppDestination.FollowList> { backStackEntry ->
+            composable<AppDestination.InterestsSkills> {
+                InterestsSkillsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable<AppDestination.SocialLinks> {
+                SocialLinksScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable<AppDestination.ProfileAppearance> {
+                ProfileAppearanceScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable<AppDestination.FeaturedContent> {
+                FeaturedContentScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+            composable<AppDestination.WorkEducation> {
+                WorkEducationScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+     composable<AppDestination.FollowList> { backStackEntry ->
                 val args = backStackEntry.toRoute<AppDestination.FollowList>()
                 val userId = args.userId
                 val currentUserId = AuthHelper.getCurrentUserId() ?: return@composable

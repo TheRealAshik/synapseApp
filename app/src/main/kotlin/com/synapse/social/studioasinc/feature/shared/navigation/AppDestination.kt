@@ -38,6 +38,16 @@ sealed interface AppDestination {
     @Serializable
     data class PhotoHistory(val type: String) : AppDestination
     @Serializable
+    data object InterestsSkills : AppDestination
+    @Serializable
+    data object SocialLinks : AppDestination
+    @Serializable
+    data object ProfileAppearance : AppDestination
+    @Serializable
+    data object FeaturedContent : AppDestination
+    @Serializable
+    data object WorkEducation : AppDestination
+    @Serializable
     data class FollowList(val userId: String, val initialTab: Int = 0) : AppDestination
     @Serializable
     data class Chat(
