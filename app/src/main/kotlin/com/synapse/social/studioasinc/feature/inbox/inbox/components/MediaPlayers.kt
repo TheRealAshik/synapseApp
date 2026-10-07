@@ -1,18 +1,28 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -21,54 +31,40 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceMessagePlayerViewModel
 import com.synapse.social.studioasinc.feature.shared.reels.VideoPlayerViewModel
 import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.text.font.FontWeight
-import androidx.media3.common.PlaybackParameters
-import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceDownloadCache
-import kotlinx.coroutines.launch
-import kotlin.random.Random
 
+private fun formatTime(ms: Long): String {
+    val totalSeconds = (ms / 1000).coerceAtLeast(0)
+    val minutes = totalSeconds / 60
+    val seconds = totalSeconds % 60
+    return String.format("%02d:%02d", minutes, seconds)
+}
+
+private fun formatSpeed(speed: Float): String {
+    return when {
+        speed == 1.5f -> "1.5x"
+        speed >= 2.0f -> "2x"
+        else -> "1x"
+    }
+}
 
 @Composable
 fun VoiceMessagePlayer(
     mediaUrl: String,
     tintColor: Color,
     isFromMe: Boolean,
-    viewModel: VideoPlayerViewModel = hiltViewModel(key = mediaUrl)
+    modifier: Modifier = Modifier,
+    viewModel: VoiceMessagePlayerViewModel = hiltViewModel(key = mediaUrl)
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val isPlaying = uiState.isPlaying
-    val durationMs = uiState.duration
-    val currentPositionMs = uiState.currentPosition
-
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // We need to access VoiceDownloadCache. The best way in Compose without injecting a new ViewModel
-    // is to resolve it from the application context.
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val voiceCache = remember {
-        // Quick manual resolution, assuming VoiceDownloadCache is provided by Hilt.
-        // Actually, we can use an entry point to get it.
-        dagger.hilt.android.EntryPointAccessors.fromApplication(
-            context.applicationContext,
-            VoiceDownloadCacheEntryPoint::class.java
-        ).getVoiceDownloadCache()
+    LaunchedEffect(mediaUrl) {
+        viewModel.initialize(mediaUrl)
     }
-
-    var localPath by remember { mutableStateOf<String?>(null) }
-    var isDownloading by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-
-    var playbackSpeed by remember { mutableFloatStateOf(1f) }
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -82,169 +78,190 @@ fun VoiceMessagePlayer(
         }
     }
 
-    LaunchedEffect(localPath) {
-        if (localPath != null) {
-            viewModel.initializePlayer(localPath!!)
-        }
-    }
+    val isPlaying = uiState.isPlaying
+    val isDownloading = uiState.isDownloading
+    val isBuffering = uiState.isBuffering
+    val hasError = uiState.downloadError != null
+    val currentPositionMs = uiState.currentPositionMs
+    val durationMs = uiState.durationMs
+    val speed = uiState.playbackSpeed
+    val amplitudes = uiState.waveformAmplitudes
 
-    DisposableEffect(Unit) {
-        onDispose {
-            viewModel.releasePlayer()
-        }
-    }
+    val progress = if (durationMs > 0) {
+        (currentPositionMs.toFloat() / durationMs.toFloat()).coerceIn(0f, 1f)
+    } else 0f
 
-    val playPauseAction = {
-        if (localPath == null) {
-            isDownloading = true
-            coroutineScope.launch {
-                val result = voiceCache.getLocalPath(mediaUrl)
-                isDownloading = false
-                result.onSuccess { path ->
-                    localPath = path
-                }
-            }
-        } else {
-            if (isPlaying) viewModel.pause() else viewModel.play()
-        }
-    }
+    val buttonContainerColor = if (isFromMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+    val buttonContentColor = if (isFromMe) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSecondary
+    val activeWaveformColor = if (isFromMe) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+    val inactiveWaveformColor = activeWaveformColor.copy(alpha = 0.38f)
+    val textColor = if (isFromMe) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
 
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(Spacing.ExtraLarge)
+    Surface(
+        color = Color.Transparent,
+        modifier = modifier
+            .widthIn(min = Sizes.ChatMaxWidth / 2, max = Sizes.ChatMaxWidth)
+            .padding(vertical = Spacing.ExtraSmall)
     ) {
-        // Play/Pause / Download Button
-        Box(
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .size(Sizes.IconLarge)
-                .clip(CircleShape)
-                .background(tintColor.copy(alpha = 0.1f))
-                .clickable { playPauseAction() },
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall)
         ) {
-            if (isDownloading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(Sizes.IconSemiMedium),
-                    color = tintColor,
-                    strokeWidth = Sizes.BorderDefault
-                )
-            } else if (localPath == null) {
-                Icon(
-                    imageVector = Icons.Default.Download,
-                    contentDescription = stringResource(R.string.voice_download),
-                    tint = tintColor,
-                    modifier = Modifier.size(Sizes.IconDefault)
-                )
-            } else {
-                Icon(
-                    imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                    contentDescription = stringResource(if (isPlaying) R.string.chat_action_pause_audio else R.string.chat_action_play_audio),
-                    tint = tintColor,
-                    modifier = Modifier.size(Sizes.IconDefault)
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.width(Spacing.Small))
-
-        // Waveform
-        val progress = if (durationMs > 0) currentPositionMs.toFloat() / durationMs.toFloat() else 0f
-
-        // Generate pseudo-random waveform based on url hash
-        val random = remember(mediaUrl) { Random(mediaUrl.hashCode()) }
-        val bars = remember(mediaUrl) { List(30) { random.nextFloat() * 0.8f + 0.2f } }
-
-        Canvas(
-            modifier = Modifier
-                .weight(1f)
-                .height(Sizes.IconLarge)
-        ) {
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-            val barCount = bars.size
-            val spacing = Spacing.ExtraSmall.toPx()
-            val totalSpacing = spacing * (barCount - 1)
-            val barWidth = (canvasWidth - totalSpacing) / barCount
-
-            bars.forEachIndexed { index, amp ->
-                val x = index * (barWidth + spacing)
-                val barHeight = canvasHeight * amp
-                val startY = (canvasHeight - barHeight) / 2f
-                val endY = startY + barHeight
-
-                // Color based on progress
-                val barProgress = index.toFloat() / barCount
-                val color = if (barProgress <= progress && localPath != null) {
-                    tintColor
-                } else {
-                    tintColor.copy(alpha = 0.3f)
+            // Material 3 FilledTonalIconButton
+            Box(
+                modifier = Modifier
+                    .size(Sizes.AvatarLarge),
+                contentAlignment = Alignment.Center
+            ) {
+                when {
+                    isDownloading || isBuffering -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(Sizes.IconLarge),
+                            color = activeWaveformColor,
+                            strokeWidth = Sizes.BorderDefault
+                        )
+                    }
+                    hasError -> {
+                        IconButton(
+                            onClick = { viewModel.onRetryClicked() },
+                            modifier = Modifier.size(Sizes.AvatarLarge)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = stringResource(R.string.retry),
+                                tint = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.size(Sizes.IconLarge)
+                            )
+                        }
+                    }
+                    else -> {
+                        FilledTonalIconButton(
+                            onClick = { viewModel.onPlayPauseClicked() },
+                            modifier = Modifier.size(Sizes.AvatarLarge),
+                            shape = CircleShape,
+                            colors = IconButtonDefaults.filledTonalIconButtonColors(
+                                containerColor = buttonContainerColor,
+                                contentColor = buttonContentColor
+                            )
+                        ) {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = stringResource(
+                                    if (isPlaying) R.string.chat_action_pause_audio else R.string.chat_action_play_audio
+                                ),
+                                modifier = Modifier.size(Sizes.IconLarge)
+                            )
+                        }
+                    }
                 }
-
-                drawLine(
-                    color = color,
-                    start = Offset(x + barWidth / 2f, startY),
-                    end = Offset(x + barWidth / 2f, endY),
-                    strokeWidth = barWidth,
-                    cap = StrokeCap.Round
-                )
             }
-        }
 
-        Spacer(modifier = Modifier.width(Spacing.Small))
+            Spacer(modifier = Modifier.width(Spacing.Medium))
 
-        // Duration / Speed Chip
-        Column(horizontalAlignment = Alignment.End) {
-            if (localPath != null) {
-                Surface(
-                    shape = RoundedCornerShape(Sizes.CornerMedium),
-                    color = tintColor.copy(alpha = 0.1f),
+            // Waveform and Controls Column
+            Column(
+                modifier = Modifier
+                    .weight(1f),
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Waveform Canvas (Seekable by tap or drag)
+                Box(
                     modifier = Modifier
-                        .clickable {
-                            // VideoPlayerViewModel does not support changing playback speed right now.
-                            // To prevent compile issues, this will be visually updated but functionally inert
-                            // until VideoPlayerViewModel exposes speed control.
-                            playbackSpeed = when (playbackSpeed) {
-                                1f -> 1.5f
-                                1.5f -> 2f
-                                else -> 1f
+                        .fillMaxWidth()
+                        .height(Sizes.IconLarge)
+                        .pointerInput(durationMs) {
+                            detectTapGestures { offset ->
+                                if (durationMs > 0 && size.width > 0) {
+                                    val fraction = offset.x / size.width.toFloat()
+                                    viewModel.onSeek(fraction)
+                                }
                             }
                         }
-                        .padding(horizontal = Spacing.ExtraSmall, vertical = Spacing.Tiny)
+                        .pointerInput(durationMs) {
+                            detectHorizontalDragGestures { change, dragAmount ->
+                                change.consume()
+                                if (durationMs > 0 && size.width > 0) {
+                                    val fraction = change.position.x / size.width.toFloat()
+                                    viewModel.onSeek(fraction)
+                                }
+                            }
+                        }
                 ) {
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val canvasWidth = size.width
+                        val canvasHeight = size.height
+                        val bars = if (amplitudes.isNotEmpty()) amplitudes else List(36) { 0.3f }
+                        val barCount = bars.size
+                        val spacingPx = Spacing.ExtraSmall.toPx()
+                        val totalSpacing = spacingPx * (barCount - 1)
+                        val barWidth = ((canvasWidth - totalSpacing) / barCount).coerceAtLeast(Sizes.BorderDefault.toPx())
+
+                        bars.forEachIndexed { index, amp ->
+                            val x = index * (barWidth + spacingPx) + (barWidth / 2f)
+                            val barHeight = (canvasHeight * amp.coerceIn(0.15f, 1.0f)).coerceAtLeast(Sizes.BorderThin.toPx() * 4)
+                            val startY = (canvasHeight - barHeight) / 2f
+                            val endY = startY + barHeight
+
+                            val barFraction = index.toFloat() / barCount.toFloat()
+                            val color = if (barFraction <= progress) {
+                                activeWaveformColor
+                            } else {
+                                inactiveWaveformColor
+                            }
+
+                            drawLine(
+                                color = color,
+                                start = Offset(x, startY),
+                                end = Offset(x, endY),
+                                strokeWidth = barWidth,
+                                cap = StrokeCap.Round
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+
+                // Time Display and Speed Chip Row
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Time position / duration string
+                    val formattedPosition = formatTime(currentPositionMs)
+                    val formattedDuration = formatTime(durationMs)
+                    val timeText = if (durationMs > 0) "$formattedPosition / $formattedDuration" else formattedPosition
+
                     Text(
-                        text = stringResource(R.string.playback_speed_format, playbackSpeed),
+                        text = timeText,
                         style = MaterialTheme.typography.labelSmall,
-                        color = tintColor,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = Spacing.ExtraSmall, vertical = Spacing.Tiny)
+                        color = textColor,
+                        fontWeight = FontWeight.Medium
                     )
+
+                    // Playback Speed Toggle Chip (1x -> 1.5x -> 2x -> 1x)
+                    Surface(
+                        shape = RoundedCornerShape(Sizes.CornerMedium),
+                        color = buttonContainerColor,
+                        contentColor = buttonContentColor,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(Sizes.CornerMedium))
+                            .clickable { viewModel.onSpeedToggle() }
+                    ) {
+                        Text(
+                            text = formatSpeed(speed),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Tiny)
+                        )
+                    }
                 }
             }
-
-            val displayTimeMs = if (isPlaying || localPath != null) {
-                if (isPlaying) currentPositionMs else durationMs
-            } else 0L
-
-            val totalSeconds = displayTimeMs / 1000
-            val m = totalSeconds / 60
-            val s = totalSeconds % 60
-
-            Text(
-                text = String.format("%02d:%02d", m, s),
-                color = tintColor,
-                style = MaterialTheme.typography.labelSmall,
-                modifier = Modifier.padding(top = Spacing.Tiny)
-            )
         }
     }
-}
-
-@dagger.hilt.EntryPoint
-@dagger.hilt.InstallIn(dagger.hilt.components.SingletonComponent::class)
-interface VoiceDownloadCacheEntryPoint {
-    fun getVoiceDownloadCache(): VoiceDownloadCache
 }
 
 @Composable

@@ -12,11 +12,12 @@ import io.ktor.client.request.header
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class VoiceDownloadCache @Inject constructor(
+open class VoiceDownloadCache @Inject constructor(
     private val httpClient: HttpClient,
     @ApplicationContext private val context: Context
 ) {
@@ -28,12 +29,28 @@ class VoiceDownloadCache @Inject constructor(
                (configuredUrl.isNotBlank() && url.contains(configuredUrl))
     }
 
-    suspend fun getLocalPath(url: String): Result<String> = withContext(Dispatchers.IO) {
-        try {
-            val urlHash = url.hashCode().toString()
-            val cachedFile = File(context.cacheDir, "voice_$urlHash.m4a")
+    private fun getCacheFilename(url: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hashBytes = digest.digest(url.toByteArray(Charsets.UTF_8))
+        val hex = hashBytes.joinToString("") { "%02x".format(it) }
+        return "voice_$hex.m4a"
+    }
 
-            // If already downloaded and decoded, return it
+    open suspend fun getLocalPath(url: String): Result<String> = withContext(Dispatchers.IO) {
+        try {
+            // Check if local file path or uri directly
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                val cleanPath = url.removePrefix("file://")
+                val localFile = File(cleanPath)
+                if (localFile.exists() && localFile.length() > 0) {
+                    return@withContext Result.success(localFile.absolutePath)
+                }
+            }
+
+            val filename = getCacheFilename(url)
+            val cachedFile = File(context.cacheDir, filename)
+
+            // If already downloaded and cached, return it
             if (cachedFile.exists() && cachedFile.length() > 0) {
                 return@withContext Result.success(cachedFile.absolutePath)
             }
@@ -65,7 +82,7 @@ class VoiceDownloadCache @Inject constructor(
             val audioBytes = VoiceEncoder.decode(downloadedBytes)
 
             if (audioBytes.isEmpty()) {
-                // If decode fails, fallback to writing raw bytes (raw audio URL)
+                // Fallback to writing downloaded bytes directly
                 cachedFile.writeBytes(downloadedBytes)
             } else {
                 cachedFile.writeBytes(audioBytes)

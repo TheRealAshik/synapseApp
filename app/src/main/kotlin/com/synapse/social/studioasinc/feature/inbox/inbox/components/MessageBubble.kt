@@ -285,7 +285,10 @@ fun MessageBubble(
             ChatThemePreset.MONOCHROME -> if (isDark) MonochromeDarkContainer else MonochromeLightContainer
         }
     } else {
-        MaterialTheme.colorScheme.surfaceContainerHigh
+        when (themePreset) {
+            ChatThemePreset.DEFAULT -> MaterialTheme.colorScheme.secondaryContainer
+            else -> MaterialTheme.colorScheme.surfaceContainerHigh
+        }
     }
 
     val contentColor = if (isFromMe) {
@@ -297,7 +300,10 @@ fun MessageBubble(
             ChatThemePreset.MONOCHROME -> if (isDark) MonochromeDarkOnContainer else MonochromeLightOnContainer
         }
     } else {
-        MaterialTheme.colorScheme.onSurface
+        when (themePreset) {
+            ChatThemePreset.DEFAULT -> MaterialTheme.colorScheme.onSecondaryContainer
+            else -> MaterialTheme.colorScheme.onSurface
+        }
     }
 
     // UI logic applied carefully matching sender side for sharpness:
@@ -442,7 +448,10 @@ fun MessageBubble(
         val uriHandler = LocalUriHandler.current
         val context = LocalContext.current
 
-        Column(modifier = Modifier.widthIn(max = bubbleMaxWidth)) {
+        Column(
+            modifier = Modifier.widthIn(max = bubbleMaxWidth),
+            horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
+        ) {
             if (replyToMessage != null) {
                 val quoteCardColor = if (isFromMe) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
                 Surface(
@@ -538,8 +547,7 @@ fun MessageBubble(
                         color = containerColor,
                         contentColor = contentColor,
                         shape = shape,
-                        tonalElevation = Sizes.BorderThin,
-                        modifier = Modifier.fillMaxWidth()
+                        tonalElevation = Sizes.BorderThin
                     ) {
                         Text(
                             text = message.content,
@@ -552,13 +560,12 @@ fun MessageBubble(
                     }
                 }
             } else {
-                // Non-media messages: rendered inside container Surface
+                // Non-media messages: rendered inside container Surface (wrapContentWidth, up to max bubbleMaxWidth)
                 Surface(
                     color = containerColor,
                     contentColor = contentColor,
                     shape = shape,
-                    tonalElevation = Sizes.BorderThin,
-                    modifier = Modifier.fillMaxWidth()
+                    tonalElevation = Sizes.BorderThin
                 ) {
                     Column(modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Small)) {
                         Box(modifier = Modifier.padding(horizontal = Spacing.Small)) {
@@ -570,7 +577,6 @@ fun MessageBubble(
                                         Row(
                                             verticalAlignment = Alignment.CenterVertically,
                                             modifier = Modifier
-                                                .fillMaxWidth()
                                                 .height(Spacing.ExtraLarge)
                                                 .padding(horizontal = Spacing.Small)
                                         ) {
