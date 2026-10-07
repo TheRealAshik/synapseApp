@@ -519,8 +519,28 @@ fun MessageBubble(
                             Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
                         }
                         MessageType.AUDIO -> {
-                            message.mediaUrl?.let {
-                                VoiceMessagePlayer(mediaUrl = it, tintColor = contentColor, isFromMe = isFromMe)
+                            if (!message.mediaUrl.isNullOrBlank()) {
+                                VoiceMessagePlayer(mediaUrl = message.mediaUrl!!, tintColor = contentColor, isFromMe = isFromMe)
+                            } else {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(Spacing.ExtraLarge)
+                                        .padding(horizontal = Spacing.Small)
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(Sizes.IconSemiMedium),
+                                        color = contentColor,
+                                        strokeWidth = Sizes.BorderDefault
+                                    )
+                                    Spacer(modifier = Modifier.width(Spacing.Small))
+                                    Text(
+                                        text = message.content.ifBlank { stringResource(R.string.chat_media_audio_voice) },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = contentColor
+                                    )
+                                }
                             }
                             Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
                         }

@@ -36,10 +36,10 @@ class ChatMediaDelegate(
         audioFile: java.io.File,
         storageConfig: com.synapse.social.studioasinc.shared.domain.model.StorageConfig,
         voiceUploadService: com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService,
-        sendMessageUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase,
-        currentUserIdProvider: () -> String?,
-        chatIdProvider: () -> String?,
-        viewModelScope: kotlinx.coroutines.CoroutineScope
+        sendMessageUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase = this.sendMessageUseCase,
+        currentUserIdProvider: () -> String? = this.currentUserIdProvider,
+        chatIdProvider: () -> String? = this.chatIdProvider,
+        viewModelScope: kotlinx.coroutines.CoroutineScope = this.viewModelScope
     ) {
         val chatId = chatIdProvider() ?: return
         val currentUserId = currentUserIdProvider() ?: return
@@ -58,14 +58,14 @@ class ChatMediaDelegate(
             )
             onOptimisticMessageAdded(optimisticMessage, tempId)
 
-            // Upload voice message using VoiceUploadService (encodes audio into PNG carrier for ImgBB)
-            val uploadResult = voiceUploadService.upload(audioFile, storageConfig)
+            val uploadResult = voiceUploadService.upload(
+                audioFile = audioFile,
+                chatId = chatId,
+                config = storageConfig
+            )
 
             uploadResult.onSuccess { mediaUrl ->
-                // Check if coroutine is still active before proceeding
-                if (!coroutineContext[Job]?.isActive!!) return@onSuccess
-                // Send the actual message with the uploaded media URL
-                // For voice messages, content should be empty (or a localized label), not the filename
+                if (coroutineContext[Job]?.isActive == false) return@onSuccess
                 sendMessageUseCase(
                     chatId = chatId,
                     content = "", // Voice messages have no text content

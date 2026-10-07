@@ -333,11 +333,19 @@ fun ChatScreen(
     }
 
 
-    // Show toast for E2EE errors
+    // Show toast for E2EE and transient errors
     LaunchedEffect(toastMessage) {
         toastMessage?.let {
             android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
             viewModel.clearToast()
+        }
+    }
+
+    LaunchedEffect(error) {
+        error?.let { err ->
+            if (messages.isNotEmpty()) {
+                android.widget.Toast.makeText(context, err, android.widget.Toast.LENGTH_LONG).show()
+            }
         }
     }
 

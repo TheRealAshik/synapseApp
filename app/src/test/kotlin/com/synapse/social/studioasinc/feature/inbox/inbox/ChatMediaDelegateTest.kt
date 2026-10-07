@@ -206,4 +206,78 @@ class ChatMediaDelegateTest {
         verifyNoInteractions(uploadMediaUseCase)
         verifyNoInteractions(sendMessageUseCase)
     }
+
+    @Test
+    fun `uploadAndSendVoiceMessage succeeds and replaces optimistic audio message`() = runTest {
+        val delegate = createDelegate()
+        val voiceUploadService = mock(com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService::class.java)
+        val dummyAudioFile = java.io.File.createTempFile("voice", ".m4a")
+        dummyAudioFile.deleteOnExit()
+
+        val config = com.synapse.social.studioasinc.shared.domain.model.StorageConfig()
+        `when`(voiceUploadService.upload(
+            audioFile = any(java.io.File::class.java) ?: dummyAudioFile,
+            chatId = anyString(),
+            config = any(com.synapse.social.studioasinc.shared.domain.model.StorageConfig::class.java) ?: config,
+            onProgress = any()
+        )).thenReturn(Result.success("https://example.supabase.co/storage/v1/object/authenticated/chat-attachments/voice.m4a"))
+
+        val persistedMsg = Message(
+            id = "msg_audio_1",
+            chatId = "chat_123",
+            senderId = "user_1",
+            content = "",
+            mediaUrl = "https://example.supabase.co/storage/v1/object/authenticated/chat-attachments/voice.m4a",
+            messageType = MessageType.AUDIO,
+            deliveryStatus = DeliveryStatus.SENT,
+            createdAt = "2025-01-01T00:00:00Z"
+        )
+        `when`(sendMessageUseCase.invoke(
+            chatId = anyString(),
+            content = anyString(),
+            mediaUrl = anyString(),
+            messageType = anyString(),
+            expiresAt = any(),
+            replyToId = any()
+        )).thenReturn(Result.success(persistedMsg))
+
+        delegate.uploadAndSendVoiceMessage(
+            audioFile = dummyAudioFile,
+            storageConfig = config,
+            voiceUploadService = voiceUploadService
+        )
+        advanceUntilIdle()
+
+        assertEquals(1, optimisticAdded.size)
+        assertEquals(MessageType.AUDIO, optimisticAdded.first().messageType)
+        assertEquals(1, optimisticSuccesses.size)
+        assertEquals("msg_audio_1", optimisticSuccesses.first().id)
+    }
+
+    @Test
+    fun `uploadAndSendVoiceMessage surfaces failure when voice upload fails`() = runTest {
+        val delegate = createDelegate()
+        val voiceUploadService = mock(com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService::class.java)
+        val dummyAudioFile = java.io.File.createTempFile("voice", ".m4a")
+        dummyAudioFile.deleteOnExit()
+
+        val config = com.synapse.social.studioasinc.shared.domain.model.StorageConfig()
+        `when`(voiceUploadService.upload(
+            audioFile = any(java.io.File::class.java) ?: dummyAudioFile,
+            chatId = anyString(),
+            config = any(com.synapse.social.studioasinc.shared.domain.model.StorageConfig::class.java) ?: config,
+            onProgress = any()
+        )).thenReturn(Result.failure(Exception("Storage unavailable")))
+
+        delegate.uploadAndSendVoiceMessage(
+            audioFile = dummyAudioFile,
+            storageConfig = config,
+            voiceUploadService = voiceUploadService
+        )
+        advanceUntilIdle()
+
+        assertEquals(1, optimisticAdded.size)
+        assertEquals("Voice upload failed: Storage unavailable", errorMessage)
+        verifyNoInteractions(sendMessageUseCase)
+    }
 }

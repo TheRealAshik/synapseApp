@@ -353,10 +353,11 @@ object ChatModule {
     @Provides
     @Singleton
     fun provideVoiceUploadService(
+        uploadMediaUseCase: UploadMediaUseCase,
         imgBBUploadService: ImgBBUploadService,
         @ApplicationContext context: Context
     ): VoiceUploadService {
-        return VoiceUploadService(imgBBUploadService, context)
+        return VoiceUploadService(uploadMediaUseCase, imgBBUploadService, context)
     }
 
 }

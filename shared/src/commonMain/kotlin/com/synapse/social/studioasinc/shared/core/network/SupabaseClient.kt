@@ -49,11 +49,10 @@ object SupabaseClient {
                 install(Postgrest)
                 install(Realtime)
                 install(Functions)
-                install(Storage) {
-                    if (SynapseConfig.SUPABASE_SYNAPSE_S3_ENDPOINT_URL.isNotBlank()) {
-                        customUrl = SynapseConfig.SUPABASE_SYNAPSE_S3_ENDPOINT_URL
-                    }
-                }
+                // Use Supabase's native Storage REST endpoint.
+                // SUPABASE_SYNAPSE_S3_ENDPOINT_URL is an S3-compatible endpoint
+                // configuration and must not replace the Storage REST base URL.
+                install(Storage)
 
                 httpConfig {
                     install(HttpTimeout) {
