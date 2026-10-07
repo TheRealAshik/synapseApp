@@ -105,6 +105,8 @@ import com.synapse.social.studioasinc.feature.inbox.inbox.components.MessageCont
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.MessageSummaryDialog
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatSummaryDialog
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatInputBar
+import com.synapse.social.studioasinc.feature.inbox.inbox.components.BatchMediaGalleryDialog
+import com.synapse.social.studioasinc.feature.inbox.inbox.components.BatchMediaViewerDialog
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.MediaPreviewDialog
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.DateDividerChip
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.GroupPosition
@@ -245,6 +247,9 @@ fun ChatScreen(
         }
 
     var selectedMessageForMenu by remember { mutableStateOf<Message?>(null) }
+    var batchGalleryMessage by remember { mutableStateOf<Message?>(null) }
+    var batchViewerMessage by remember { mutableStateOf<Message?>(null) }
+    var batchViewerInitialIndex by remember { mutableIntStateOf(0) }
 
     @Suppress("DEPRECATION")
     val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
@@ -333,7 +338,7 @@ fun ChatScreen(
     }
 
 
-    // Show toast for E2EE and transient errors
+    // Show toast for E2EE errors
     LaunchedEffect(toastMessage) {
         toastMessage?.let {
             android.widget.Toast.makeText(context, it, android.widget.Toast.LENGTH_LONG).show()
@@ -474,7 +479,8 @@ fun ChatScreen(
                         onToggleSelection = { viewModel.toggleMessageSelection(it) },
                         onSwipeToReply = { viewModel.setReplyingToMessage(it) },
                         onReactionSelected = { id, reaction -> viewModel.toggleMessageReaction(id, reaction) },
-                        onNavigateToProfile = onNavigateToProfile
+                        onNavigateToProfile = onNavigateToProfile,
+                        onOpenBatchGallery = { batchGalleryMessage = it }
                     )
 
                     // Context Menu and Reactions for messages
@@ -580,6 +586,29 @@ fun ChatScreen(
                 chatSummary = chatSummary,
                 onDismissRequest = viewModel::clearSummary
             )
+
+            // Dedicated Batch Media Gallery Dialog (Stage 1)
+            batchGalleryMessage?.let { msg ->
+                BatchMediaGalleryDialog(
+                    attachments = msg.attachments,
+                    caption = msg.content.takeIf { it.isNotBlank() },
+                    onDismiss = { batchGalleryMessage = null },
+                    onMediaItemClick = { clickedIndex ->
+                        batchViewerInitialIndex = clickedIndex
+                        batchViewerMessage = msg
+                    }
+                )
+            }
+
+            // Dedicated Batch Individual Media Viewer Dialog (Stage 2)
+            batchViewerMessage?.let { msg ->
+                BatchMediaViewerDialog(
+                    attachments = msg.attachments,
+                    initialIndex = batchViewerInitialIndex,
+                    caption = msg.content.takeIf { it.isNotBlank() },
+                    onDismiss = { batchViewerMessage = null }
+                )
+            }
         }
 
         val disappearingMode by viewModel.disappearingMode.collectAsState()

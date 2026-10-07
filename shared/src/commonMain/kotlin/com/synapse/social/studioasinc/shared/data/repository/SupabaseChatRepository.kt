@@ -11,6 +11,7 @@ import com.synapse.social.studioasinc.shared.data.local.database.CachedConversat
 import com.synapse.social.studioasinc.shared.data.local.database.CachedMessageDao
 import com.synapse.social.studioasinc.shared.data.local.database.MessageReactionDao
 import com.synapse.social.studioasinc.shared.data.mapper.ChatMapper.toDomain
+import com.synapse.social.studioasinc.shared.data.mapper.ChatMapper.toDto
 import com.synapse.social.studioasinc.shared.domain.model.PendingAction
 import com.synapse.social.studioasinc.shared.domain.model.ReactionType
 import com.synapse.social.studioasinc.shared.domain.model.StorageConfig
@@ -18,6 +19,7 @@ import com.synapse.social.studioasinc.shared.domain.model.StorageProvider
 import com.synapse.social.studioasinc.shared.domain.model.chat.Conversation
 import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageReaction
 import com.synapse.social.studioasinc.shared.domain.model.chat.TypingStatus
 import com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
@@ -207,16 +209,18 @@ class SupabaseChatRepository(
         messageType: String,
         expiresAt: String?,
         replyToId: String?,
-        senderPlaintext: String?
+        senderPlaintext: String?,
+        attachments: List<MessageAttachment>?
     ): Result<Message> = withContext(AppDispatchers.IO) {
         try {
             val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
+            val dtoAttachments = attachments?.map { it.toDto() }
 
             val messageDto = try {
-                dataSource.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId)
+                dataSource.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId, dtoAttachments)
             } catch (e: Exception) {
                 if (offlineActionRepository != null) {
-                    queueMessageOffline(chatId, content, mediaUrl, messageType, expiresAt, replyToId, currentUserId)
+                    queueMessageOffline(chatId, content, mediaUrl, messageType, expiresAt, replyToId, currentUserId, attachments)
                 } else throw e
             }
 
@@ -244,9 +248,17 @@ class SupabaseChatRepository(
     private suspend fun queueMessageOffline(
         chatId: String, content: String, mediaUrl: String?,
         messageType: String, expiresAt: String?, replyToId: String?,
-        currentUserId: String
+        currentUserId: String, attachments: List<MessageAttachment>? = null
     ): MessageDto {
         val actionId = UUIDUtils.randomUUID()
+        val dtoAttachments = attachments?.map { it.toDto() }
+        val attachmentsJson = if (dtoAttachments != null) {
+            Json.encodeToJsonElement(
+                kotlinx.serialization.builtins.ListSerializer(com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto.serializer()),
+                dtoAttachments
+            )
+        } else null
+
         offlineActionRepository?.addAction(
             PendingAction(
                 id = actionId,
@@ -258,6 +270,7 @@ class SupabaseChatRepository(
                     put("messageType", messageType)
                     put("expiresAt", expiresAt)
                     put("replyToId", replyToId)
+                    if (attachmentsJson != null) put("attachments", attachmentsJson)
                 }.toString()
             )
         )
@@ -268,7 +281,8 @@ class SupabaseChatRepository(
             content = content,
             messageType = messageType,
             mediaUrl = mediaUrl,
-            createdAt = TimeProvider.nowInstant().toString()
+            createdAt = TimeProvider.nowInstant().toString(),
+            attachments = dtoAttachments
         )
     }
 

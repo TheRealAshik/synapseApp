@@ -5,6 +5,15 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+@Serializable
+data class MessageAttachmentDto(
+    val url: String,
+    val type: String,
+    val size: Long? = null,
+    val duration: Int? = null,
+    @SerialName("media_group_id") val mediaGroupId: String? = null
+)
+
 @OptIn(ExperimentalSerializationApi::class)
 @Serializable
 data class MessageDto(
@@ -23,7 +32,8 @@ data class MessageDto(
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("read_by") val readBy: List<String>? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
-    val encryptionFailureReason: String? = null
+    val encryptionFailureReason: String? = null,
+    val attachments: List<MessageAttachmentDto>? = null
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -49,7 +59,8 @@ data class NewMessageDto(
     @SerialName("media_url") val mediaUrl: String? = null,
     @SerialName("expires_at") val expiresAt: String? = null,
     @SerialName("reply_to_id") val replyToId: String? = null,
-    @SerialName("delivery_status") val deliveryStatus: String = "sent"
+    @SerialName("delivery_status") val deliveryStatus: String = "sent",
+    val attachments: List<MessageAttachmentDto>? = null
 )
 
 @Serializable

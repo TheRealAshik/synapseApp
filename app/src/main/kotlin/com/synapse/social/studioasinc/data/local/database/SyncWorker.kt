@@ -52,13 +52,28 @@ class SyncWorker(appContext: Context, workerParams: WorkerParameters):
                     }
                     PendingAction.ActionType.SEND_MESSAGE -> {
                         val payload = Json.parseToJsonElement(action.payload ?: "{}").jsonObject
+                        val attachmentsElement = payload["attachments"]
+                        val parsedAttachments = if (attachmentsElement != null) {
+                            try {
+                                val dtos = Json.decodeFromJsonElement(
+                                    kotlinx.serialization.builtins.ListSerializer(com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto.serializer()),
+                                    attachmentsElement
+                                )
+                                dtos.map { with(com.synapse.social.studioasinc.shared.data.mapper.ChatMapper) { it.toDomain() } }
+                            } catch (e: Exception) {
+                                Log.e(TAG, "Error parsing attachments from pending action payload", e)
+                                null
+                            }
+                        } else null
+
                         chatRepository.sendMessage(
                             chatId = action.targetId,
                             content = payload["content"]?.jsonPrimitive?.content ?: "",
                             mediaUrl = payload["mediaUrl"]?.jsonPrimitive?.content,
                             messageType = payload["messageType"]?.jsonPrimitive?.content ?: "text",
                             expiresAt = payload["expiresAt"]?.jsonPrimitive?.content,
-                            replyToId = payload["replyToId"]?.jsonPrimitive?.content
+                            replyToId = payload["replyToId"]?.jsonPrimitive?.content,
+                            attachments = parsedAttachments
                         ).isSuccess
                     }
                     else -> true // Unsupported for now

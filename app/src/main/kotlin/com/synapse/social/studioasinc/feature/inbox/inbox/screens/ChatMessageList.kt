@@ -56,6 +56,7 @@ internal fun ChatMessageList(
     onSwipeToReply: (Message) -> Unit,
     onReactionSelected: (String, SharedReactionType) -> Unit,
     onNavigateToProfile: (String) -> Unit,
+    onOpenBatchGallery: (Message) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -144,6 +145,7 @@ internal fun ChatMessageList(
                             }
                         },
                         onReactionSelected = { reaction -> message.id?.let { onReactionSelected(it, reaction) } },
+                        onOpenBatchGallery = onOpenBatchGallery,
                         onQuoteClick = { targetId ->
                             val targetIndex = reversedItems.indexOfFirst {
                                 it is ChatListItem.MessageItem && it.message.id == targetId

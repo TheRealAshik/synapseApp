@@ -10,7 +10,16 @@ interface ChatRepository {
     suspend fun getConversations(): Result<List<Conversation>>
     suspend fun getMessages(chatId: String, limit: Int = 50, before: String? = null, beforeId: String? = null, forceNetwork: Boolean = false): Result<List<Message>>
     suspend fun getMessageById(messageId: String): Result<Message?>
-    suspend fun sendMessage(chatId: String, content: String, mediaUrl: String? = null, messageType: String = "text", expiresAt: String? = null, replyToId: String? = null, senderPlaintext: String? = null): Result<Message>
+    suspend fun sendMessage(
+        chatId: String,
+        content: String,
+        mediaUrl: String? = null,
+        messageType: String = "text",
+        expiresAt: String? = null,
+        replyToId: String? = null,
+        senderPlaintext: String? = null,
+        attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>? = null
+    ): Result<Message>
     suspend fun getOrCreateChat(otherUserId: String): Result<String>
 
     suspend fun updateConversationArchiveStatus(chatId: String, isArchived: Boolean): Result<Unit>

@@ -103,7 +103,7 @@ private fun createDummyChatRepository(): ChatRepository {
         override suspend fun getConversations(): Result<List<Conversation>> = Result.success(emptyList())
         override suspend fun getMessages(chatId: String, limit: Int, before: String?, beforeId: String?, forceNetwork: Boolean): Result<List<Message>> = Result.success(emptyList())
         override suspend fun getMessageById(messageId: String): Result<Message?> = Result.success(null)
-        override suspend fun sendMessage(chatId: String, content: String, mediaUrl: String?, messageType: String, expiresAt: String?, replyToId: String?, senderPlaintext: String?): Result<Message> = Result.failure(Exception("Not implemented"))
+        override suspend fun sendMessage(chatId: String, content: String, mediaUrl: String?, messageType: String, expiresAt: String?, replyToId: String?, senderPlaintext: String?, attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>?): Result<Message> = Result.failure(Exception("Not implemented"))
         override suspend fun getOrCreateChat(otherUserId: String): Result<String> = Result.failure(Exception("Not implemented"))
         override suspend fun updateConversationArchiveStatus(chatId: String, isArchived: Boolean): Result<Unit> = Result.success(Unit)
         override suspend fun deleteConversation(chatId: String): Result<Unit> = Result.success(Unit)

@@ -25,5 +25,8 @@ enum class MessageType {
     CALL,
 
     /** System-generated message (user joined, left, settings changed, etc.) */
-    SYSTEM
+    SYSTEM,
+
+    /** Batch of multiple media files (photos/videos) */
+    MEDIA_GROUP
 }

@@ -1336,6 +1336,7 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="chat_media_video">Video</string>
     <string name="chat_media_audio">Audio</string>
     <string name="chat_media_file">File</string>
+    <string name="chat_cd_stacked_media">Media batch containing %1$d items</string>
     <string name="chat_action_play_video">Play Video</string>
     <string name="chat_action_play_audio">Play Audio</string>
     <string name="chat_action_pause_audio">Pause Audio</string>

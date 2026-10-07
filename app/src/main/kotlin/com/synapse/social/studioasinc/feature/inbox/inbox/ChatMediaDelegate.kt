@@ -207,22 +207,154 @@ class ChatMediaDelegate(
         caption: String? = null,
         quality: MediaUploadQuality = MediaUploadQuality.STANDARD
     ) {
-        files.forEachIndexed { index, (filePath, pickedFile) ->
+        if (files.isEmpty()) return
+        if (files.size == 1) {
+            val (filePath, pickedFile) = files.first()
             val type = when {
                 pickedFile.mimeType.startsWith("image/") -> "image"
                 pickedFile.mimeType.startsWith("video/") -> "video"
                 pickedFile.mimeType.startsWith("audio/") -> "audio"
                 else -> "file"
             }
-            val itemCaption = if (index == 0) caption else null
             uploadAndSendMedia(
                 filePath = filePath,
                 fileName = pickedFile.fileName,
                 contentType = pickedFile.mimeType,
                 messageType = type,
-                caption = itemCaption,
+                caption = caption,
                 quality = quality
             )
+            return
+        }
+
+        val chatId = chatIdProvider() ?: return
+        viewModelScope.launch {
+            val batchMediaGroupId = UUID.randomUUID().toString()
+            val tempId = UUID.randomUUID().toString()
+
+            var currentAttachments = files.map { (_, pickedFile) ->
+                val type = if (pickedFile.mimeType.startsWith("video/")) com.synapse.social.studioasinc.shared.domain.model.chat.AttachmentType.VIDEO else com.synapse.social.studioasinc.shared.domain.model.chat.AttachmentType.IMAGE
+                com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment(
+                    url = pickedFile.uri.toString(),
+                    type = type,
+                    size = pickedFile.size,
+                    mediaGroupId = batchMediaGroupId,
+                    uploadProgress = 0.0f
+                )
+            }
+
+            var optimisticMessage = Message(
+                id = tempId,
+                chatId = chatId,
+                senderId = currentUserIdProvider() ?: "",
+                content = if (!caption.isNullOrBlank()) caption else "",
+                messageType = MessageType.MEDIA_GROUP,
+                deliveryStatus = DeliveryStatus.SENT,
+                createdAt = Instant.now().toString(),
+                attachments = currentAttachments,
+                mediaGroupId = batchMediaGroupId
+            )
+            onOptimisticMessageAdded(optimisticMessage, tempId)
+
+            val uploadedAttachments = mutableListOf<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>()
+            var hasError = false
+            var errorMessageStr: String? = null
+
+            for (index in files.indices) {
+                val (filePath, pickedFile) = files[index]
+                val isImage = pickedFile.mimeType.startsWith("image/")
+                val isVideo = pickedFile.mimeType.startsWith("video/")
+
+                var uploadPath = filePath
+                if (isImage && mediaCompressor != null) {
+                    mediaCompressor.compress(filePath, quality).onSuccess { compressedPath ->
+                        uploadPath = compressedPath
+                    }
+                }
+
+                val fileSize = fileUploader.getFileSize(uploadPath)
+                val maxVideoSize = 50 * 1024 * 1024L
+                val maxImageSize = 10 * 1024 * 1024L
+
+                if (isVideo && fileSize > maxVideoSize) {
+                    hasError = true
+                    errorMessageStr = "Video file size exceeds 50MB limit"
+                    currentAttachments = currentAttachments.mapIndexed { idx, att ->
+                        if (idx == index) att.copy(isUploadFailed = true) else att
+                    }
+                    onOptimisticMessageAdded(optimisticMessage.copy(attachments = currentAttachments), tempId)
+                    break
+                }
+                if (isImage && fileSize > maxImageSize) {
+                    hasError = true
+                    errorMessageStr = "Image file size exceeds 10MB limit"
+                    currentAttachments = currentAttachments.mapIndexed { idx, att ->
+                        if (idx == index) att.copy(isUploadFailed = true) else att
+                    }
+                    onOptimisticMessageAdded(optimisticMessage.copy(attachments = currentAttachments), tempId)
+                    break
+                }
+
+                val uploadResult = uploadMediaUseCase(
+                    chatId = chatId,
+                    filePath = uploadPath,
+                    fileName = pickedFile.fileName,
+                    contentType = pickedFile.mimeType,
+                    onProgress = { progress ->
+                        val floatProgress = (progress / 100f).coerceIn(0f, 1f)
+                        currentAttachments = currentAttachments.mapIndexed { idx, att ->
+                            if (idx == index) att.copy(uploadProgress = floatProgress) else att
+                        }
+                        onOptimisticMessageAdded(optimisticMessage.copy(attachments = currentAttachments), tempId)
+                    }
+                )
+
+                if (uploadResult.isSuccess) {
+                    val mediaUrl = uploadResult.getOrThrow()
+                    val attachmentType = if (isVideo) com.synapse.social.studioasinc.shared.domain.model.chat.AttachmentType.VIDEO else com.synapse.social.studioasinc.shared.domain.model.chat.AttachmentType.IMAGE
+                    currentAttachments = currentAttachments.mapIndexed { idx, att ->
+                        if (idx == index) att.copy(url = mediaUrl, uploadProgress = 1.0f) else att
+                    }
+                    uploadedAttachments.add(
+                        com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment(
+                            url = mediaUrl,
+                            type = attachmentType,
+                            size = fileSize,
+                            mediaGroupId = batchMediaGroupId,
+                            uploadProgress = 1.0f
+                        )
+                    )
+                    onOptimisticMessageAdded(optimisticMessage.copy(attachments = currentAttachments), tempId)
+                } else {
+                    val err = uploadResult.exceptionOrNull()
+                    hasError = true
+                    errorMessageStr = "Upload failed: ${err?.message}"
+                    currentAttachments = currentAttachments.mapIndexed { idx, att ->
+                        if (idx == index) att.copy(isUploadFailed = true) else att
+                    }
+                    onOptimisticMessageAdded(optimisticMessage.copy(attachments = currentAttachments), tempId)
+                    break
+                }
+            }
+
+            if (hasError) {
+                onError(errorMessageStr)
+                onOptimisticMessageFailed(tempId, errorMessageStr)
+                return@launch
+            }
+
+            val finalContent = if (!caption.isNullOrBlank()) caption else ""
+            sendMessageUseCase(
+                chatId = chatId,
+                content = finalContent,
+                mediaUrl = uploadedAttachments.firstOrNull()?.url,
+                messageType = "media_group",
+                attachments = uploadedAttachments
+            ).onSuccess { actualMessage ->
+                onOptimisticMessageSuccess(tempId, actualMessage)
+            }.onFailure { e ->
+                onOptimisticMessageFailed(tempId, "Failed to send: ${e.message}")
+            }
         }
     }
 }

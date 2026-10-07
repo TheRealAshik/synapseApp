@@ -6,10 +6,14 @@ import com.synapse.social.studioasinc.shared.data.database.StorageDatabase
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
+import com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto
+import com.synapse.social.studioasinc.shared.data.mapper.ChatMapper
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
 import com.synapse.social.studioasinc.shared.domain.model.ReactionType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Clock
+import kotlinx.serialization.json.Json
 
 class SqlDelightCachedMessageDao(
     private val db: StorageDatabase
@@ -114,13 +118,27 @@ class SqlDelightCachedMessageDao(
     }
 
     private fun toCachedMessage(domain: Message, cachedAt: Long): CachedMessage {
+        val mediaUrlValue = if (domain.attachments.isNotEmpty()) {
+            try {
+                val dtoList = domain.attachments.map { with(ChatMapper) { it.toDto() } }
+                Json.encodeToString(
+                    kotlinx.serialization.builtins.ListSerializer(MessageAttachmentDto.serializer()),
+                    dtoList
+                )
+            } catch (e: Exception) {
+                domain.mediaUrl
+            }
+        } else {
+            domain.mediaUrl
+        }
+
         return CachedMessage(
             id = domain.id,
             chat_id = domain.chatId,
             sender_id = domain.senderId,
             content = domain.content,
             message_type = domain.messageType.name,
-            media_url = domain.mediaUrl,
+            media_url = mediaUrlValue,
             delivery_status = domain.deliveryStatus.name,
             read_by = domain.readBy.joinToString(separator = ",").takeIf { it.isNotEmpty() },
             created_at = domain.createdAt,
@@ -145,13 +163,31 @@ class SqlDelightCachedMessageDao(
             DeliveryStatus.SENT // fallback
         }
 
+        var attachmentsList = emptyList<MessageAttachment>()
+        var resolvedMediaUrl = cached.media_url
+
+        if (cached.media_url?.trimStart()?.startsWith("[") == true) {
+            try {
+                val dtos = Json.decodeFromString(
+                    kotlinx.serialization.builtins.ListSerializer(MessageAttachmentDto.serializer()),
+                    cached.media_url
+                )
+                attachmentsList = dtos.map { with(ChatMapper) { it.toDomain() } }
+                resolvedMediaUrl = attachmentsList.firstOrNull()?.url
+            } catch (e: Exception) {
+                com.synapse.social.studioasinc.shared.util.Logger.e("Error deserializing attachments for cached message ${cached.id}", throwable = e)
+            }
+        }
+
+        val finalMessageType = if (attachmentsList.size >= 2 || messageType == MessageType.MEDIA_GROUP) MessageType.MEDIA_GROUP else messageType
+
         return Message(
             id = cached.id,
             chatId = cached.chat_id,
             senderId = cached.sender_id,
             content = cached.content,
-            messageType = messageType,
-            mediaUrl = cached.media_url,
+            messageType = finalMessageType,
+            mediaUrl = resolvedMediaUrl,
             deliveryStatus = deliveryStatus,
             isDeleted = cached.is_deleted == 1L,
             isEdited = cached.is_edited == 1L,
@@ -160,7 +196,9 @@ class SqlDelightCachedMessageDao(
             expiresAt = cached.expires_at,
             readBy = cached.read_by?.split(",") ?: emptyList(),
             reactions = emptyMap(),
-            userReaction = null
+            userReaction = null,
+            attachments = attachmentsList,
+            mediaGroupId = attachmentsList.firstOrNull()?.mediaGroupId
         )
     }
 }

@@ -56,11 +56,12 @@ internal class ChatMessageDataSource(private val client: SupabaseClientLib) {
         mediaUrl: String? = null,
         messageType: String = "text",
         expiresAt: String? = null,
-        replyToId: String? = null
+        replyToId: String? = null,
+        attachments: List<com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto>? = null
     ): MessageDto =
         withContext(AppDispatchers.IO) {
             val senderId = getCurrentUserId() ?: throw NotAuthenticatedException("User not authenticated")
-            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, expiresAt, replyToId)
+            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, expiresAt, replyToId, attachments = attachments)
             client.postgrest.from("messages").insert(newMessage) { select() }.decodeSingle<MessageDto>()
         }
 

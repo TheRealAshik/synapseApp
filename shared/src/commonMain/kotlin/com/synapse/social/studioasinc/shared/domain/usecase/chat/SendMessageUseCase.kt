@@ -42,7 +42,8 @@ class SendMessageUseCase(
         mediaUrl: String? = null,
         messageType: String = "text",
         expiresAt: String? = null,
-        replyToId: String? = null
+        replyToId: String? = null,
+        attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>? = null
     ): Result<Message> {
         val currentUserId = repository.getCurrentUserId()
             ?: return Result.failure(Exception("Not logged in"))
@@ -56,7 +57,8 @@ class SendMessageUseCase(
                 messageType = messageType,
                 expiresAt = expiresAt,
                 replyToId = replyToId,
-                senderPlaintext = content
+                senderPlaintext = content,
+                attachments = attachments
             )
         }
 
@@ -77,6 +79,13 @@ class SendMessageUseCase(
             val jsonPayload = kotlinx.serialization.json.buildJsonObject {
                 put("content", content)
                 if (mediaUrl != null) put("mediaUrl", mediaUrl)
+                if (attachments != null) {
+                    val attachmentsJson = kotlinx.serialization.json.Json.encodeToJsonElement(
+                        kotlinx.serialization.builtins.ListSerializer(com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto.serializer()),
+                        attachments.map { with(com.synapse.social.studioasinc.shared.data.mapper.ChatMapper) { it.toDto() } }
+                    )
+                    put("attachments", attachmentsJson)
+                }
             }.toString()
             val contentBytes = jsonPayload.encodeToByteArray()
 
@@ -115,7 +124,8 @@ class SendMessageUseCase(
                 messageType = messageType,
                 expiresAt = expiresAt,
                 replyToId = replyToId,
-                senderPlaintext = jsonPayload
+                senderPlaintext = jsonPayload,
+                attachments = attachments
             )
         } catch (e: Exception) {
             Napier.e("E2EE_ENCRYPT: Failed: ${e.message}", tag = "E2EE", throwable = e)

@@ -232,6 +232,17 @@ fun isWithinTimeThreshold(timeStr1: String?, timeStr2: String?): Boolean {
     }
 }
 
+private fun formatMessageTime(isoTimestamp: String?): String {
+    if (isoTimestamp == null) return ""
+    return try {
+        val instant = Instant.parse(isoTimestamp)
+        val formatter = DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
+        formatter.format(instant)
+    } catch (e: Exception) {
+        ""
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
@@ -255,6 +266,7 @@ fun MessageBubble(
     reactions: List<Pair<String, Int>> = emptyList(),
     replyCount: Int = 0,
     onQuoteClick: (messageId: String) -> Unit = {},
+    onOpenBatchGallery: (Message) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
@@ -426,81 +438,81 @@ fun MessageBubble(
         Column(
             horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
         ) {
-        Surface(
-            color = containerColor,
-            contentColor = contentColor,
-            shape = shape,
-            tonalElevation = Sizes.BorderThin,
-            modifier = Modifier.widthIn(max = bubbleMaxWidth)
-        ) {
-            Column(modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Small)) {
+        val isMedia = message.messageType == MessageType.MEDIA_GROUP || message.attachments.size >= 2 || message.messageType == MessageType.IMAGE || message.messageType == MessageType.VIDEO
+        val uriHandler = LocalUriHandler.current
+        val context = LocalContext.current
 
-                if (replyToMessage != null) {
-                    val quoteCardColor = if (isFromMe)
-                        MaterialTheme.colorScheme.surface
-                    else
-                        MaterialTheme.colorScheme.surfaceContainerHigh
-                    Surface(
-                        color = quoteCardColor,
-                        shape = RoundedCornerShape(Sizes.CornerMedium),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = Sizes.BorderThin)
-                            .clickable { replyToMessage.id?.let { onQuoteClick(it) } }
-                    ) {
-                        val isOwnReply = replyToMessage.senderId == message.senderId
-                        val quotedName = replyToSenderName
-                            ?: if (isOwnReply xor isFromMe) senderName ?: "You" else "You"
-                        Column(modifier = Modifier.padding(Spacing.Small)) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "❝",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    modifier = Modifier.padding(end = Spacing.ExtraSmall)
-                                )
-                                AsyncImage(
-                                    model = if (isOwnReply) null else senderAvatarUrl, // Real implementation should pass correct url
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    placeholder = rememberVectorPainter(Icons.Filled.Person),
-                                    error = rememberVectorPainter(Icons.Filled.Person),
-                                    modifier = Modifier
-                                        .size(Sizes.IconSemiMedium)
-                                        .clip(CircleShape)
-                                        .background(MaterialTheme.colorScheme.surfaceVariant)
-                                )
-                                Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
-                                Text(
-                                    text = (quotedName ?: "").uppercase(),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+        Column(modifier = Modifier.widthIn(max = bubbleMaxWidth)) {
+            if (replyToMessage != null) {
+                val quoteCardColor = if (isFromMe) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
+                Surface(
+                    color = quoteCardColor,
+                    shape = RoundedCornerShape(Sizes.CornerMedium),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = Sizes.BorderThin)
+                        .clickable { replyToMessage.id?.let { onQuoteClick(it) } }
+                ) {
+                    val isOwnReply = replyToMessage.senderId == message.senderId
+                    val quotedName = replyToSenderName ?: if (isOwnReply xor isFromMe) senderName ?: "You" else "You"
+                    Column(modifier = Modifier.padding(Spacing.Small)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = replyToMessage.content ?: "",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                ),
-                                maxLines = 4,
-                                overflow = TextOverflow.Ellipsis
+                                text = "❝",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.padding(end = Spacing.ExtraSmall)
+                            )
+                            AsyncImage(
+                                model = if (isOwnReply) null else senderAvatarUrl,
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                placeholder = rememberVectorPainter(Icons.Filled.Person),
+                                error = rememberVectorPainter(Icons.Filled.Person),
+                                modifier = Modifier
+                                    .size(Sizes.IconSemiMedium)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                            )
+                            Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                            Text(
+                                text = (quotedName ?: "").uppercase(),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
+                        Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                        Text(
+                            text = replyToMessage.content ?: "",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontSize = MaterialTheme.typography.bodySmall.fontSize * fontScale,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            maxLines = 4,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
+            }
 
-                val uriHandler = LocalUriHandler.current
-                val context = LocalContext.current
-
-                Box(modifier = Modifier.padding(horizontal = Spacing.Small)) {
-                when (message.messageType) {
-                    MessageType.IMAGE -> {
+            if (isMedia) {
+                // Standalone Media Surface - No oversized bubble background
+                Box(modifier = Modifier.fillMaxWidth()) {
+                    when {
+                        message.messageType == MessageType.MEDIA_GROUP || message.attachments.size >= 2 -> {
+                            StackedMediaCard(
+                                attachments = message.attachments,
+                                onClick = { onOpenBatchGallery(message) }
+                            )
+                        }
+                        message.messageType == MessageType.IMAGE -> {
                             AsyncImage(
-                                model = message.mediaUrl,
-                                contentDescription = "Image message",
+                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                    .data(message.mediaUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = stringResource(R.string.cd_post_image),
                                 contentScale = ContentScale.Crop,
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -510,132 +522,167 @@ fun MessageBubble(
                                         message.mediaUrl?.let { uriHandler.openUri(it) }
                                     }
                             )
-                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
                         }
-                        MessageType.VIDEO -> {
+                        message.messageType == MessageType.VIDEO -> {
                             message.mediaUrl?.let {
                                 VideoPlayerBox(mediaUrl = it)
                             }
-                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-                        }
-                        MessageType.AUDIO -> {
-                            if (!message.mediaUrl.isNullOrBlank()) {
-                                VoiceMessagePlayer(mediaUrl = message.mediaUrl!!, tintColor = contentColor, isFromMe = isFromMe)
-                            } else {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(Spacing.ExtraLarge)
-                                        .padding(horizontal = Spacing.Small)
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(Sizes.IconSemiMedium),
-                                        color = contentColor,
-                                        strokeWidth = Sizes.BorderDefault
-                                    )
-                                    Spacer(modifier = Modifier.width(Spacing.Small))
-                                    Text(
-                                        text = message.content.ifBlank { stringResource(R.string.chat_media_audio_voice) },
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = contentColor
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-                        }
-                        MessageType.FILE -> {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(vertical = Spacing.ExtraSmall).clickable {
-                                    message.mediaUrl?.let { uriHandler.openUri(it) }
-                                }
-                            ) {
-                                Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                                    contentDescription = stringResource(R.string.chat_cd_file),
-                                    tint = contentColor
-                                )
-                                Spacer(modifier = Modifier.width(Spacing.Small))
-                                Text(
-                                    text = (message.content ?: "").ifEmpty { stringResource(R.string.chat_media_attachment) },
-                                    color = contentColor,
-                                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                            }
-                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-                        }
-                        else -> {
-                            val firstUrl = UrlUtils.extractFirstUrl(message.content)
-                            if (firstUrl != null && getLinkMetadataUseCase != null) {
-                                LinkPreviewCard(
-                                    url = firstUrl,
-                                    useCase = getLinkMetadataUseCase,
-                                    modifier = Modifier.padding(bottom = Spacing.Small)
-                                )
-                            }
-
-                            val annotatedString = buildAnnotatedString {
-                                val urlRegex = Regex("(https?://[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)|(www\\.[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)")
-                                var lastIndex = 0
-
-                                urlRegex.findAll(message.content ?: "").forEach { matchResult ->
-                                    append((message.content ?: "").substring(lastIndex, matchResult.range.first))
-
-                                    val url = matchResult.value
-                                    val fullUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                                        "https://$url"
-                                    } else {
-                                        url
-                                    }
-
-                                    pushStringAnnotation(tag = "URL", annotation = fullUrl)
-                                    withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
-                                        append(url)
-                                    }
-                                    pop()
-
-                                    lastIndex = matchResult.range.last + 1
-                                }
-                                append((message.content ?: "").substring(lastIndex))
-                            }
-
-                            var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
-                            Text(
-                                text = annotatedString,
-                                style = MaterialTheme.typography.bodyMedium.copy(
-                                    color = contentColor,
-                                    fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
-                                ),
-                                onTextLayout = { layoutResult = it },
-                                modifier = Modifier.pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onLongPress = {
-                                            onLongClick()
-                                        },
-                                        onTap = { pos ->
-                                            var urlHandled = false
-                                            layoutResult?.let { layoutResult ->
-                                                val offset = layoutResult.getOffsetForPosition(pos)
-                                                annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                                                    .firstOrNull()?.let { annotation ->
-                                                        IntentUtils.openUrl(context, annotation.item)
-                                                        urlHandled = true
-                                                    }
-                                            }
-                                            if (!urlHandled) {
-                                                onClick()
-                                            }
-                                        }
-                                    )
-                                }
-                            )
                         }
                     }
                 }
-                } // close Box
+
+                // Compact Caption bubble below media if caption text is present
+                if (message.content.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                    Surface(
+                        color = containerColor,
+                        contentColor = contentColor,
+                        shape = shape,
+                        tonalElevation = Sizes.BorderThin,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = message.content,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = contentColor,
+                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale
+                            ),
+                            modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
+                        )
+                    }
+                }
+            } else {
+                // Non-media messages: rendered inside container Surface
+                Surface(
+                    color = containerColor,
+                    contentColor = contentColor,
+                    shape = shape,
+                    tonalElevation = Sizes.BorderThin,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Small)) {
+                        Box(modifier = Modifier.padding(horizontal = Spacing.Small)) {
+                            when (message.messageType) {
+                                MessageType.AUDIO -> {
+                                    if (!message.mediaUrl.isNullOrBlank()) {
+                                        VoiceMessagePlayer(mediaUrl = message.mediaUrl!!, tintColor = contentColor, isFromMe = isFromMe)
+                                    } else {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(Spacing.ExtraLarge)
+                                                .padding(horizontal = Spacing.Small)
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(Sizes.IconSemiMedium),
+                                                color = contentColor,
+                                                strokeWidth = Sizes.BorderDefault
+                                            )
+                                            Spacer(modifier = Modifier.width(Spacing.Small))
+                                            Text(
+                                                text = message.content.ifBlank { stringResource(R.string.chat_media_audio_voice) },
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = contentColor
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                                }
+
+                                MessageType.FILE -> {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.padding(vertical = Spacing.ExtraSmall).clickable {
+                                            message.mediaUrl?.let { uriHandler.openUri(it) }
+                                        }
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                                            contentDescription = stringResource(R.string.chat_cd_file),
+                                            tint = contentColor
+                                        )
+                                        Spacer(modifier = Modifier.width(Spacing.Small))
+                                        Text(
+                                            text = (message.content ?: "").ifEmpty { stringResource(R.string.chat_media_attachment) },
+                                            color = contentColor,
+                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+                                }
+                                else -> {
+                                    val firstUrl = UrlUtils.extractFirstUrl(message.content)
+                                    if (firstUrl != null && getLinkMetadataUseCase != null) {
+                                        LinkPreviewCard(
+                                            url = firstUrl,
+                                            useCase = getLinkMetadataUseCase,
+                                            modifier = Modifier.padding(bottom = Spacing.Small)
+                                        )
+                                    }
+
+                                    val annotatedString = buildAnnotatedString {
+                                        val urlRegex = Regex("(https?://[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)|(www\\.[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)")
+                                        var lastIndex = 0
+
+                                        urlRegex.findAll(message.content ?: "").forEach { matchResult ->
+                                            append((message.content ?: "").substring(lastIndex, matchResult.range.first))
+
+                                            val url = matchResult.value
+                                            val fullUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                                                "https://$url"
+                                            } else {
+                                                url
+                                            }
+
+                                            pushStringAnnotation(tag = "URL", annotation = fullUrl)
+                                            withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                                append(url)
+                                            }
+                                            pop()
+
+                                            lastIndex = matchResult.range.last + 1
+                                        }
+                                        append((message.content ?: "").substring(lastIndex))
+                                    }
+
+                                    var layoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
+                                    Text(
+                                        text = annotatedString,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = contentColor,
+                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
+                                        ),
+                                        onTextLayout = { layoutResult = it },
+                                        modifier = Modifier.pointerInput(Unit) {
+                                            detectTapGestures(
+                                                onLongPress = {
+                                                    onLongClick()
+                                                },
+                                                onTap = { pos ->
+                                                    var urlHandled = false
+                                                    layoutResult?.let { layoutResult ->
+                                                        val offset = layoutResult.getOffsetForPosition(pos)
+                                                        annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                                                            .firstOrNull()?.let { annotation ->
+                                                                IntentUtils.openUrl(context, annotation.item)
+                                                                urlHandled = true
+                                                            }
+                                                    }
+                                                    if (!urlHandled) {
+                                                        onClick()
+                                                    }
+                                                }
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -693,17 +740,4 @@ fun MessageBubble(
         } // Column
     } // Row/Box
 }
-
-/**
- * Formats an ISO timestamp to a short time string (e.g., "2:30 PM").
- */
-private fun formatMessageTime(isoTimestamp: String?): String {
-    if (isoTimestamp == null) return ""
-    return try {
-        val instant = Instant.parse(isoTimestamp)
-        val formatter = DateTimeFormatter.ofPattern("h:mm a").withZone(ZoneId.systemDefault())
-        formatter.format(instant)
-    } catch (e: Exception) {
-        ""
-    }
 }

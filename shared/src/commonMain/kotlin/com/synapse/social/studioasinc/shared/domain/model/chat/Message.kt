@@ -22,7 +22,9 @@ data class Message(
     val reactions: Map<ReactionType, Int> = emptyMap(),
     val userReaction: ReactionType? = null,
     val userReactions: Map<String, ReactionType> = emptyMap(),
-    val linkPreview: LinkPreview? = null
+    val linkPreview: LinkPreview? = null,
+    val attachments: List<MessageAttachment> = emptyList(),
+    val mediaGroupId: String? = null
 ) {
     fun isFromMe(currentUserId: String): Boolean = senderId == currentUserId
 

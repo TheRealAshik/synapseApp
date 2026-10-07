@@ -39,8 +39,9 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         mediaUrl: String? = null, 
         messageType: String = "text", 
         expiresAt: String? = null,
-        replyToId: String? = null
-    ): MessageDto = messages.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId)
+        replyToId: String? = null,
+        attachments: List<com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto>? = null
+    ): MessageDto = messages.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId, attachments)
 
     suspend fun sendMessageNotification(recipientId: String, senderId: String, message: String, chatId: String) =
         messages.sendMessageNotification(recipientId, senderId, message, chatId)

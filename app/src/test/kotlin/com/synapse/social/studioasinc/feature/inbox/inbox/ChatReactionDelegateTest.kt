@@ -38,7 +38,7 @@ class ChatReactionDelegateTest {
         override suspend fun getConversations() = Result.success(emptyList<com.synapse.social.studioasinc.shared.domain.model.chat.Conversation>())
         override suspend fun getMessages(chatId: String, limit: Int, before: String?, beforeId: String?, forceNetwork: Boolean) = Result.success(emptyList<Message>())
         override suspend fun getMessageById(messageId: String) = Result.success(null)
-        override suspend fun sendMessage(chatId: String, content: String, mediaUrl: String?, messageType: String, expiresAt: String?, replyToId: String?, senderPlaintext: String?): Result<Message> = Result.failure(Exception("Not implemented"))
+        override suspend fun sendMessage(chatId: String, content: String, mediaUrl: String?, messageType: String, expiresAt: String?, replyToId: String?, senderPlaintext: String?, attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>?): Result<Message> = Result.failure(Exception("Not implemented"))
         override suspend fun getOrCreateChat(otherUserId: String) = Result.success("chat-1")
         override suspend fun updateConversationArchiveStatus(chatId: String, isArchived: Boolean) = Result.success(Unit)
         override suspend fun deleteConversation(chatId: String) = Result.success(Unit)
