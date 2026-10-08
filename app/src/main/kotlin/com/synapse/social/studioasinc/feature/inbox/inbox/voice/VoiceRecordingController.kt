@@ -13,12 +13,6 @@ import java.io.File
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.math.abs
 
-enum class DragDirection {
-    UNDETERMINED,
-    HORIZONTAL_CANCEL,
-    VERTICAL_LOCK
-}
-
 class VoiceRecordingController(
     private val scope: CoroutineScope,
     private val voiceRecorder: VoiceRecorder,
@@ -40,7 +34,6 @@ class VoiceRecordingController(
     private var amplitudeJob: Job? = null
     private var playerProgressJob: Job? = null
 
-    private var dragDirection = DragDirection.UNDETERMINED
     private var cumulativeX = 0f
     private var cumulativeY = 0f
     private var lastRawAmplitude = 0f
@@ -119,16 +112,13 @@ class VoiceRecordingController(
             if (pendingPermissionIntent) {
                 pendingPermissionIntent = false
                 startActualRecording()
+                lockRecording()
             }
         } else {
             pendingPermissionIntent = false
             holdJob?.cancel()
             holdJob = null
-            if (_state.value is VoiceState.Pressing || _state.value is VoiceState.Recording) {
-                _state.value = VoiceState.VoiceReady
-            } else if (_state.value is VoiceState.Normal) {
-                _state.value = VoiceState.VoiceReady
-            }
+            _state.value = VoiceState.Normal
         }
     }
 
@@ -155,7 +145,6 @@ class VoiceRecordingController(
             pausedAccumulatedDurationMs = 0L
             cumulativeX = 0f
             cumulativeY = 0f
-            dragDirection = DragDirection.UNDETERMINED
             smoothedAmplitude = 0.1f
 
             _state.value = VoiceState.Recording()
@@ -174,67 +163,32 @@ class VoiceRecordingController(
         cumulativeX += deltaX
         cumulativeY += deltaY
 
-        if (dragDirection == DragDirection.UNDETERMINED) {
-            val absX = abs(cumulativeX)
-            val absY = abs(cumulativeY)
-            if (absX > directionSlopPx || absY > directionSlopPx) {
-                dragDirection = if (absX > absY * 1.2f) {
-                    DragDirection.HORIZONTAL_CANCEL
-                } else if (cumulativeY < -directionSlopPx) {
-                    DragDirection.VERTICAL_LOCK
-                } else {
-                    DragDirection.UNDETERMINED
-                }
-            }
+        val cancelOffset = cumulativeX.coerceAtMost(0f)
+        val absCancelOffset = abs(cancelOffset)
+        val cancelProgress = (absCancelOffset / cancelThresholdPx).coerceIn(0f, 1f)
+        val isArmed = absCancelOffset >= cancelThresholdPx
+
+        val lockOffset = cumulativeY.coerceAtMost(0f)
+        val absLockOffset = abs(lockOffset)
+        val lockProgress = (absLockOffset / lockThresholdPx).coerceIn(0f, 1f)
+
+        // Lock if vertical drag threshold met
+        if (absLockOffset >= lockThresholdPx && cumulativeY < 0f) {
+            lockRecording()
+            return
         }
 
-        when (dragDirection) {
-            DragDirection.HORIZONTAL_CANCEL -> {
-                val cancelOffset = cumulativeX.coerceAtMost(0f)
-                val absOffset = abs(cancelOffset)
-                val cancelProgress = (absOffset / cancelThresholdPx).coerceIn(0f, 1f)
-                val isArmed = absOffset >= cancelThresholdPx
-
-                if (isArmed != currentState.isArmedForCancel) {
-                    onHapticPerform()
-                }
-
-                _state.value = currentState.copy(
-                    slideOffsetPx = cancelOffset,
-                    dragOffsetYPx = 0f,
-                    isArmedForCancel = isArmed,
-                    cancelProgress = cancelProgress,
-                    lockProgress = 0f
-                )
-            }
-            DragDirection.VERTICAL_LOCK -> {
-                val lockOffset = cumulativeY.coerceAtMost(0f)
-                val absOffset = abs(lockOffset)
-                val lockProgress = (absOffset / lockThresholdPx).coerceIn(0f, 1f)
-
-                if (absOffset >= lockThresholdPx) {
-                    lockRecording()
-                    return
-                }
-
-                _state.value = currentState.copy(
-                    slideOffsetPx = 0f,
-                    dragOffsetYPx = lockOffset,
-                    isArmedForCancel = false,
-                    cancelProgress = 0f,
-                    lockProgress = lockProgress
-                )
-            }
-            DragDirection.UNDETERMINED -> {
-                _state.value = currentState.copy(
-                    slideOffsetPx = 0f,
-                    dragOffsetYPx = 0f,
-                    isArmedForCancel = false,
-                    cancelProgress = 0f,
-                    lockProgress = 0f
-                )
-            }
+        if (isArmed != currentState.isArmedForCancel) {
+            onHapticPerform()
         }
+
+        _state.value = currentState.copy(
+            slideOffsetPx = cancelOffset,
+            dragOffsetYPx = lockOffset,
+            isArmedForCancel = isArmed,
+            cancelProgress = cancelProgress,
+            lockProgress = lockProgress
+        )
     }
 
     private fun handleRelease() {
@@ -242,8 +196,9 @@ class VoiceRecordingController(
         if (currentState is VoiceState.Pressing) {
             holdJob?.cancel()
             holdJob = null
-            // Single tap: toggle between Normal and VoiceReady
-            _state.value = VoiceState.VoiceReady
+            // Single tap: start recording immediately and lock it into locked recording state
+            startActualRecording()
+            lockRecording()
             return
         }
 
@@ -264,7 +219,7 @@ class VoiceRecordingController(
             voiceRecorder.cancel()
         } catch (_: Exception) {}
         onHapticPerform()
-        _state.value = VoiceState.VoiceReady
+        _state.value = VoiceState.Normal
     }
 
     private fun lockRecording() {
@@ -351,7 +306,7 @@ class VoiceRecordingController(
                 }
             }
             is VoiceRecorderStopResult.EmptyOrTooShort -> {
-                _state.value = VoiceState.VoiceReady
+                _state.value = VoiceState.Normal
             }
             is VoiceRecorderStopResult.Error -> {
                 _state.value = VoiceState.Failed(result.cause.message ?: "Failed to stop recorder")
@@ -366,10 +321,10 @@ class VoiceRecordingController(
             stopPlayerProgressTracker()
             currentState.audioFile.delete()
             onHapticPerform()
-            _state.value = VoiceState.VoiceReady
+            _state.value = VoiceState.Normal
         } else if (currentState is VoiceState.Failed && currentState.draftFile != null) {
             currentState.draftFile.delete()
-            _state.value = VoiceState.VoiceReady
+            _state.value = VoiceState.Normal
         }
     }
 

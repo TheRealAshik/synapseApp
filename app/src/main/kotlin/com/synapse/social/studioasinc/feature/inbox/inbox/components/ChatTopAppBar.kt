@@ -134,7 +134,11 @@ fun ChatTopAppBar(
             },
             actions = {
                 IconButton(onClick = onSummarizeChat) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Chat")
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = "Summarize Chat with AI",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 IconButton(onClick = {
                     if (participantProfile?.accountType != "group") {

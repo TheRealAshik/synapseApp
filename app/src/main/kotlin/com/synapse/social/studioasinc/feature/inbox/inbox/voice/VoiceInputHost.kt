@@ -172,6 +172,18 @@ private fun VoiceInputBarContent(
                     label = "slideOffsetAnim"
                 )
 
+                // Pulsing red recording dot indicator
+                val pulseInfinite = rememberInfiniteTransition(label = "recordingPulse")
+                val pulseAlpha by pulseInfinite.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 0.3f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "pulseAlpha"
+                )
+
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -190,6 +202,17 @@ private fun VoiceInputBarContent(
                         )
                     }
 
+                    // Active mic capture indicator dot
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .graphicsLayer { alpha = pulseAlpha }
+                            .background(
+                                color = if (voiceState.isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.error,
+                                shape = CircleShape
+                            )
+                    )
+
                     LiveWaveformView(
                         amplitudeHistory = voiceState.amplitudeHistory,
                         modifier = Modifier
@@ -206,11 +229,24 @@ private fun VoiceInputBarContent(
             }
 
             is VoiceState.Locked -> {
+                // Pulsing recording dot indicator when active
+                val pulseInfinite = rememberInfiniteTransition(label = "recordingPulseLocked")
+                val pulseAlpha by pulseInfinite.animateFloat(
+                    initialValue = 1f,
+                    targetValue = 0.3f,
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(600, easing = LinearEasing),
+                        repeatMode = RepeatMode.Reverse
+                    ),
+                    label = "pulseAlphaLocked"
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
+                    // Clearly Destructive Delete Action
                     IconButton(
                         onClick = { onVoiceAction(VoiceAction.CancelRecording) },
                         modifier = Modifier
@@ -231,17 +267,33 @@ private fun VoiceInputBarContent(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
                     ) {
+                        // Mic capture status indicator (Red pulse if recording, static gray if paused)
+                        Box(
+                            modifier = Modifier
+                                .size(10.dp)
+                                .graphicsLayer { alpha = if (voiceState.isPaused) 0.5f else pulseAlpha }
+                                .background(
+                                    color = if (voiceState.isPaused) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                    shape = CircleShape
+                                )
+                        )
+
                         LiveWaveformView(
                             amplitudeHistory = voiceState.amplitudeHistory,
+                            isPaused = voiceState.isPaused,
                             modifier = Modifier
                                 .weight(1f)
                                 .height(28.dp),
                             activeColor = MaterialTheme.colorScheme.primary
                         )
 
-                        OdometerTimerText(durationMs = voiceState.durationMs)
+                        OdometerTimerText(
+                            durationMs = voiceState.durationMs,
+                            color = if (voiceState.isPaused) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface
+                        )
                     }
 
+                    // Visually Secondary / Tonal Pause / Resume Action
                     IconButton(
                         onClick = { onVoiceAction(VoiceAction.TogglePause) },
                         modifier = Modifier
@@ -257,17 +309,25 @@ private fun VoiceInputBarContent(
 
                     Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
 
-                    IconButton(
-                        onClick = { onVoiceAction(VoiceAction.FinishRecording) },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.primary, CircleShape)
+                    // Dominant Primary Send Action
+                    Surface(
+                        modifier = Modifier.size(44.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shadowElevation = 2.dp
                     ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Send,
-                            contentDescription = stringResource(R.string.chat_action_send),
-                            tint = MaterialTheme.colorScheme.onPrimary
-                        )
+                        IconButton(
+                            onClick = { onVoiceAction(VoiceAction.FinishRecording) },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.Send,
+                                contentDescription = stringResource(R.string.chat_action_send),
+                                tint = MaterialTheme.colorScheme.onPrimary,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 }
             }

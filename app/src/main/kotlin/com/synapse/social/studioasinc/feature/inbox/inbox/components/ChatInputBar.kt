@@ -225,16 +225,28 @@ fun ChatInputBar(
         ) {
             // Normal Chat Input Left/Middle Content
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = Spacing.ExtraSmall),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Box {
-                    IconButton(onClick = { showAttachmentMenu = true }, modifier = Modifier.size(Sizes.InputButtonCompact)) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Attach file",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                    Surface(
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        IconButton(
+                            onClick = { showAttachmentMenu = true },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Attach file",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                     if (showAttachmentMenu) {
                         SynapseFilePicker(
@@ -264,13 +276,15 @@ fun ChatInputBar(
                     }
                 }
 
+                Spacer(modifier = Modifier.width(Spacing.Small))
+
                 BasicTextField(
                     value = inputText,
                     onValueChange = onInputTextChange,
                     modifier = Modifier
                         .weight(1f)
                         .defaultMinSize(minHeight = Sizes.InputButtonCompact)
-                        .padding(horizontal = Spacing.Small)
+                        .padding(horizontal = Spacing.ExtraSmall)
                         .padding(vertical = Spacing.ExtraSmall)
                         .focusRequester(focusRequester)
                         .onFocusChanged { isFocused = it.isFocused }
@@ -312,8 +326,8 @@ fun ChatInputBar(
                             if (inputText.isEmpty()) {
                                 Text(
                                     text = stringResource(R.string.chat_type_message),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.65f)
                                 )
                             }
                             innerTextField()

@@ -95,29 +95,18 @@ class VoiceRecordingControllerTest {
     }
 
     @Test
-    fun `single tap mic transitions to VoiceReady without starting recording`() {
+    fun `single tap mic starts recording and enters locked state immediately`() {
         assertEquals(VoiceState.Normal, controller.state.value)
 
-        controller.handleAction(VoiceAction.OpenVoiceMode)
-        assertEquals(VoiceState.VoiceReady, controller.state.value)
-        verify(mockRecorder, never()).start(anyObject(), anyObject())
-    }
-
-    @Test
-    fun `pointer down enters Pressing and release before hold threshold cancels without recording`() {
-        controller.handleAction(VoiceAction.OpenVoiceMode)
-
-        // Down enters Pressing
         controller.handleAction(VoiceAction.StartRecording)
         assertEquals(VoiceState.Pressing, controller.state.value)
 
-        // Release before 180ms threshold
+        // Release before hold threshold (single tap)
         testScope.advanceTimeBy(50)
         controller.handleAction(VoiceAction.ReleaseRecording)
 
-        // Returns to VoiceReady and MediaRecorder was NEVER started
-        assertEquals(VoiceState.VoiceReady, controller.state.value)
-        verify(mockRecorder, never()).start(anyObject(), anyObject())
+        assertTrue(controller.state.value is VoiceState.Locked)
+        verify(mockRecorder, times(1)).start(anyObject(), anyObject())
     }
 
     @Test
@@ -147,16 +136,51 @@ class VoiceRecordingControllerTest {
     }
 
     @Test
-    fun `releasing while armed for cancel deletes recording and returns to VoiceReady`() {
-        controller.handleAction(VoiceAction.OpenVoiceMode)
+    fun `releasing while armed for cancel deletes recording and returns to Normal`() {
         controller.handleAction(VoiceAction.StartRecording)
         testScope.advanceTimeBy(200)
 
         controller.handleAction(VoiceAction.Dragged(deltaX = -120f, deltaY = 0f))
         controller.handleAction(VoiceAction.ReleaseRecording)
 
-        assertEquals(VoiceState.VoiceReady, controller.state.value)
+        assertEquals(VoiceState.Normal, controller.state.value)
         verify(mockRecorder).cancel()
+    }
+
+    @Test
+    fun `mid-gesture direction change - dragging up partway then left arms cancel and cancels on release`() {
+        controller.handleAction(VoiceAction.StartRecording)
+        testScope.advanceTimeBy(200)
+
+        // Drag up partway (-40f)
+        controller.handleAction(VoiceAction.Dragged(deltaX = 0f, deltaY = -40f))
+        var state = controller.state.value as VoiceState.Recording
+        assertEquals(0.44f, state.lockProgress, 0.05f)
+
+        // Move finger back down and left (-120f)
+        controller.handleAction(VoiceAction.Dragged(deltaX = -120f, deltaY = 40f))
+        state = controller.state.value as VoiceState.Recording
+        assertTrue(state.isArmedForCancel)
+
+        // Release finger
+        controller.handleAction(VoiceAction.ReleaseRecording)
+        assertEquals(VoiceState.Normal, controller.state.value)
+        verify(mockRecorder).cancel()
+    }
+
+    @Test
+    fun `mid-gesture direction change - dragging left partway then up locks recording`() {
+        controller.handleAction(VoiceAction.StartRecording)
+        testScope.advanceTimeBy(200)
+
+        // Drag left partway (-50f)
+        controller.handleAction(VoiceAction.Dragged(deltaX = -50f, deltaY = 0f))
+        var state = controller.state.value as VoiceState.Recording
+        assertEquals(0.5f, state.cancelProgress, 0.05f)
+
+        // Drag up beyond lock threshold (-100f)
+        controller.handleAction(VoiceAction.Dragged(deltaX = 50f, deltaY = -100f))
+        assertTrue(controller.state.value is VoiceState.Locked)
     }
 
     @Test
@@ -219,16 +243,15 @@ class VoiceRecordingControllerTest {
     }
 
     @Test
-    fun `stop EmptyOrTooShort gracefully resets to VoiceReady`() {
+    fun `stop EmptyOrTooShort gracefully resets to Normal`() {
         `when`(mockRecorder.stop()).thenReturn(VoiceRecorderStopResult.EmptyOrTooShort)
 
-        controller.handleAction(VoiceAction.OpenVoiceMode)
         controller.handleAction(VoiceAction.StartRecording)
         testScope.advanceTimeBy(200)
 
         controller.handleAction(VoiceAction.FinishRecording)
 
-        assertEquals(VoiceState.VoiceReady, controller.state.value)
+        assertEquals(VoiceState.Normal, controller.state.value)
     }
 
     @Test
@@ -270,7 +293,7 @@ class VoiceRecordingControllerTest {
         controller.onPermissionResult(true)
 
         testScope.advanceTimeBy(50)
-        assertTrue(controller.state.value is VoiceState.Recording)
+        assertTrue(controller.state.value is VoiceState.Locked)
         verify(mockRecorder, times(1)).start(anyObject(), anyObject())
     }
 
@@ -279,7 +302,7 @@ class VoiceRecordingControllerTest {
         controller.requestPermissionAndRecord()
         controller.onPermissionResult(false)
 
-        assertEquals(VoiceState.VoiceReady, controller.state.value)
+        assertEquals(VoiceState.Normal, controller.state.value)
         verify(mockRecorder, never()).start(anyObject(), anyObject())
     }
 

@@ -20,6 +20,7 @@ fun LiveWaveformView(
     modifier: Modifier = Modifier,
     progressFraction: Float = 0f,
     isDraftPlayback: Boolean = false,
+    isPaused: Boolean = false,
     activeColor: Color = MaterialTheme.colorScheme.primary,
     inactiveColor: Color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
     onSeek: ((Float) -> Unit)? = null
@@ -66,10 +67,10 @@ fun LiveWaveformView(
             val x = startX + index * totalBarWidthWithSpacing
 
             val isPlayed = isDraftPlayback && ((index.toFloat() / visibleBars.size) <= progressFraction)
-            val color = if (isDraftPlayback) {
-                if (isPlayed) activeColor else inactiveColor
-            } else {
-                activeColor
+            val color = when {
+                isPaused -> inactiveColor
+                isDraftPlayback -> if (isPlayed) activeColor else inactiveColor
+                else -> activeColor
             }
 
             drawRoundRect(

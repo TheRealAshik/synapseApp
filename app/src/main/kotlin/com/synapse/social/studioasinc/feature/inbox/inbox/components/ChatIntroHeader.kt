@@ -79,22 +79,32 @@ fun ChatIntroHeader(
 
         Spacer(modifier = Modifier.height(Spacing.Large))
 
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
+        Surface(
+            shape = RoundedCornerShape(Sizes.CornerFull),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shadowElevation = Spacing.None,
+            tonalElevation = Sizes.BorderThin,
+            modifier = Modifier.padding(horizontal = Spacing.Medium)
         ) {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = null,
-                modifier = Modifier.size(Sizes.IconSemiSmall),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
-            Text(
-                text = stringResource(id = R.string.messages_are_end_to_end_encrypted),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = null,
+                    modifier = Modifier.size(Sizes.IconSemiSmall),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(Spacing.Small))
+                Text(
+                    text = stringResource(id = R.string.messages_are_end_to_end_encrypted),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }

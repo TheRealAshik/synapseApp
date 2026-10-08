@@ -37,7 +37,7 @@ internal fun ChatBackground(
                 contentDescription = "Background",
                 modifier = modifier.fillMaxSize().blur(radius = (chatWallpaperBlur * MAX_BLUR_RADIUS).dp),
                 contentScale = ContentScale.Crop,
-                alpha = 0.5f
+                alpha = 0.20f
             )
         }
         WallpaperType.PATTERN, WallpaperType.PRESET_IMAGE -> {

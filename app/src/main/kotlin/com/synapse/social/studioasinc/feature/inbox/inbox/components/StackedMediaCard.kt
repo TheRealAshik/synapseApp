@@ -54,13 +54,13 @@ fun StackedMediaCard(
     val context = LocalContext.current
 
     // Pronounced Instagram-style card stack/fan dimensions
-    val fanOffsetX2 = (-20).dp
-    val fanOffsetY2 = (-12).dp
-    val fanRotation2 = -8f
+    val fanOffsetX2 = (-28).dp
+    val fanOffsetY2 = (-16).dp
+    val fanRotation2 = -12f
 
-    val fanOffsetX1 = 18.dp
-    val fanOffsetY1 = (-8).dp
-    val fanRotation1 = 7f
+    val fanOffsetX1 = 26.dp
+    val fanOffsetY1 = (-10).dp
+    val fanRotation1 = 10f
 
     Box(
         modifier = modifier
