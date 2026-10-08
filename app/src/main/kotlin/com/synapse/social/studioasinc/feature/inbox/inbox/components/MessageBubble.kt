@@ -663,7 +663,13 @@ fun MessageBubble(
                                                 Column {
                                                     val audioUrl = message.mediaUrl
                                                     if (!audioUrl.isNullOrBlank()) {
-                                                        VoiceMessagePlayer(mediaUrl = audioUrl, tintColor = contentColor, isFromMe = isFromMe)
+                                                        val attachmentDuration = message.attachments.firstOrNull()?.duration?.toLong()?.let { it * 1000L } ?: 0L
+                                                        VoiceMessagePlayer(
+                                                            mediaUrl = audioUrl,
+                                                            tintColor = contentColor,
+                                                            isFromMe = isFromMe,
+                                                            initialDurationMs = attachmentDuration
+                                                        )
                                                     } else {
                                                         Row(
                                                             verticalAlignment = Alignment.CenterVertically,

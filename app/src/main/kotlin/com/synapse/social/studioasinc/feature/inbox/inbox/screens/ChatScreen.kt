@@ -1,161 +1,51 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.screens
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatInputBar
 
-import com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile
-import com.synapse.social.studioasinc.feature.shared.components.picker.SynapseFilePicker
-
-
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.canhub.cropper.CropImageContract
-import com.canhub.cropper.CropImageContractOptions
-import com.canhub.cropper.CropImageOptions
-import com.canhub.cropper.CropImageView
-
-
-import android.content.Intent
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.Animatable
-import kotlinx.coroutines.launch
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.ClickableText
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.automirrored.filled.Reply
-import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.withStyle
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.text.TextLayoutResult
-
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-
-
-import com.synapse.social.studioasinc.feature.shared.components.post.ReactionPicker
-import com.synapse.social.studioasinc.domain.model.ReactionType as AppReactionType
-import com.synapse.social.studioasinc.shared.domain.model.ReactionType as SharedReactionType
-import androidx.compose.foundation.Image
-import androidx.compose.ui.graphics.vector.rememberVectorPainter
-
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import android.provider.OpenableColumns
-import com.synapse.social.studioasinc.feature.shared.components.UserAvatarWithStatus
-import coil.compose.AsyncImage
-import coil.decode.SvgDecoder
-import coil.request.ImageRequest
-import androidx.compose.ui.res.stringResource
-import com.synapse.social.studioasinc.R
-
-import androidx.compose.ui.draw.blur
-import com.synapse.social.studioasinc.shared.domain.model.settings.WallpaperType
-import com.synapse.social.studioasinc.shared.domain.model.settings.ChatThemePreset
-import com.synapse.social.studioasinc.feature.inbox.inbox.ChatViewModel
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatShimmer
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatTopAppBar
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.MessageContextMenu
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.MessageSummaryDialog
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatSummaryDialog
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.ChatInputBar
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.BatchMediaGalleryDialog
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.BatchMediaViewerDialog
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.MediaPreviewDialog
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.DateDividerChip
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.GroupPosition
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.MessageBubble
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.UnreadDividerRow
-import com.synapse.social.studioasinc.feature.inbox.inbox.components.isWithinTimeThreshold
-import com.synapse.social.studioasinc.feature.inbox.inbox.models.ChatListItem
-import com.synapse.social.studioasinc.feature.shared.theme.Spacing
-import com.synapse.social.studioasinc.feature.shared.theme.StatusOnline
-import com.synapse.social.studioasinc.feature.shared.theme.StatusRead
-import com.synapse.social.studioasinc.feature.shared.theme.LightPrimaryContainer
-import com.synapse.social.studioasinc.feature.shared.theme.ForestBubbleBackground
-import com.synapse.social.studioasinc.feature.shared.theme.ForestBubbleText
-import com.synapse.social.studioasinc.feature.shared.theme.SunsetBubbleBackground
-import com.synapse.social.studioasinc.feature.shared.theme.SunsetBubbleText
-import com.synapse.social.studioasinc.feature.shared.theme.Gray200
-import com.synapse.social.studioasinc.feature.shared.theme.Gray900
-import com.synapse.social.studioasinc.feature.shared.theme.DarkPrimaryContainer
-import com.synapse.social.studioasinc.feature.shared.theme.LightOnPrimaryContainer
-import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
-import com.synapse.social.studioasinc.shared.domain.model.chat.Message
-import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
-import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewCard
-import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewViewModel
-import com.synapse.social.studioasinc.feature.shared.utils.UrlUtils
-import com.synapse.social.studioasinc.shared.domain.usecase.GetLinkMetadataUseCase
-import androidx.hilt.navigation.compose.hiltViewModel
-
-import com.synapse.social.studioasinc.shared.domain.service.AudioRecorder
-import kotlinx.coroutines.delay
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.common.MediaItem
-import androidx.media3.common.Player
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.media3.ui.PlayerView
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
-import java.io.File
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import kotlin.math.abs
-import com.synapse.social.studioasinc.feature.shared.theme.Sizes
-import com.synapse.social.studioasinc.core.util.IntentUtils
-import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceRecorder
-import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService
-import android.Manifest
-import android.content.pm.PackageManager
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.core.media.VoicePlayerManager
+import com.synapse.social.studioasinc.feature.inbox.inbox.ChatViewModel
+import com.synapse.social.studioasinc.feature.inbox.inbox.components.*
+import com.synapse.social.studioasinc.feature.inbox.inbox.models.ChatListItem
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceAction
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceRecorder
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceRecordingController
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceState
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService
+import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewViewModel
+import com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile
+import com.synapse.social.studioasinc.feature.shared.theme.Sizes
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.shared.domain.model.chat.Message
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -176,9 +66,6 @@ fun ChatScreen(
         viewModel.initialize(chatId, participantId)
     }
 
-    // Re-fetch messages and restart real-time subscriptions when screen resumes.
-    // rememberSaveable survives navigation back-stack save/restore so isFirstResume
-    // stays false when returning to the screen, avoiding a skip on re-entry.
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
     var isFirstResume by rememberSaveable { mutableStateOf(true) }
     DisposableEffect(lifecycleOwner) {
@@ -239,7 +126,6 @@ fun ChatScreen(
     val chatMessageCornerRadius by viewModel.chatMessageCornerRadius.collectAsState()
     val chatAvatarDisabled by viewModel.chatAvatarDisabled.collectAsState()
 
-    // Resolve avatar URL: prefer loaded profile, fall back to nav arg (constructing full URL if needed)
     val participantAvatarUrl = participantProfile?.avatar
         ?: initialParticipantAvatar?.let {
             if (it.startsWith("http")) it
@@ -251,32 +137,56 @@ fun ChatScreen(
     var batchViewerMessage by remember { mutableStateOf<Message?>(null) }
     var batchViewerInitialIndex by remember { mutableIntStateOf(0) }
 
-    @Suppress("DEPRECATION")
-    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val haptic = LocalHapticFeedback.current
+    val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
+
+    val cancelThresholdPx = with(density) { 100.dp.toPx() }
+    val lockThresholdPx = with(density) { 90.dp.toPx() }
+    val directionSlopPx = with(density) { 12.dp.toPx() }
 
     var selectedMediaFiles by remember { mutableStateOf<List<PickedFile>?>(null) }
 
-    // Voice Recording State
-    var isRecording by remember { mutableStateOf(false) }
-    var recordingDurationMs by remember { mutableStateOf(0L) }
-    var recordingAmplitude by remember { mutableStateOf(0) }
-
+    // Voice Recording Infrastructure
     val voiceRecorder = remember { VoiceRecorder(context) }
-    val coroutineScope = rememberCoroutineScope()
+    val voicePlayerManager = remember { VoicePlayerManager(context.applicationContext) }
 
-    // Ensure voice recorder resources are released when the screen is disposed
-    DisposableEffect(voiceRecorder) {
+    val voiceController = remember {
+        VoiceRecordingController(
+            scope = coroutineScope,
+            voiceRecorder = voiceRecorder,
+            voicePlayerManager = voicePlayerManager,
+            getOutputFile = { File(context.cacheDir, "temp_voice_${System.currentTimeMillis()}.m4a") },
+            onHapticPerform = { haptic.performHapticFeedback(HapticFeedbackType.LongPress) },
+            onSendVoiceMessage = { audioFile, durationMs, onResult ->
+                viewModel.uploadVoiceMessage(audioFile, durationMs, onResult)
+            },
+            cancelThresholdPx = cancelThresholdPx,
+            lockThresholdPx = lockThresholdPx,
+            directionSlopPx = directionSlopPx
+        )
+    }
+
+    LaunchedEffect(cancelThresholdPx, lockThresholdPx, directionSlopPx) {
+        voiceController.updateThresholds(cancelThresholdPx, lockThresholdPx, directionSlopPx)
+    }
+
+    val voiceState by voiceController.state.collectAsState()
+
+    DisposableEffect(voiceController) {
         onDispose {
-            voiceRecorder.cancel()
+            voiceController.cleanup()
+            voicePlayerManager.release()
         }
     }
 
     val recordPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted ->
+            voiceController.onPermissionResult(isGranted)
             if (!isGranted) {
                 android.widget.Toast.makeText(context, context.getString(R.string.voice_mic_permission_required), android.widget.Toast.LENGTH_SHORT).show()
             }
@@ -290,53 +200,6 @@ fun ChatScreen(
             }
         }
     }
-
-    // Collection of amplitude and timer
-    LaunchedEffect(isRecording) {
-        if (isRecording) {
-            val startTime = System.currentTimeMillis()
-            launch {
-                voiceRecorder.amplitudeFlow.collect { amp ->
-                    recordingAmplitude = amp
-                }
-            }
-            launch {
-                while (isRecording) {
-                    recordingDurationMs = System.currentTimeMillis() - startTime
-                    delay(100)
-                }
-            }
-        } else {
-            recordingDurationMs = 0L
-            recordingAmplitude = 0
-        }
-    }
-
-    val handleFileSelection = { uri: Uri?, type: String, caption: String? ->
-        uri?.let {
-            val contentResolver = context.contentResolver
-            val mimeType = contentResolver.getType(it) ?: ""
-            var fileName = "attachment"
-            contentResolver.query(it, null, null, null, null)?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (index >= 0) fileName = cursor.getString(index)
-                }
-            }
-
-            val filePath = com.synapse.social.studioasinc.core.util.FileUtils.validateAndCleanPath(context, it.toString())
-            if (filePath != null) {
-                viewModel.uploadAndSendMedia(
-                    filePath = filePath,
-                    fileName = fileName,
-                    contentType = mimeType,
-                    messageType = type,
-                    caption = caption
-                )
-            }
-        }
-    }
-
 
     // Show toast for E2EE errors
     LaunchedEffect(toastMessage) {
@@ -354,11 +217,9 @@ fun ChatScreen(
         }
     }
 
-    // Hide list until initial scroll is done to prevent header flicker on first render
     var listReady by remember { mutableStateOf(false) }
     var showDisappearingModeDialog by remember { mutableStateOf(false) }
 
-    // Auto-scroll to bottom when new messages arrive
     var lastScrolledMessageId by remember { mutableStateOf<String?>(null) }
     val newestMessage = remember(messages) { messages.lastOrNull() }
     val newestMessageId = newestMessage?.id
@@ -366,13 +227,10 @@ fun ChatScreen(
     LaunchedEffect(newestMessageId) {
         if (newestMessageId != null) {
             if (!listReady) {
-                // Initial load: Snap to bottom instantly, then reveal the list
                 listState.scrollToItem(0)
                 listReady = true
                 lastScrolledMessageId = newestMessageId
             } else if (newestMessageId != lastScrolledMessageId) {
-                // New message arrived (or ID updated): Animate scroll
-                // if it's from the current user or if the user is near the bottom.
                 val isFromMe = newestMessage.senderId == currentUserId
                 val isNearBottom = listState.firstVisibleItemIndex <= 3
 
@@ -483,7 +341,6 @@ fun ChatScreen(
                         onOpenBatchGallery = { batchGalleryMessage = it }
                     )
 
-                    // Context Menu and Reactions for messages
                     if (selectedMessageForMenu != null) {
                         MessageContextMenu(
                             selectedMessage = selectedMessageForMenu,
@@ -499,14 +356,12 @@ fun ChatScreen(
                 }
             }
 
-            // ── Message Summary Dialog ──
             MessageSummaryDialog(
                 isSummarizingMessage = isSummarizingMessage,
                 messageSummary = messageSummary,
                 onDismissRequest = viewModel::clearMessageSummary
             )
 
-            // ── Bottom fade gradient so messages appear to fade behind the floating input ──
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -522,7 +377,7 @@ fun ChatScreen(
                     )
             )
 
-            // ── Floating Input Bar ──
+            // Redesigned Voice Input Bar & Host
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -537,57 +392,30 @@ fun ChatScreen(
                     participantDisplayName = participantProfile?.displayName,
                     getLinkMetadataUseCase = linkPreviewViewModel.getLinkMetadataUseCase,
                     context = context,
+                    voiceState = voiceState,
+                    onVoiceAction = { action ->
+                        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                        if (action is VoiceAction.StartRecording && !hasPermission) {
+                            voiceController.requestPermissionAndRecord()
+                            recordPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            voiceController.handleAction(action)
+                        }
+                    },
                     onInputTextChange = viewModel::onInputTextChange,
                     onSendMessage = viewModel::sendMessage,
                     onCancelReply = viewModel::cancelReply,
                     onCancelEditing = viewModel::cancelEditing,
                     onUploadAndSendMedia = viewModel::uploadAndSendMedia,
-                    onFilesSelected = { files -> selectedMediaFiles = files },
-                    isRecording = isRecording,
-                    recordingDurationMs = recordingDurationMs,
-                    recordingAmplitude = recordingAmplitude,
-                    onMicHeld = {
-                        val hasPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
-                        if (hasPermission) {
-                            val tempFile = File(context.cacheDir, "temp_voice_${System.currentTimeMillis()}.m4a")
-                            try {
-                                voiceRecorder.start(tempFile)
-                                isRecording = true
-                            } catch (e: Exception) {
-                                isRecording = false
-                                android.widget.Toast.makeText(context, context.getString(R.string.voice_record_start_failed), android.widget.Toast.LENGTH_SHORT).show()
-                            }
-                        } else {
-                            recordPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                        }
-                    },
-                    onMicReleased = {
-                        if (isRecording) {
-                            isRecording = false
-                            val outputFile = voiceRecorder.stop()
-                            if (outputFile != null && recordingDurationMs > 500) {
-                                viewModel.uploadVoiceMessage(outputFile)
-                            } else {
-                                outputFile?.delete()
-                            }
-                        }
-                    },
-                    onRecordingCancelled = {
-                        if (isRecording) {
-                            isRecording = false
-                            voiceRecorder.cancel()
-                        }
-                    }
+                    onFilesSelected = { files -> selectedMediaFiles = files }
                 )
             }
 
-            // Chat Summary Dialog
             ChatSummaryDialog(
                 chatSummary = chatSummary,
                 onDismissRequest = viewModel::clearSummary
             )
 
-            // Dedicated Batch Media Gallery Dialog (Stage 1)
             batchGalleryMessage?.let { msg ->
                 BatchMediaGalleryDialog(
                     attachments = msg.attachments,
@@ -600,7 +428,6 @@ fun ChatScreen(
                 )
             }
 
-            // Dedicated Batch Individual Media Viewer Dialog (Stage 2)
             batchViewerMessage?.let { msg ->
                 BatchMediaViewerDialog(
                     attachments = msg.attachments,

@@ -1,10 +1,15 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.components
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -57,13 +63,14 @@ fun VoiceMessagePlayer(
     tintColor: Color,
     isFromMe: Boolean,
     modifier: Modifier = Modifier,
+    initialDurationMs: Long = 0L,
     viewModel: VoiceMessagePlayerViewModel = hiltViewModel(key = mediaUrl)
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    LaunchedEffect(mediaUrl) {
-        viewModel.initialize(mediaUrl)
+    LaunchedEffect(mediaUrl, initialDurationMs) {
+        viewModel.initialize(mediaUrl, initialDurationMs)
     }
 
     DisposableEffect(lifecycleOwner) {
@@ -97,6 +104,22 @@ fun VoiceMessagePlayer(
     val inactiveWaveformColor = activeWaveformColor.copy(alpha = 0.38f)
     val textColor = if (isFromMe) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
 
+    val playPauseInteractionSource = remember { MutableInteractionSource() }
+    val isPlayPausePressed by playPauseInteractionSource.collectIsPressedAsState()
+    val playPauseScale by animateFloatAsState(
+        targetValue = if (isPlayPausePressed) 0.92f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "playPauseScale"
+    )
+
+    val speedInteractionSource = remember { MutableInteractionSource() }
+    val isSpeedPressed by speedInteractionSource.collectIsPressedAsState()
+    val speedScale by animateFloatAsState(
+        targetValue = if (isSpeedPressed) 0.92f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessMedium),
+        label = "speedScale"
+    )
+
     Surface(
         color = Color.Transparent,
         modifier = modifier
@@ -109,7 +132,7 @@ fun VoiceMessagePlayer(
                 .fillMaxWidth()
                 .padding(horizontal = Spacing.Small, vertical = Spacing.ExtraSmall)
         ) {
-            // Material 3 FilledTonalIconButton
+            // Material 3 Expressive Substantial Play/Pause Button
             Box(
                 modifier = Modifier
                     .size(Sizes.AvatarLarge),
@@ -139,7 +162,13 @@ fun VoiceMessagePlayer(
                     else -> {
                         FilledTonalIconButton(
                             onClick = { viewModel.onPlayPauseClicked() },
-                            modifier = Modifier.size(Sizes.AvatarLarge),
+                            interactionSource = playPauseInteractionSource,
+                            modifier = Modifier
+                                .size(Sizes.AvatarLarge)
+                                .graphicsLayer {
+                                    scaleX = playPauseScale
+                                    scaleY = playPauseScale
+                                },
                             shape = CircleShape,
                             colors = IconButtonDefaults.filledTonalIconButtonColors(
                                 containerColor = buttonContainerColor,
@@ -248,8 +277,16 @@ fun VoiceMessagePlayer(
                         color = buttonContainerColor,
                         contentColor = buttonContentColor,
                         modifier = Modifier
+                            .graphicsLayer {
+                                scaleX = speedScale
+                                scaleY = speedScale
+                            }
                             .clip(RoundedCornerShape(Sizes.CornerMedium))
-                            .clickable { viewModel.onSpeedToggle() }
+                            .clickable(
+                                interactionSource = speedInteractionSource,
+                                indication = ripple(),
+                                onClick = { viewModel.onSpeedToggle() }
+                            )
                     ) {
                         Text(
                             text = formatSpeed(speed),

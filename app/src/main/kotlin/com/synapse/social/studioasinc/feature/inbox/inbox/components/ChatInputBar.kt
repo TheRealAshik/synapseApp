@@ -1,66 +1,50 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.components
-import androidx.compose.ui.unit.dp
 
 import android.content.Context
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Reply
-import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.runtime.*
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.LocalDensity
-import kotlin.random.Random
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.foundation.background
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Stop
-import androidx.compose.material.icons.filled.Delete
-import kotlin.math.abs
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceAction
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceInputHost
+import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceState
 import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewCard
 import com.synapse.social.studioasinc.feature.shared.components.picker.PickedFile
 import com.synapse.social.studioasinc.feature.shared.components.picker.SynapseFilePicker
 import com.synapse.social.studioasinc.feature.shared.theme.Sizes
-import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.feature.shared.utils.UrlUtils
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
@@ -77,39 +61,23 @@ fun ChatInputBar(
     participantDisplayName: String?,
     getLinkMetadataUseCase: GetLinkMetadataUseCase?,
     context: Context,
+    voiceState: VoiceState = VoiceState.Normal,
+    onVoiceAction: (VoiceAction) -> Unit = {},
     onInputTextChange: (String) -> Unit,
     onSendMessage: () -> Unit,
     onCancelReply: () -> Unit,
     onCancelEditing: () -> Unit,
     onUploadAndSendMedia: (filePath: String, fileName: String, contentType: String, messageType: String, caption: String?) -> Unit,
-    onFilesSelected: ((List<PickedFile>) -> Unit)? = null,
-    isRecording: Boolean = false,
-    recordingDurationMs: Long = 0L,
-    recordingAmplitude: Int = 0,
-    onMicHeld: () -> Unit = {},
-    onMicReleased: () -> Unit = {},
-    onRecordingCancelled: () -> Unit = {}
+    onFilesSelected: ((List<PickedFile>) -> Unit)? = null
 ) {
     var dismissedPreviewUrl by remember { mutableStateOf<String?>(null) }
     var showAttachmentMenu by remember { mutableStateOf(false) }
-    val coroutineScope = rememberCoroutineScope()
-    var isSwipeToCancel by remember { mutableStateOf(false) }
-    var slideOffset by remember { mutableFloatStateOf(0f) }
-    var isArmedForCancel by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
-    val haptic = LocalHapticFeedback.current
-    val cancelThresholdPx = with(LocalDensity.current) { 100.dp.toPx() }
-
-    val micScale by animateFloatAsState(
-        targetValue = if (isRecording) (if (isArmedForCancel) 1.35f else 1.2f) else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy),
-        label = "micScale"
-    )
 
     var isFocused by remember { mutableStateOf(false) }
     val isImeVisible = WindowInsets.ime.getBottom(LocalDensity.current) > 0
     val inputWidthFraction by animateFloatAsState(
-        targetValue = if ((isFocused && isImeVisible) || inputText.isNotEmpty()) 1f else 0.8f,
+        targetValue = if ((isFocused && isImeVisible) || inputText.isNotEmpty()) 1f else 0.85f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMediumLow
@@ -138,7 +106,12 @@ fun ChatInputBar(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)
                 ) {
-                    Icon(Icons.AutoMirrored.Filled.Reply, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(Sizes.IconSemiMedium))
+                    Icon(
+                        Icons.AutoMirrored.Filled.Reply,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        modifier = Modifier.size(Sizes.IconSemiMedium)
+                    )
                     Spacer(modifier = Modifier.width(Spacing.Small))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
@@ -236,132 +209,25 @@ fun ChatInputBar(
             )
         }
 
-        // Recording Indicator Row
-        AnimatedVisibility(
-            visible = isRecording,
-            enter = slideInVertically { it } + fadeIn(tween(300)),
-            exit = slideOutVertically { it } + fadeOut(tween(200))
-        ) {
-            val animatedSlideOffset by animateFloatAsState(targetValue = slideOffset, label = "slideOffset")
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .offset { IntOffset(animatedSlideOffset.toInt(), 0) }
-                    .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    val infiniteTransition = rememberInfiniteTransition(label = "recordingIndicator")
-                    val alpha by infiniteTransition.animateFloat(
-                        initialValue = 1f,
-                        targetValue = 0.2f,
-                        animationSpec = infiniteRepeatable(
-                            animation = tween(800, easing = LinearEasing),
-                            repeatMode = RepeatMode.Reverse
-                        ),
-                        label = "alpha"
-                    )
-                    Box(
-                        modifier = Modifier
-                            .size(Sizes.IconSmall)
-                            .background(if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.error.copy(alpha = alpha), CircleShape)
-                    )
-                    Spacer(modifier = Modifier.width(Spacing.Small))
-                    val totalSeconds = recordingDurationMs / 1000
-                    val m = totalSeconds / 60
-                    val s = totalSeconds % 60
-                    Text(
-                        text = String.format("%02d:%02d", m, s),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-                    )
-
-                    Spacer(modifier = Modifier.width(Spacing.Medium))
-
-                    // Waveform visualizer
-                    val maxAmp = 32767f // Max amplitude for 16-bit audio
-                    val normalizedAmp = (recordingAmplitude / maxAmp).coerceIn(0.1f, 1f)
-
-                    Row(
-                        modifier = Modifier.height(Sizes.IconLarge),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
-                    ) {
-                        for (i in 0 until 5) {
-                            val seed = remember { Random.nextFloat() * 0.5f + 0.5f }
-                            val targetHeight = (Sizes.IconLarge * normalizedAmp * seed).coerceIn(Spacing.ExtraSmall, Sizes.IconLarge)
-                            val animatedHeight by animateDpAsState(
-                                targetValue = targetHeight,
-                                animationSpec = tween(100),
-                                label = "amp_$i"
-                            )
-                            Box(
-                                modifier = Modifier
-                                    .width(Spacing.ExtraSmall)
-                                    .height(animatedHeight)
-                                    .background(
-                                        if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(Sizes.CornerSmall)
-                                    )
-                            )
-                        }
-                    }
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
-                ) {
-                    val cancelColor = if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-
-                    val shakeOffset = if (isArmedForCancel) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "shake")
-                        infiniteTransition.animateFloat(
-                            initialValue = -5f,
-                            targetValue = 5f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(50, easing = LinearEasing),
-                                repeatMode = RepeatMode.Reverse
-                            ),
-                            label = "shakeOffset"
-                        ).value
-                    } else 0f
-
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .size(Sizes.IconSemiMedium)
-                            .offset(x = shakeOffset.dp),
-                        tint = cancelColor
-                    )
-                    Text(
-                        text = stringResource(R.string.voice_cancel_hint),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = cancelColor,
-                        modifier = Modifier.offset(x = shakeOffset.dp)
-                    )
-                }
-            }
-        }
-
-        // Floating input row
-        Surface(
+        // Voice Input Host wrapping normal composer and voice morph overlay
+        VoiceInputHost(
+            voiceState = voiceState,
+            onVoiceAction = onVoiceAction,
+            showSendButton = inputText.isNotEmpty(),
+            onSendMessage = {
+                onSendMessage()
+                dismissedPreviewUrl = null
+                focusRequester.requestFocus()
+            },
             modifier = Modifier
                 .fillMaxWidth(inputWidthFraction)
-                .align(Alignment.CenterHorizontally),
-            shape = RoundedCornerShape(Sizes.CornerMassive),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            tonalElevation = Sizes.BorderDefault,
-            shadowElevation = Spacing.ExtraSmall
+                .align(Alignment.CenterHorizontally)
         ) {
+            // Normal Chat Input Left/Middle Content
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(Spacing.ExtraSmall),
-                verticalAlignment = Alignment.Bottom
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Emoji / Attachment button
                 Box {
                     IconButton(onClick = { showAttachmentMenu = true }, modifier = Modifier.size(Sizes.InputButtonCompact)) {
                         Icon(
@@ -454,144 +320,9 @@ fun ChatInputBar(
                         }
                     }
                 )
-
-                @OptIn(ExperimentalFoundationApi::class)
-                Box(
-                    modifier = Modifier
-                        .size(Sizes.InputButtonCompact),
-                    contentAlignment = Alignment.Center
-                ) {
-                    if (isRecording) {
-                        val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-                        val pulseScale by infiniteTransition.animateFloat(
-                            initialValue = 1f,
-                            targetValue = 1.6f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "pulseScale"
-                        )
-                        val pulseAlpha by infiniteTransition.animateFloat(
-                            initialValue = 0.4f,
-                            targetValue = 0f,
-                            animationSpec = infiniteRepeatable(
-                                animation = tween(1000, easing = LinearEasing),
-                                repeatMode = RepeatMode.Restart
-                            ),
-                            label = "pulseAlpha"
-                        )
-                        Box(
-                            modifier = Modifier
-                                .matchParentSize()
-                                .graphicsLayer {
-                                    scaleX = pulseScale
-                                    scaleY = pulseScale
-                                    alpha = pulseAlpha
-                                }
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        )
-                    }
-
-                Surface(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .graphicsLayer {
-                            scaleX = micScale
-                            scaleY = micScale
-                        }
-                        .pointerInput(inputText, canSendMessage) {
-                            if (inputText.isNotEmpty() || !canSendMessage) {
-                                detectTapGestures(
-                                    onTap = {
-                                        if (inputText.isNotEmpty()) {
-                                            onSendMessage()
-                                            dismissedPreviewUrl = null
-                                            focusRequester.requestFocus()
-                                        }
-                                    }
-                                )
-                            } else {
-                                awaitEachGesture {
-                                    val down = awaitFirstDown(requireUnconsumed = false)
-                                    isSwipeToCancel = false
-                                    isArmedForCancel = false
-                                    slideOffset = 0f
-                                    onMicHeld()
-                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-
-                                    var cumulativeDrag = 0f
-                                    var cancelTriggered = false
-
-                                    while (true) {
-                                        val event = awaitPointerEvent()
-                                        val change = event.changes.firstOrNull { it.id == down.id }
-                                        if (change == null || !change.pressed) {
-                                            if (cancelTriggered || isArmedForCancel) {
-                                                isSwipeToCancel = true
-                                                onRecordingCancelled()
-                                            } else {
-                                                onMicReleased()
-                                            }
-                                            slideOffset = 0f
-                                            isArmedForCancel = false
-                                            break
-                                        }
-
-                                        val dragDelta = change.positionChange().x
-                                        cumulativeDrag += dragDelta
-                                        slideOffset = cumulativeDrag.coerceAtMost(0f)
-
-                                        val currentDistance = abs(slideOffset)
-                                        if (currentDistance >= cancelThresholdPx) {
-                                            if (!cancelTriggered) {
-                                                cancelTriggered = true
-                                                isArmedForCancel = true
-                                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            }
-                                        } else {
-                                            if (cancelTriggered) {
-                                                cancelTriggered = false
-                                                isArmedForCancel = false
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                    shape = CircleShape,
-                    color = if (isArmedForCancel) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    contentColor = if (isArmedForCancel) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        val icon = when {
-                            editingMessage != null -> Icons.Default.Check
-                            inputText.isNotEmpty() || !canSendMessage -> Icons.Default.ArrowUpward
-                            isArmedForCancel -> Icons.Default.Delete
-                            else -> Icons.Default.Mic
-                        }
-                        AnimatedContent(
-                            targetState = icon,
-                            transitionSpec = {
-                                fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.8f, animationSpec = tween(200)) togetherWith
-                                fadeOut(animationSpec = tween(200)) + scaleOut(targetScale = 0.8f, animationSpec = tween(200))
-                            },
-                            label = "iconAnimation"
-                        ) { targetIcon ->
-                            Icon(
-                                targetIcon,
-                                contentDescription = stringResource(if (inputText.isEmpty()) R.string.voice_hold_to_record else R.string.chat_action_send),
-                                modifier = Modifier.size(Sizes.IconLarge),
-                                tint = if (isArmedForCancel) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-                }
-                }
-
             }
         }
-        // Hint if restricted
+
         if (!canSendMessage) {
             Text(
                 text = stringResource(R.string.only_admins_can_message_hint),

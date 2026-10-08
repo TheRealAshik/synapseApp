@@ -10,6 +10,7 @@ import com.synapse.social.studioasinc.shared.domain.repository.FileUploader
 import com.synapse.social.studioasinc.shared.domain.service.MediaCompressor
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.UploadMediaUseCase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -32,32 +33,48 @@ class ChatMediaDelegate(
     private val mediaCompressor: MediaCompressor? = null
 ) {
 
-    fun uploadAndSendVoiceMessage(
+    suspend fun uploadAndSendVoiceMessageSuspend(
         audioFile: java.io.File,
+        durationMs: Long = 0L,
         storageConfig: com.synapse.social.studioasinc.shared.domain.model.StorageConfig,
         voiceUploadService: com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService,
         sendMessageUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase = this.sendMessageUseCase,
         currentUserIdProvider: () -> String? = this.currentUserIdProvider,
         chatIdProvider: () -> String? = this.chatIdProvider,
-        viewModelScope: kotlinx.coroutines.CoroutineScope = this.viewModelScope
+        onResult: ((Boolean, String?) -> Unit)? = null
     ) {
-        val chatId = chatIdProvider() ?: return
-        val currentUserId = currentUserIdProvider() ?: return
+        val chatId = chatIdProvider()
+        val currentUserId = currentUserIdProvider()
 
-        viewModelScope.launch {
-            // Optimistic message
-            val tempId = UUID.randomUUID().toString()
-            val optimisticMessage = Message(
-                id = tempId,
-                chatId = chatId,
-                senderId = currentUserId,
-                content = "Sending voice message...",
-                messageType = MessageType.AUDIO,
-                deliveryStatus = DeliveryStatus.SENDING,
-                createdAt = Instant.now().toString()
-            )
-            onOptimisticMessageAdded(optimisticMessage, tempId)
+        if (chatId.isNullOrBlank() || currentUserId.isNullOrBlank()) {
+            val err = "Missing chat or user ID"
+            onError(err)
+            onResult?.invoke(false, err)
+            return
+        }
 
+        val durationSeconds = (durationMs / 1000).toInt().coerceAtLeast(1)
+        val tempId = UUID.randomUUID().toString()
+        val audioAttachment = com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment(
+            url = audioFile.absolutePath,
+            type = com.synapse.social.studioasinc.shared.domain.model.chat.AttachmentType.AUDIO,
+            size = audioFile.length(),
+            duration = durationSeconds,
+            uploadProgress = 0.0f
+        )
+        val optimisticMessage = Message(
+            id = tempId,
+            chatId = chatId,
+            senderId = currentUserId,
+            content = "",
+            messageType = MessageType.AUDIO,
+            deliveryStatus = DeliveryStatus.SENDING,
+            createdAt = Instant.now().toString(),
+            attachments = listOf(audioAttachment)
+        )
+        onOptimisticMessageAdded(optimisticMessage, tempId)
+
+        try {
             val uploadResult = voiceUploadService.upload(
                 audioFile = audioFile,
                 chatId = chatId,
@@ -65,20 +82,58 @@ class ChatMediaDelegate(
             )
 
             uploadResult.onSuccess { mediaUrl ->
-                if (coroutineContext[Job]?.isActive == false) return@onSuccess
                 sendMessageUseCase(
                     chatId = chatId,
-                    content = "", // Voice messages have no text content
+                    content = "",
                     mediaUrl = mediaUrl,
-                    messageType = MessageType.AUDIO.name.lowercase()
+                    messageType = MessageType.AUDIO.name.lowercase(),
+                    attachments = listOf(audioAttachment.copy(url = mediaUrl, uploadProgress = 1.0f))
                 ).onSuccess { actualMessage ->
                     onOptimisticMessageSuccess(tempId, actualMessage)
+                    onResult?.invoke(true, null)
                 }.onFailure { e ->
-                    onOptimisticMessageFailed(tempId, "Failed to send: ${e.message}")
+                    val err = "Failed to send: ${e.message}"
+                    onOptimisticMessageFailed(tempId, err)
+                    onResult?.invoke(false, err)
                 }
             }.onFailure { e ->
-                onOptimisticMessageFailed(tempId, "Voice upload failed: ${e.message}")
+                val err = "Voice upload failed: ${e.message}"
+                onOptimisticMessageFailed(tempId, err)
+                onResult?.invoke(false, err)
             }
+        } catch (e: CancellationException) {
+            onOptimisticMessageFailed(tempId, "Cancelled")
+            onResult?.invoke(false, "Cancelled")
+            throw e
+        } catch (e: Exception) {
+            val err = "Upload error: ${e.message}"
+            onOptimisticMessageFailed(tempId, err)
+            onResult?.invoke(false, err)
+        }
+    }
+
+    fun uploadAndSendVoiceMessage(
+        audioFile: java.io.File,
+        durationMs: Long = 0L,
+        storageConfig: com.synapse.social.studioasinc.shared.domain.model.StorageConfig,
+        voiceUploadService: com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceUploadService,
+        sendMessageUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.SendMessageUseCase = this.sendMessageUseCase,
+        currentUserIdProvider: () -> String? = this.currentUserIdProvider,
+        chatIdProvider: () -> String? = this.chatIdProvider,
+        viewModelScope: kotlinx.coroutines.CoroutineScope = this.viewModelScope,
+        onResult: ((Boolean, String?) -> Unit)? = null
+    ): Job {
+        return viewModelScope.launch {
+            uploadAndSendVoiceMessageSuspend(
+                audioFile = audioFile,
+                durationMs = durationMs,
+                storageConfig = storageConfig,
+                voiceUploadService = voiceUploadService,
+                sendMessageUseCase = sendMessageUseCase,
+                currentUserIdProvider = currentUserIdProvider,
+                chatIdProvider = chatIdProvider,
+                onResult = onResult
+            )
         }
     }
 
@@ -152,7 +207,6 @@ class ChatMediaDelegate(
                 return@launch
             }
 
-            // Optimistic update
             val tempId = UUID.randomUUID().toString()
 
             val type = when(messageType) {

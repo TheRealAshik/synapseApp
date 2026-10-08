@@ -44,12 +44,18 @@ class VoiceMessagePlayerViewModel @Inject constructor(
         observePlaybackState()
     }
 
-    fun initialize(mediaUrl: String) {
-        if (_uiState.value.mediaUrl == mediaUrl) return
+    fun initialize(mediaUrl: String, initialDurationMs: Long = 0L) {
+        if (_uiState.value.mediaUrl == mediaUrl) {
+            if (initialDurationMs > 0 && _uiState.value.durationMs <= 0) {
+                _uiState.update { it.copy(durationMs = initialDurationMs) }
+            }
+            return
+        }
 
         _uiState.update {
             VoicePlayerUiState(
                 mediaUrl = mediaUrl,
+                durationMs = initialDurationMs,
                 waveformAmplitudes = VoiceWaveformExtractor.generateFallbackAmplitudes(mediaUrl)
             )
         }

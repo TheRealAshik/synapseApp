@@ -355,27 +355,20 @@ class ChatViewModel @Inject constructor(
     }
 
     fun initialize(chatId: String, participantId: String? = null) {
-        // Always restart subscriptions when entering the screen, even for the same chat.
-        // Subscriptions may have been torn down by a previous cleanup() on navigation away.
         cleanup()
         initializationDelegate.initialize(chatId, participantId, currentChatId)
     }
 
-    /** Re-fetches messages for the current chat (e.g. after screen resumes from off). */
     fun refreshMessages() {
         val chatId = currentChatId ?: return
         _hasMoreMessages.value = true
         viewModelScope.launch {
-            // Always force a network fetch here — this is called on screen re-entry (ON_RESUME)
-            // and must never return stale cache. Without this, missed messages only appear
-            // after a second exit/re-enter cycle (cache-first stale return then background sync).
             getMessagesUseCase(chatId, forceNetwork = true).onSuccess { messages ->
                 messagingDelegate.setMessages(messages)
             }
         }
     }
 
-    /** Restarts real-time subscriptions (e.g. after app resumes from background). */
     fun restartSubscriptions() {
         val chatId = currentChatId ?: return
         subscriptionDelegate.restartSubscriptions(chatId)
@@ -409,11 +402,9 @@ class ChatViewModel @Inject constructor(
 
         val encryptedPlaceholders = ChatMessagingDelegate.ENCRYPTED_PLACEHOLDERS
         messagingDelegate._messages.update { current ->
-            // 1. Check if message already exists (e.g. from REST response)
             val existing = current.find { it.id == newMessage.id }
 
             if (existing != null) {
-                // Merge state, preserving decrypted content if realtime is still encrypted
                 val mergedMessage = if (
                     existing.content !in encryptedPlaceholders &&
                     newMessage.content in encryptedPlaceholders
@@ -433,9 +424,6 @@ class ChatViewModel @Inject constructor(
                 }
                 with(messagingDelegate) { current.replaceById(newMessage.id, mergedMessage) }
             } else {
-                // 2. Check if this resolves a pending optimistic message.
-                // Match by content first so rapid multi-send doesn't misfire across messages.
-                // Fall back to any same-sender pending temp only when content is encrypted (not yet decrypted).
                 val tempId = messagingDelegate.pendingTempIds.value.firstOrNull { id ->
                     val tempMsg = current.find { it.id == id } ?: return@firstOrNull false
                     tempMsg.senderId == newMessage.senderId &&
@@ -462,7 +450,6 @@ class ChatViewModel @Inject constructor(
                             .sortedBy { it.createdAt }
                     }
                 } else {
-                    // 3. Brand new message from someone else (or local message without temp ID match)
                     (current + newMessage)
                         .distinctBy { it.id }
                         .sortedBy { it.createdAt }
@@ -471,7 +458,6 @@ class ChatViewModel @Inject constructor(
         }
         aiDelegate.generateSmartReplies(messages.value)
 
-        // Race condition: realtime message arrived before Signal session was ready → retry decryption
         if (newMessage.senderId != currentUserId && newMessage.content in encryptedPlaceholders) {
             viewModelScope.launch {
                 delay(2.seconds)
@@ -599,24 +585,31 @@ class ChatViewModel @Inject constructor(
     fun setDisappearingMode(mode: DisappearingMode) {
         settingsDelegate.setDisappearingMode(mode)
     }
-    fun uploadVoiceMessage(audioFile: File) {
-        viewModelScope.launch {
+
+    fun uploadVoiceMessage(
+        audioFile: File,
+        durationMs: Long = 0L,
+        onResult: ((Boolean, String?) -> Unit)? = null
+    ): Job {
+        return viewModelScope.launch {
             ensureActive()
             val storageConfig: com.synapse.social.studioasinc.shared.domain.model.StorageConfig
             try {
                 storageConfig = getStorageConfigUseCase().first()
             } catch (e: Exception) {
                 _error.value = "Storage config unavailable: ${e.message}"
+                onResult?.invoke(false, "Storage config unavailable: ${e.message}")
                 return@launch
             }
-            mediaDelegate.uploadAndSendVoiceMessage(
+            mediaDelegate.uploadAndSendVoiceMessageSuspend(
                 audioFile = audioFile,
+                durationMs = durationMs,
                 storageConfig = storageConfig,
                 voiceUploadService = voiceUploadService,
                 sendMessageUseCase = sendMessageUseCase,
                 currentUserIdProvider = { currentUserId },
                 chatIdProvider = { currentChatId },
-                viewModelScope = viewModelScope
+                onResult = onResult
             )
         }
     }
