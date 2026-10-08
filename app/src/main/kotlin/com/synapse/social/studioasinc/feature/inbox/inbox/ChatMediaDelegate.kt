@@ -67,6 +67,7 @@ class ChatMediaDelegate(
             chatId = chatId,
             senderId = currentUserId,
             content = "",
+            mediaUrl = audioFile.absolutePath,
             messageType = MessageType.AUDIO,
             deliveryStatus = DeliveryStatus.SENDING,
             createdAt = Instant.now().toString(),

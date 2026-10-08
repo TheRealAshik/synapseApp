@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.io.File
 import javax.inject.Inject
 
 data class VoicePlayerUiState(
@@ -52,16 +53,23 @@ class VoiceMessagePlayerViewModel @Inject constructor(
             return
         }
 
+        val localFile = File(mediaUrl)
+        val isLocalFile = localFile.exists() && localFile.isFile
+
         _uiState.update {
             VoicePlayerUiState(
                 mediaUrl = mediaUrl,
+                localPath = if (isLocalFile) mediaUrl else null,
                 durationMs = initialDurationMs,
                 waveformAmplitudes = VoiceWaveformExtractor.generateFallbackAmplitudes(mediaUrl)
             )
         }
 
-        // Prefetch cache or prepare local path asynchronously
-        loadLocalPathAndWaveform(mediaUrl)
+        if (isLocalFile) {
+            loadWaveformForLocalPath(mediaUrl)
+        } else {
+            loadLocalPathAndWaveform(mediaUrl)
+        }
     }
 
     private fun observePlaybackState() {
@@ -95,6 +103,19 @@ class VoiceMessagePlayerViewModel @Inject constructor(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    private fun loadWaveformForLocalPath(filePath: String) {
+        viewModelScope.launch(ioDispatcher) {
+            val amplitudes = VoiceWaveformExtractor.extractAmplitudes(filePath, dispatcher = ioDispatcher)
+            _uiState.update { state ->
+                state.copy(
+                    isDownloading = false,
+                    downloadError = null,
+                    waveformAmplitudes = amplitudes
+                )
             }
         }
     }
@@ -179,7 +200,11 @@ class VoiceMessagePlayerViewModel @Inject constructor(
     fun onRetryClicked() {
         val url = _uiState.value.mediaUrl
         if (url.isNotBlank()) {
-            loadLocalPathAndWaveform(url)
+            if (File(url).exists()) {
+                loadWaveformForLocalPath(url)
+            } else {
+                loadLocalPathAndWaveform(url)
+            }
         }
     }
 
