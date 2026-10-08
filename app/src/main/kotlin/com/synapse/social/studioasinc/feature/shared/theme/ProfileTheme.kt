@@ -92,7 +92,10 @@ object ProfileColors {
     val coverOverlayEnd = Color.Black.copy(alpha = 0.4f)
 
 
-    val verifiedBadge = SynapseBlue
+    val verifiedBadge: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primary
 
 
     val shimmerBase = ShimmerBase

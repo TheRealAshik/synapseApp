@@ -9,14 +9,17 @@ object Spacing {
 
     val None = 0.dp
 
+    // My design decision (not in M3): 2dp micro spacing
     val Tiny = 2.dp
 
     val ExtraSmall = 4.dp
 
+    // My design decision (not in M3): 6dp intermediate spacing
     val ExtraSmallMedium = 6.dp
 
     val Small = 8.dp
 
+    // My design decision (not in M3): 10dp intermediate spacing
     val SmallPlus = 10.dp
 
     val SmallMedium = 12.dp
@@ -31,11 +34,13 @@ object Spacing {
 
     val Huge = 48.dp
 
+    // My design decision (not in M3): Component specific heights
     val ButtonHeight = 40.dp
     val NavBarHeight = 60.dp
 }
 
 object Sizes {
+    // M3 Expressive & Project Specific Icon Sizes
     val IconSmall = 12.dp
     val IconSemiSmall = 14.dp
     val IconSemiMedium = 16.dp
@@ -47,6 +52,7 @@ object Sizes {
     val IconMassive = 40.dp
     val IconGiant = 48.dp
 
+    // My design decision (not in M3): Avatar sizes for social feeds and chat
     val AvatarTiny = 28.dp
     val AvatarSmall = 36.dp
     val AvatarMedium = 40.dp
@@ -55,11 +61,13 @@ object Sizes {
     val AvatarExtraLarge = 80.dp
     val AvatarHuge = 110.dp
 
+    // My design decision (not in M3): Border widths
     val BorderThin = 1.dp
     val BorderHairline = 0.5.dp
     val BorderDefault = 2.dp
     val BorderSelected = 3.dp
 
+    // M3 Expressive Corner Scale Mappings
     val CornerSmall = 4.dp
     val CornerMedium = 8.dp
     val CornerDefault = 12.dp
@@ -69,6 +77,7 @@ object Sizes {
     val CornerMassive = 28.dp
     val CornerSharp = 2.dp
 
+    // My design decision (not in M3): Layout & Container component sizing
     val HeightSmall = 24.dp
     val HeightButtonSmall = 28.dp
     val HeightMedium = 40.dp

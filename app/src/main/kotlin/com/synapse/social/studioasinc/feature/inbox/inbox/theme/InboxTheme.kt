@@ -3,6 +3,7 @@ package com.synapse.social.studioasinc.feature.inbox.inbox.theme
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -16,32 +17,53 @@ object InboxColors {
     val OnlineGreenLight = com.synapse.social.studioasinc.feature.shared.theme.OnlineGreenLight
     val OfflineGray = StatusOffline
 
-    val UnreadAccent = LightPrimary
-    val UnreadAccentLight = DarkPrimary
+    val UnreadAccent: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primary
 
     val PinnedBackground = com.synapse.social.studioasinc.feature.shared.theme.PinnedBackground
     val PinnedBackgroundDark = com.synapse.social.studioasinc.feature.shared.theme.PinnedBackgroundDark
     val PinnedIcon = AccentYellow
 
-    val SwipeArchive = AccentBlue
-    val SwipeDelete = LightError
-    val SwipeMute = AccentOrange
-    val SwipePin = AccentYellow
+    val SwipeArchive: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primary
+
+    val SwipeDelete: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.error
+
+    val SwipeMute: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.tertiary
+
+    val SwipePin: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.secondary
 
     val StoryGradientStart = com.synapse.social.studioasinc.feature.shared.theme.StoryGradientStart
     val StoryGradientMiddle = com.synapse.social.studioasinc.feature.shared.theme.StoryGradientMiddle
     val StoryGradientEnd = com.synapse.social.studioasinc.feature.shared.theme.StoryGradientEnd
 
-    val TypingDot = LightPrimary
-    val TypingDotLight = DarkPrimary
+    val TypingDot: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.primary
 
     val storyRingGradient: Brush
+        @Composable
+        @ReadOnlyComposable
         get() = Brush.sweepGradient(
             colors = listOf(
-                StoryGradientStart,
-                StoryGradientMiddle,
-                StoryGradientEnd,
-                StoryGradientStart
+                MaterialTheme.colorScheme.primary,
+                MaterialTheme.colorScheme.secondary,
+                MaterialTheme.colorScheme.tertiary,
+                MaterialTheme.colorScheme.primary
             )
         )
 }
@@ -49,15 +71,37 @@ object InboxColors {
 object InboxShapes {
     val ChatBadge = CircleShape
     val AvatarShape = CircleShape
-    val SearchBar = RoundedCornerShape(Sizes.IconExtraLarge)
-    val ChatItemCard = RoundedCornerShape(Spacing.Medium)
-    val SwipeActionShape = RoundedCornerShape(Spacing.SmallMedium)
-    val TabIndicator = RoundedCornerShape(50)
-    val FABShape = RoundedCornerShape(Spacing.Medium)
-    val GroupedListTopShape = RoundedCornerShape(topStart = Spacing.Medium, topEnd = Spacing.Medium, bottomStart = Spacing.None, bottomEnd = Spacing.None)
-    val GroupedListMiddleShape = RoundedCornerShape(Spacing.None)
-    val GroupedListBottomShape = RoundedCornerShape(topStart = Spacing.None, topEnd = Spacing.None, bottomStart = Spacing.Medium, bottomEnd = Spacing.Medium)
-    val GroupedListSingleShape = RoundedCornerShape(Spacing.Medium)
+
+    val SearchBar: androidx.compose.ui.graphics.Shape
+        @OptIn(ExperimentalMaterial3ExpressiveApi::class)
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.extraExtraLarge
+
+    val ChatItemCard: androidx.compose.ui.graphics.Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.medium
+
+    val SwipeActionShape: androidx.compose.ui.graphics.Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.small
+
+    val TabIndicator = CircleShape
+
+    val FABShape: androidx.compose.ui.graphics.Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.large
+
+    val GroupedListTopShape = RoundedCornerShape(topStart = Spacing.Medium, topEnd = Spacing.Medium, bottomStart = Spacing.ExtraSmall, bottomEnd = Spacing.ExtraSmall)
+    val GroupedListMiddleShape = RoundedCornerShape(Spacing.ExtraSmall)
+    val GroupedListBottomShape = RoundedCornerShape(topStart = Spacing.ExtraSmall, topEnd = Spacing.ExtraSmall, bottomStart = Spacing.Medium, bottomEnd = Spacing.Medium)
+    val GroupedListSingleShape: androidx.compose.ui.graphics.Shape
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.shapes.medium
 }
 
 object InboxAnimations {

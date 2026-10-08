@@ -54,22 +54,23 @@ enum class NotificationGroupPosition {
 }
 
 @Composable
-fun getNotificationCardShape(position: NotificationGroupPosition): RoundedCornerShape {
-    val cornerRadius = 16.dp
+fun getNotificationCardShape(position: NotificationGroupPosition): androidx.compose.ui.graphics.Shape {
+    val outer = Sizes.CornerLarge
+    val inner = Spacing.ExtraSmall
     return when (position) {
-        NotificationGroupPosition.SINGLE -> RoundedCornerShape(cornerRadius)
+        NotificationGroupPosition.SINGLE -> MaterialTheme.shapes.large
         NotificationGroupPosition.FIRST -> RoundedCornerShape(
-            topStart = cornerRadius,
-            topEnd = cornerRadius,
-            bottomStart = 0.dp,
-            bottomEnd = 0.dp
+            topStart = outer,
+            topEnd = outer,
+            bottomStart = inner,
+            bottomEnd = inner
         )
-        NotificationGroupPosition.MIDDLE -> RoundedCornerShape(0.dp)
+        NotificationGroupPosition.MIDDLE -> RoundedCornerShape(inner)
         NotificationGroupPosition.LAST -> RoundedCornerShape(
-            topStart = 0.dp,
-            topEnd = 0.dp,
-            bottomStart = cornerRadius,
-            bottomEnd = cornerRadius
+            topStart = inner,
+            topEnd = inner,
+            bottomStart = outer,
+            bottomEnd = outer
         )
     }
 }

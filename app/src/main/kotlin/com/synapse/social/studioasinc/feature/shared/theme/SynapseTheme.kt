@@ -112,11 +112,11 @@ fun SynapseTheme(
     val finalColorScheme = when {
         increaseContrast || highContrastText -> {
             baseScheme.copy(
-                outline = if (darkTheme) Color.White else Color.Black,
-                outlineVariant = if (darkTheme) Color.LightGray else Color.DarkGray,
-                onBackground = if (darkTheme) Color.White else Color.Black,
-                onSurface = if (darkTheme) Color.White else Color.Black,
-                onSurfaceVariant = if (darkTheme) Color.White else Color.Black
+                outline = baseScheme.onSurface,
+                outlineVariant = baseScheme.outline,
+                onBackground = baseScheme.onBackground,
+                onSurface = baseScheme.onSurface,
+                onSurfaceVariant = baseScheme.onSurfaceVariant
             )
         }
         else -> baseScheme

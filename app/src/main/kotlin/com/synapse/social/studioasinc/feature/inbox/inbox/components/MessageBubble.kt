@@ -346,7 +346,7 @@ fun MessageBubble(
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
-    val bubbleMaxWidth = (configuration.screenWidthDp.dp * 0.78f).coerceIn(240.dp, 480.dp)
+    val bubbleMaxWidth = (configuration.screenWidthDp.dp * 0.78f).coerceIn(Sizes.ChatMaxWidth, Sizes.BubbleMaxWidth)
 
     val isDark = isSystemInDarkTheme()
 

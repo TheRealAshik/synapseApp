@@ -81,11 +81,12 @@ val DarkSurfaceContainer = Color(0xFF1D2024)
 val DarkSurfaceContainerHigh = Color(0xFF282A2F)
 val DarkSurfaceContainerHighest = Color(0xFF33353A)
 
-// Status & Semantic State Colors
+// My design decision (not in M3): Status & Semantic State Colors for messaging & presence
 val StatusOnline = Color(0xFF2E7D32)
 val StatusOffline = Color(0xFF757575)
 val StatusRead = Color(0xFF0288D1)
 
+// My design decision (not in M3): Domain specific success / warning roles
 val LightSuccess = Color(0xFF1B6D33)
 val LightOnSuccess = Color(0xFFFFFFFF)
 val LightSuccessContainer = Color(0xFFA7F5B1)
@@ -106,7 +107,7 @@ val DarkOnWarning = Color(0xFF422B00)
 val DarkWarningContainer = Color(0xFF5F3E00)
 val DarkOnWarningContainer = Color(0xFFFFDEAE)
 
-// Chat Theme Preset Harmonized Color Tokens
+// My design decision (not in M3): Chat Theme Preset Harmonized Color Tokens
 val OceanDarkContainer = Color(0xFF00497D)
 val OceanLightContainer = Color(0xFFE0F2FE)
 val OceanDarkOnContainer = Color(0xFFC2E8FF)

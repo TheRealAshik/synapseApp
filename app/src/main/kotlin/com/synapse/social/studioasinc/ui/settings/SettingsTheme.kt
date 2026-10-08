@@ -314,17 +314,17 @@ enum class SettingsItemPosition {
     fun getShape(): Shape = when (this) {
         Single -> SettingsShapes.itemShape
         Top -> RoundedCornerShape(
-            topStart = Sizes.CornerExtraLarge,
-            topEnd = Sizes.CornerExtraLarge,
-            bottomStart = Sizes.CornerSmall,
-            bottomEnd = Sizes.CornerSmall
+            topStart = Sizes.CornerMassive,
+            topEnd = Sizes.CornerMassive,
+            bottomStart = Spacing.ExtraSmall,
+            bottomEnd = Spacing.ExtraSmall
         )
-        Middle -> RoundedCornerShape(Sizes.CornerSmall)
+        Middle -> RoundedCornerShape(Spacing.ExtraSmall)
         Bottom -> RoundedCornerShape(
-            topStart = Sizes.CornerSmall,
-            topEnd = Sizes.CornerSmall,
-            bottomStart = Sizes.CornerExtraLarge,
-            bottomEnd = Sizes.CornerExtraLarge
+            topStart = Spacing.ExtraSmall,
+            topEnd = Spacing.ExtraSmall,
+            bottomStart = Sizes.CornerMassive,
+            bottomEnd = Sizes.CornerMassive
         )
     }
 }
