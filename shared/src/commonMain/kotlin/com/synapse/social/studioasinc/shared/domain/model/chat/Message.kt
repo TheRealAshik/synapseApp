@@ -14,7 +14,9 @@ data class Message(
     val contentStatus: ContentStatus = ContentStatus.ACTIVE,
     val isDeleted: Boolean = false,
     val isEdited: Boolean = false,
+    val isForwarded: Boolean = false,
     val replyToId: String? = null,
+    val forwardedFromMessageId: String? = null,
     val sentAt: String? = null,
     val deliveredAt: String? = null,
     val readAt: String? = null,
@@ -31,7 +33,8 @@ data class Message(
     val userReactions: Map<String, ReactionType> = emptyMap(),
     val linkPreview: LinkPreview? = null,
     val attachments: List<MessageAttachment> = emptyList(),
-    val mediaGroupId: String? = null
+    val mediaGroupId: String? = null,
+    val metadataContainer: MessageMetadataContainer? = null
 ) {
     fun isFromMe(currentUserId: String): Boolean = senderId == currentUserId
 

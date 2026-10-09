@@ -10,6 +10,7 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 import kotlinx.coroutines.withContext
@@ -19,6 +20,11 @@ import kotlinx.serialization.json.Json
 class SqlDelightCachedMessageDao(
     private val db: StorageDatabase
 ) : CachedMessageDao {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     override suspend fun upsertAll(messages: List<Message>) {
         withContext(AppDispatchers.IO) {
@@ -134,7 +140,7 @@ class SqlDelightCachedMessageDao(
         val mediaUrlValue = if (domain.attachments.isNotEmpty()) {
             try {
                 val dtoList = domain.attachments.map { with(ChatMapper) { it.toDto() } }
-                Json.encodeToString(
+                json.encodeToString(
                     kotlinx.serialization.builtins.ListSerializer(MessageAttachmentDto.serializer()),
                     dtoList
                 )
@@ -143,6 +149,14 @@ class SqlDelightCachedMessageDao(
             }
         } else {
             domain.mediaUrl
+        }
+
+        val metadataString = domain.metadataContainer?.let {
+            try {
+                json.encodeToString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) {
+                null
+            }
         }
 
         return CachedMessage(
@@ -196,7 +210,7 @@ class SqlDelightCachedMessageDao(
 
         if (cached.media_url?.trimStart()?.startsWith("[") == true) {
             try {
-                val dtos = Json.decodeFromString(
+                val dtos = json.decodeFromString(
                     kotlinx.serialization.builtins.ListSerializer(MessageAttachmentDto.serializer()),
                     cached.media_url
                 )

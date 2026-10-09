@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DoneAll
@@ -506,6 +507,27 @@ fun MessageBubble(
                         modifier = Modifier.widthIn(max = bubbleMaxWidth),
                         horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
                     ) {
+                        if (message.isForwarded || message.forwardedFromMessageId != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Forwarded",
+                                    tint = contentColor.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(Sizes.IconSemiSmall)
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                                Text(
+                                    text = "Forwarded",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontStyle = FontStyle.Italic,
+                                    color = contentColor.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
                         if (replyToMessage != null && !isDeletedMessage) {
                             val quoteCardColor = if (isFromMe) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
                             Surface(
@@ -594,125 +616,7 @@ fun MessageBubble(
                             }
                         } else if (isMedia) {
                             val mediaType = when (message.messageType) {
-                                MessageType.VIDEO -> MediaType.VIDEO
-                                MessageType.AUDIO -> MediaType.AUDIO
-                                else -> MediaType.PHOTO
-                            }
-                            var isAutoDownloadAllowed by remember(message.id) { mutableStateOf<Boolean?>(null) }
-                            var userRequestedDownload by remember(message.id) { mutableStateOf(false) }
-
-                            val settingsRepo = remember(context) {
-                                com.synapse.social.studioasinc.data.repository.SettingsRepositoryImpl.getInstance(context.applicationContext)
-                            }
-
-                            LaunchedEffect(message.id) {
-                                settingsRepo.autoDownloadRules.collect { rules ->
-                                    isAutoDownloadAllowed = AutoDownloadManager.isAutoDownloadAllowed(context, rules, mediaType)
-                                }
-                            }
-
-                            val shouldShowMedia = isFromMe || (isAutoDownloadAllowed == true) || userRequestedDownload
-
-                            Box(modifier = Modifier.fillMaxWidth()) {
-                                if (!shouldShowMedia) {
-                                    Surface(
-                                        color = MaterialTheme.colorScheme.surfaceVariant,
-                                        shape = RoundedCornerShape(Sizes.CornerMedium),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(Sizes.HeightMediaSingle)
-                                            .clickable { userRequestedDownload = true }
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally,
-                                            verticalArrangement = Arrangement.Center,
-                                            modifier = Modifier.padding(Spacing.Medium)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.Download,
-                                                contentDescription = "Tap to download media",
-                                                tint = MaterialTheme.colorScheme.primary,
-                                                modifier = Modifier.size(Sizes.IconLarge)
-                                            )
-                                            Spacer(modifier = Modifier.height(Spacing.Small))
-                                            Text(
-                                                text = "Tap to load media",
-                                                style = MaterialTheme.typography.labelLarge,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                    }
-                                } else {
-                                    when {
-                                        message.messageType == MessageType.MEDIA_GROUP || message.attachments.size >= 2 -> {
-                                            StackedMediaCard(
-                                                attachments = message.attachments,
-                                                onClick = { onOpenBatchGallery(message) }
-                                            )
-                                        }
-                                        message.messageType == MessageType.IMAGE -> {
-                                            AsyncImage(
-                                                model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                                    .data(message.mediaUrl)
-                                                    .crossfade(true)
-                                                    .build(),
-                                                contentDescription = stringResource(R.string.cd_post_image),
-                                                contentScale = ContentScale.Crop,
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .heightIn(max = Sizes.HeightExtraLarge)
-                                                    .clip(RoundedCornerShape(Sizes.CornerMedium))
-                                                    .clickable {
-                                                        message.mediaUrl?.let { uriHandler.openUri(it) }
-                                                    }
-                                            )
-                                        }
-                                        message.messageType == MessageType.VIDEO -> {
-                                            message.mediaUrl?.let {
-                                                VideoPlayerBox(mediaUrl = it)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
-                            Surface(
-                                color = containerColor,
-                                contentColor = contentColor,
-                                shape = shape,
-                                tonalElevation = Sizes.BorderThin
-                            ) {
-                                Column(modifier = Modifier.padding(horizontal = Spacing.Medium, vertical = Spacing.Small)) {
-                                    if (message.content.isNotBlank()) {
-                                        Text(
-                                            text = message.content,
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                color = contentColor,
-                                                fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale
-                                            )
-                                        )
-                                    }
-                                    MessageMetadataRow(
-                                        message = message,
-                                        isFromMe = isFromMe,
-                                        contentColor = contentColor,
-                                        onRetryClick = onRetryClick,
-                                        modifier = Modifier.align(Alignment.End)
-                                    )
-                                }
-                            }
-                        } else {
-                            Surface(
-                                color = containerColor,
-                                contentColor = contentColor,
-                                shape = shape,
-                                tonalElevation = Sizes.BorderThin
-                            ) {
-                                Column(modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Small)) {
-                                    Box(modifier = Modifier.padding(horizontal = Spacing.Small)) {
-                                        when (message.messageType) {
-                                            MessageType.AUDIO -> {
+                                            MessageType.VOICE, MessageType.AUDIO -> {
                                                 Column {
                                                     val audioUrl = message.mediaUrl
                                                     if (!audioUrl.isNullOrBlank()) {
@@ -782,6 +686,110 @@ fun MessageBubble(
                                                         onRetryClick = onRetryClick,
                                                         modifier = Modifier.align(Alignment.End)
                                                     )
+                                                }
+                                            }
+
+                                            MessageType.CONTACT -> {
+                                                Column {
+                                                    ContactCardBubble(metadata = message.metadataContainer?.contact, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.LOCATION, MessageType.MAP -> {
+                                                Column {
+                                                    LocationCardBubble(metadata = message.metadataContainer?.location, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.LIVE_LOCATION -> {
+                                                Column {
+                                                    LiveLocationCardBubble(metadata = message.metadataContainer?.liveLocation, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.POLL -> {
+                                                Column {
+                                                    PollCardBubble(metadata = message.metadataContainer?.poll, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.MUSIC -> {
+                                                Column {
+                                                    MusicCardBubble(metadata = message.metadataContainer?.music, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.SHARED_POST -> {
+                                                Column {
+                                                    SharedPostCardBubble(metadata = message.metadataContainer?.sharedPost, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.STORY_SHARE -> {
+                                                Column {
+                                                    SharedStoryCardBubble(metadata = message.metadataContainer?.sharedStory, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.EVENT -> {
+                                                Column {
+                                                    EventCardBubble(metadata = message.metadataContainer?.event, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.PRODUCT -> {
+                                                Column {
+                                                    ProductCardBubble(metadata = message.metadataContainer?.product, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.PAYMENT -> {
+                                                Column {
+                                                    PaymentCardBubble(metadata = message.metadataContainer?.payment, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.CODE_SNIPPET -> {
+                                                Column {
+                                                    CodeSnippetCardBubble(metadata = message.metadataContainer?.codeSnippet, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.CALL -> {
+                                                Column {
+                                                    CallLogCardBubble(metadata = message.metadataContainer?.call, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.EPHEMERAL_MEDIA -> {
+                                                Column {
+                                                    ViewOnceCardBubble(metadata = message.metadataContainer?.viewOnce, mediaUrl = message.mediaUrl, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.GIF, MessageType.STICKER -> {
+                                                Column {
+                                                    message.mediaUrl?.let { url ->
+                                                        AsyncImage(
+                                                            model = url,
+                                                            contentDescription = "Sticker or GIF",
+                                                            modifier = Modifier.size(150.dp).padding(4.dp)
+                                                        )
+                                                    }
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
                                                 }
                                             }
 
@@ -903,8 +911,5 @@ fun MessageBubble(
 
                 if (replyCount > 0) {
                     RepliesIndicatorRow(count = replyCount)
-                }
-            }
         }
     }
-}
