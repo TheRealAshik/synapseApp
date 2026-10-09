@@ -115,7 +115,8 @@ class ChatMediaDelegateTest {
                 messageType = anyString(),
                 expiresAt = any(),
                 replyToId = any(),
-                attachments = any()
+                attachments = any(),
+                metadataContainer = any()
             )
 
         delegate.uploadAndSendMedia(
@@ -164,7 +165,8 @@ class ChatMediaDelegateTest {
                 messageType = anyString(),
                 expiresAt = any(),
                 replyToId = any(),
-                attachments = any()
+                attachments = any(),
+                metadataContainer = any()
             )
 
         val uri1 = mock(Uri::class.java)
@@ -214,7 +216,8 @@ class ChatMediaDelegateTest {
                 messageType = anyString(),
                 expiresAt = any(),
                 replyToId = any(),
-                attachments = any()
+                attachments = any(),
+                metadataContainer = any()
             )
 
         val uri1 = mock(Uri::class.java)

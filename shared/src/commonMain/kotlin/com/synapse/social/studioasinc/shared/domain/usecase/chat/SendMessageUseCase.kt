@@ -70,7 +70,7 @@ class SendMessageUseCase(
                 replyToId = replyToId,
                 senderPlaintext = content,
                 attachments = attachments,
-                metadata = serializedMetadata
+                metadataContainer = metadataContainer
             )
         }
 
@@ -136,7 +136,7 @@ class SendMessageUseCase(
                 replyToId = replyToId,
                 senderPlaintext = jsonPayload,
                 attachments = attachments,
-                metadata = serializedMetadata
+                metadataContainer = metadataContainer
             )
         } catch (e: Exception) {
             Napier.e("E2EE_ENCRYPT: Failed: ${e.message}", tag = "E2EE", throwable = e)

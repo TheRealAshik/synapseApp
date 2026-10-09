@@ -1,5 +1,7 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.screens
 
+import androidx.compose.ui.platform.LocalUriHandler
+
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
@@ -139,6 +141,7 @@ fun ChatScreen(
 
     val listState = rememberLazyListState()
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
     val focusManager = LocalFocusManager.current
     val haptic = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
@@ -338,7 +341,13 @@ fun ChatScreen(
                         onSwipeToReply = { viewModel.setReplyingToMessage(it) },
                         onReactionSelected = { id, reaction -> viewModel.toggleMessageReaction(id, reaction) },
                         onNavigateToProfile = onNavigateToProfile,
-                        onOpenBatchGallery = { batchGalleryMessage = it }
+                        onOpenBatchGallery = { batchGalleryMessage = it },
+                        onVoteOption = { messageId, optionId -> viewModel.voteInPoll(messageId, optionId) },
+                        onOpenPost = { postId -> try { uriHandler.openUri("synapse://post/$postId") } catch (_: Exception) {} },
+                        onOpenStory = { storyId -> try { uriHandler.openUri("synapse://story/$storyId") } catch (_: Exception) {} },
+                        onOpenEphemeralMedia = { mediaUrl -> try { uriHandler.openUri(mediaUrl) } catch (_: Exception) {} },
+                        onOpenMap = { lat, lon -> try { uriHandler.openUri("https://maps.google.com/?q=$lat,$lon") } catch (_: Exception) {} },
+                        onContactAction = { phone -> try { uriHandler.openUri("tel:$phone") } catch (_: Exception) {} }
                     )
 
                     if (selectedMessageForMenu != null) {

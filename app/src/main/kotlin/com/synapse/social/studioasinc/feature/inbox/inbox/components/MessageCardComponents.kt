@@ -31,25 +31,50 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.*
 fun ContactCardBubble(
     metadata: ContactMetadata?,
     contentColor: Color,
-    onCallClick: (String) -> Unit = {}
+    onContactAction: (String) -> Unit = {}
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = metadata?.avatarUrl,
-                    contentDescription = "Contact Avatar",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primaryContainer)
-                )
-                Spacer(modifier = Modifier.width(10.dp))
+                if (!metadata?.avatarUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = metadata?.avatarUrl,
+                        contentDescription = "Contact Avatar",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer)
+                    )
+                } else {
+                    val initials = metadata?.name?.split(" ")
+                        ?.mapNotNull { it.firstOrNull()?.toString() }
+                        ?.take(2)
+                        ?.joinToString("")
+                        ?.uppercase()
+                        ?.ifBlank { "C" } ?: "C"
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = initials,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = metadata?.name ?: "Contact",
@@ -60,32 +85,72 @@ fun ContactCardBubble(
                     metadata?.phoneNumber?.let {
                         Text(
                             text = it,
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { metadata?.phoneNumber?.let { onCallClick(it) } },
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(modifier = Modifier.height(10.dp))
+            OutlinedButton(
+                onClick = { metadata?.phoneNumber?.let { onContactAction(it) } },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Person,
+                    imageVector = Icons.Default.PersonAdd,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "View Contact",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold
+                    text = "Add Contact",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun MapCardBubble(
+    metadata: MapMetadata?,
+    contentColor: Color,
+    onOpenMap: (Double, Double) -> Unit = { _, _ -> }
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+            .clickable {
+                metadata?.let { onOpenMap(it.latitude, it.longitude) }
+            }
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Map,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = metadata?.locationName ?: "Map Location",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            if (metadata != null) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Lat: ${metadata.latitude}, Lon: ${metadata.longitude} (Zoom: ${metadata.zoomLevel.toInt()})",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

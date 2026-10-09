@@ -370,6 +370,36 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun voteInPoll(messageId: String, optionId: String) {
+        val uid = currentUserId ?: return
+        messagingDelegate._messages.update { current ->
+            with(messagingDelegate) {
+                current.updateById(messageId) { msg ->
+                    val poll = msg.metadataContainer?.poll ?: return@updateById msg
+                    val updatedOptions = poll.options.map { option ->
+                        if (option.id == optionId) {
+                            val currentVoters = option.voterUserIds.toSet()
+                            val newVoters = if (uid in currentVoters) currentVoters - uid else currentVoters + uid
+                            option.copy(
+                                voteCount = newVoters.size,
+                                voterUserIds = newVoters.toList()
+                            )
+                        } else if (!poll.allowMultipleAnswers) {
+                            val currentVoters = option.voterUserIds.toSet() - uid
+                            option.copy(
+                                voteCount = currentVoters.size,
+                                voterUserIds = currentVoters.toList()
+                            )
+                        } else option
+                    }
+                    val container = msg.metadataContainer ?: return@updateById msg
+                    val updatedContainer = container.copy(poll = poll.copy(options = updatedOptions))
+                    msg.copy(metadataContainer = updatedContainer)
+                }
+            }
+        }
+    }
+
     fun restartSubscriptions() {
         val chatId = currentChatId ?: return
         subscriptionDelegate.restartSubscriptions(chatId)

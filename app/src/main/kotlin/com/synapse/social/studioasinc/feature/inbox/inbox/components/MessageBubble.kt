@@ -353,6 +353,8 @@ fun MessageBubble(
     onOpenEvent: (String) -> Unit = {},
     onOpenProduct: (String) -> Unit = {},
     onOpenEphemeralMedia: (String) -> Unit = {},
+    onOpenMap: (Double, Double) -> Unit = { _, _ -> },
+    onContactAction: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -783,25 +785,74 @@ fun MessageBubble(
 
                                             MessageType.FILE -> {
                                                 Column {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        modifier = Modifier.padding(vertical = Spacing.ExtraSmall).clickable {
-                                                            message.mediaUrl?.let { uriHandler.openUri(it) }
+                                                    val attachment = message.attachments.firstOrNull()
+                                                    val fileName = message.content.ifEmpty { attachment?.url?.substringAfterLast("/") ?: stringResource(R.string.chat_media_attachment) }
+                                                    val sizeBytes = attachment?.size
+                                                    val sizeStr = sizeBytes?.let {
+                                                        when {
+                                                            it >= 1024 * 1024 -> "${it / (1024 * 1024)} MB"
+                                                            it >= 1024 -> "${it / 1024} KB"
+                                                            else -> "$it B"
                                                         }
+                                                    } ?: "File Document"
+
+                                                    Surface(
+                                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = Spacing.ExtraSmall)
+                                                            .clickable {
+                                                                message.mediaUrl?.let { uriHandler.openUri(it) }
+                                                            }
                                                     ) {
-                                                        Icon(
-                                                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                                                            contentDescription = stringResource(R.string.chat_cd_file),
-                                                            tint = contentColor
-                                                        )
-                                                        Spacer(modifier = Modifier.width(Spacing.Small))
-                                                        Text(
-                                                            text = message.content.ifEmpty { stringResource(R.string.chat_media_attachment) },
-                                                            color = contentColor,
-                                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            modifier = Modifier.padding(Spacing.Small)
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(42.dp)
+                                                                    .clip(CircleShape)
+                                                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                                                                    contentDescription = stringResource(R.string.chat_cd_file),
+                                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                    modifier = Modifier.size(22.dp)
+                                                                )
+                                                            }
+                                                            Spacer(modifier = Modifier.width(Spacing.Small))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    text = fileName,
+                                                                    style = MaterialTheme.typography.titleSmall,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = contentColor,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                Text(
+                                                                    text = sizeStr,
+                                                                    style = MaterialTheme.typography.bodySmall,
+                                                                    color = contentColor.copy(alpha = 0.7f)
+                                                                )
+                                                            }
+                                                            Spacer(modifier = Modifier.width(Spacing.Small))
+                                                            IconButton(
+                                                                onClick = { message.mediaUrl?.let { uriHandler.openUri(it) } },
+                                                                modifier = Modifier.size(36.dp)
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Download,
+                                                                    contentDescription = "Download File",
+                                                                    tint = MaterialTheme.colorScheme.primary,
+                                                                    modifier = Modifier.size(20.dp)
+                                                                )
+                                                            }
+                                                        }
                                                     }
                                                     MessageMetadataRow(
                                                         message = message,
@@ -816,14 +867,21 @@ fun MessageBubble(
 
                                             MessageType.CONTACT -> {
                                                 Column {
-                                                    ContactCardBubble(metadata = message.metadataContainer?.contact, contentColor = contentColor)
+                                                    ContactCardBubble(metadata = message.metadataContainer?.contact, contentColor = contentColor, onContactAction = onContactAction)
                                                     MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
                                                 }
                                             }
 
-                                            MessageType.LOCATION, MessageType.MAP -> {
+                                            MessageType.LOCATION -> {
                                                 Column {
-                                                    LocationCardBubble(metadata = message.metadataContainer?.location, contentColor = contentColor)
+                                                    LocationCardBubble(metadata = message.metadataContainer?.location, contentColor = contentColor, onOpenMap = onOpenMap)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.MAP -> {
+                                                Column {
+                                                    MapCardBubble(metadata = message.metadataContainer?.map, contentColor = contentColor, onOpenMap = onOpenMap)
                                                     MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
                                                 }
                                             }
