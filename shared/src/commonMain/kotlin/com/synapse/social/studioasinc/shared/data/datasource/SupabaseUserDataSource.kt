@@ -6,6 +6,7 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Count
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
 import io.github.jan.supabase.postgrest.query.filter.PostgrestFilterBuilder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -57,11 +58,17 @@ class SupabaseUserDataSource(
 
     override suspend fun searchUsers(query: String): Result<List<User>> = withContext(AppDispatchers.IO) {
         runCatching {
+            val currentUserId = client.auth.currentUserOrNull()?.id
+            
             client.postgrest["users"].select {
                 filter {
                     or {
                         ilike("username", "$query%")
                         ilike("display_name", "$query%")
+                    }
+                    // Exclude current user from search results
+                    if (currentUserId != null && currentUserId.isNotBlank()) {
+                        filterNot("uid", FilterOperator.EQ, currentUserId)
                     }
                 }
                 limit(20)
