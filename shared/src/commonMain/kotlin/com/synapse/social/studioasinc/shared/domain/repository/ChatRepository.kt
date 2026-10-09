@@ -18,7 +18,8 @@ interface ChatRepository {
         expiresAt: String? = null,
         replyToId: String? = null,
         senderPlaintext: String? = null,
-        attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>? = null
+        attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>? = null,
+        metadata: String? = null
     ): Result<Message>
     suspend fun getOrCreateChat(otherUserId: String): Result<String>
 

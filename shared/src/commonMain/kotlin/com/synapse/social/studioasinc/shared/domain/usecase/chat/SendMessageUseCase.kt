@@ -1,6 +1,7 @@
 package com.synapse.social.studioasinc.shared.domain.usecase.chat
 
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer
 import com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
 import com.synapse.social.studioasinc.shared.data.crypto.SignalProtocolManager
 import com.synapse.social.studioasinc.shared.data.crypto.models.EncryptedMessage
@@ -34,6 +35,7 @@ class SendMessageUseCase(
      * @param messageType The category of the message (defaults to "text").
      * @param expiresAt Optional timestamp for disappearing messages.
      * @param replyToId Optional ID of the message being replied to.
+     * @param metadataContainer Optional structured metadata for rich message types.
      * @return A [Result] containing the sent [Message] on success, or an exception on failure.
      */
     suspend operator fun invoke(
@@ -43,10 +45,19 @@ class SendMessageUseCase(
         messageType: String = "text",
         expiresAt: String? = null,
         replyToId: String? = null,
-        attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>? = null
+        attachments: List<com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment>? = null,
+        metadataContainer: MessageMetadataContainer? = null
     ): Result<Message> {
         val currentUserId = repository.getCurrentUserId()
             ?: return Result.failure(Exception("Not logged in"))
+
+        val serializedMetadata = metadataContainer?.let {
+            try {
+                Json.encodeToString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) {
+                null
+            }
+        }
 
         if (signalProtocolManager == null) {
             Napier.w("E2EE_ENCRYPT: SignalProtocolManager is null — sending plain text message", tag = "E2EE")
@@ -58,7 +69,8 @@ class SendMessageUseCase(
                 expiresAt = expiresAt,
                 replyToId = replyToId,
                 senderPlaintext = content,
-                attachments = attachments
+                attachments = attachments,
+                metadata = serializedMetadata
             )
         }
 
@@ -79,6 +91,7 @@ class SendMessageUseCase(
             val jsonPayload = kotlinx.serialization.json.buildJsonObject {
                 put("content", content)
                 if (mediaUrl != null) put("mediaUrl", mediaUrl)
+                if (serializedMetadata != null) put("metadata", serializedMetadata)
                 if (attachments != null) {
                     val attachmentsJson = kotlinx.serialization.json.Json.encodeToJsonElement(
                         kotlinx.serialization.builtins.ListSerializer(com.synapse.social.studioasinc.shared.data.dto.chat.MessageAttachmentDto.serializer()),
@@ -89,8 +102,6 @@ class SendMessageUseCase(
             }.toString()
             val contentBytes = jsonPayload.encodeToByteArray()
 
-            // Encrypt concurrently for all recipients. Capture per-recipient failures without
-            // cancelling the whole coroutineScope — null signals a failed encryption for that user.
             val payloadMap: Map<String, JsonElement> = coroutineScope {
                 otherParticipants.map { userId ->
                     async {
@@ -107,7 +118,6 @@ class SendMessageUseCase(
                 }.awaitAll().filterNotNull().toMap()
             }
 
-            // Refuse to send if any recipient's encryption failed — avoids partial-plaintext leaks.
             if (payloadMap.size < otherParticipants.size) {
                 return Result.failure(
                     Exception("Encryption failed for one or more recipients. Message not sent.")
@@ -120,12 +130,13 @@ class SendMessageUseCase(
             repository.sendMessage(
                 chatId = chatId,
                 content = encryptedPayload,
-                mediaUrl = null, // mediaUrl is embedded in the encrypted payload
+                mediaUrl = null,
                 messageType = messageType,
                 expiresAt = expiresAt,
                 replyToId = replyToId,
                 senderPlaintext = jsonPayload,
-                attachments = attachments
+                attachments = attachments,
+                metadata = serializedMetadata
             )
         } catch (e: Exception) {
             Napier.e("E2EE_ENCRYPT: Failed: ${e.message}", tag = "E2EE", throwable = e)

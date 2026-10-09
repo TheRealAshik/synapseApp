@@ -180,7 +180,8 @@ class SqlDelightCachedMessageDao(
             failure_reason = domain.failureReason,
             is_deleted = if (domain.isDeleted || domain.contentStatus == ContentStatus.DELETED) 1L else 0L,
             is_edited = if (domain.isEdited || domain.contentStatus == ContentStatus.EDITED) 1L else 0L,
-            cached_at = cachedAt
+            cached_at = cachedAt,
+            metadata = metadataString
         )
     }
 
@@ -223,6 +224,14 @@ class SqlDelightCachedMessageDao(
 
         val finalMessageType = if (attachmentsList.size >= 2 || messageType == MessageType.MEDIA_GROUP) MessageType.MEDIA_GROUP else messageType
 
+        val parsedMetadata = cached.metadata?.let {
+            try {
+                json.decodeFromString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) {
+                null
+            }
+        }
+
         return Message(
             id = cached.id,
             chatId = cached.chat_id,
@@ -247,7 +256,8 @@ class SqlDelightCachedMessageDao(
             reactions = emptyMap(),
             userReaction = null,
             attachments = attachmentsList,
-            mediaGroupId = attachmentsList.firstOrNull()?.mediaGroupId
+            mediaGroupId = attachmentsList.firstOrNull()?.mediaGroupId,
+            metadataContainer = parsedMetadata
         )
     }
 }

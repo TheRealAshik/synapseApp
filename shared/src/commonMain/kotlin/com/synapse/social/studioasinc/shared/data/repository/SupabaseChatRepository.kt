@@ -251,7 +251,8 @@ class SupabaseChatRepository(
         expiresAt: String?,
         replyToId: String?,
         senderPlaintext: String?,
-        attachments: List<MessageAttachment>?
+        attachments: List<MessageAttachment>?,
+        metadata: String?
     ): Result<Message> = withContext(AppDispatchers.IO) {
         try {
             val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
@@ -289,7 +290,8 @@ class SupabaseChatRepository(
     private suspend fun queueMessageOffline(
         chatId: String, content: String, mediaUrl: String?,
         messageType: String, expiresAt: String?, replyToId: String?,
-        currentUserId: String, attachments: List<MessageAttachment>? = null
+        currentUserId: String, attachments: List<MessageAttachment>?,
+        metadata: String? = null
     ): MessageDto {
         val actionId = UUIDUtils.randomUUID()
         val dtoAttachments = attachments?.map { it.toDto() }
