@@ -27,6 +27,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
@@ -36,6 +38,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.inbox.inbox.voice.VoiceMessagePlayerViewModel
 import com.synapse.social.studioasinc.feature.shared.reels.VideoPlayerViewModel
@@ -304,9 +307,11 @@ fun VoiceMessagePlayer(
 @Composable
 fun VideoPlayerBox(
     mediaUrl: String,
-    viewModel: VideoPlayerViewModel = hiltViewModel(key = mediaUrl)
+    viewModel: VideoPlayerViewModel = hiltViewModel(key = mediaUrl),
+    onPlayClick: (() -> Unit)? = null
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
+    val uiState = viewModel.uiState.collectAsStateWithLifecycle()
 
     DisposableEffect(lifecycleOwner) {
         val observer = LifecycleEventObserver { _, event ->
@@ -330,6 +335,9 @@ fun VideoPlayerBox(
         }
     }
 
+    val player = viewModel.getPlayerInstance()
+    val state = uiState.value
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -337,7 +345,17 @@ fun VideoPlayerBox(
             .clip(RoundedCornerShape(Sizes.CornerMedium))
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        val player = viewModel.getPlayerInstance()
+        // Thumbnail background (always present as fallback)
+        AsyncImage(
+            model = mediaUrl,
+            contentDescription = stringResource(R.string.cd_media_attachment),
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            placeholder = MaterialTheme.colorScheme.surfaceVariant,
+            error = MaterialTheme.colorScheme.surfaceVariant
+        )
+
+        // Player view on top of thumbnail
         if (player != null) {
             AndroidView(
                 factory = {
@@ -353,5 +371,85 @@ fun VideoPlayerBox(
                 modifier = Modifier.fillMaxSize()
             )
         }
+
+        // Loading / Buffering overlay
+        if (state.isBuffering) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(Sizes.IconXLarge),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+        }
+
+        // Play button overlay (show when not playing and not buffering)
+        if (!state.isPlaying && !state.isBuffering) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .combinedClickable(
+                        onClick = {
+                            onPlayClick?.invoke()
+                            viewModel.play()
+                        },
+                        onLongClick = {}
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                val size = Sizes.IconXLarge
+                Box(
+                    modifier = Modifier
+                        .size(size)
+                        .background(
+                            color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                            shape = CircleShape
+                        )
+                        .padding(Spacing.Small)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = stringResource(R.string.chat_action_play_video),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(Sizes.IconLarge)
+                    )
+                }
+            }
+        }
+
+        // Duration badge (bottom-right)
+        if (state.duration > 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(Spacing.Small)
+                    .align(Alignment.BottomEnd)
+            ) {
+                Surface(
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.8f),
+                    shape = RoundedCornerShape(Sizes.CornerSmall)
+                ) {
+                    Text(
+                        text = formatDuration(state.duration),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Tiny)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun formatDuration(durationMs: Long): String {
+    val seconds = (durationMs / 1000).toInt()
+    val minutes = seconds / 60
+    val remainingSeconds = seconds % 60
+    return if (minutes > 0) {
+        "$minutes:${"%02d".format(remainingSeconds)}"
+    } else {
+        "0:${"%02d".format(remainingSeconds)}"
     }
 }
