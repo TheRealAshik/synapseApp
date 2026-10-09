@@ -59,6 +59,7 @@ import androidx.compose.ui.unit.lerp
 import coil.compose.AsyncImage
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.core.util.AutoDownloadManager
+import com.synapse.social.studioasinc.core.util.DownloadManager
 import com.synapse.social.studioasinc.core.util.IntentUtils
 import com.synapse.social.studioasinc.ui.settings.MediaType
 import androidx.compose.material.icons.filled.Download

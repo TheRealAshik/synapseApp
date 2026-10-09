@@ -727,7 +727,7 @@ fun ViewOnceCardBubble(
 
 @Composable
 fun FileMessageBubble(
-    message: ChatMessage,
+    message: Message,
     contentColor: Color,
     downloadFile: (String, String?) -> Unit = { _, _ -> },
     openUrl: (String) -> Unit = {}
@@ -808,7 +808,7 @@ fun FileMessageBubble(
     }
 }
 
-private fun filenameForFile(message: ChatMessage, attachment: MessageAttachment?): Triple<String, String, String> {
+private fun filenameForFile(message: Message, attachment: MessageAttachment?): Triple<String, String, String> {
     val url = attachment?.url ?: message.mediaUrl ?: ""
     val content = message.content
 
