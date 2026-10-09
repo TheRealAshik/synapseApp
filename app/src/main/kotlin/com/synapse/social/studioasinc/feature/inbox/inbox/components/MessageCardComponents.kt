@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -24,7 +23,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.layout.Arrangement
 import coil.compose.AsyncImage
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.shared.domain.model.chat.*
 
 @Composable
@@ -719,5 +722,134 @@ fun ViewOnceCardBubble(
                 )
             }
         }
+    }
+}
+
+@Composable
+fun FileMessageBubble(
+    message: ChatMessage,
+    contentColor: Color,
+    downloadFile: (String, String?) -> Unit = { _, _ -> },
+    openUrl: (String) -> Unit = {}
+) {
+    val attachment = message.attachments.firstOrNull()
+    val url = attachment?.url ?: message.mediaUrl
+
+    val (fileName, fileExt, fileMimeType) = filenameForFile(message, attachment)
+    val fileSizeStr = attachment?.size?.let { size ->
+        when {
+            size >= 1024 * 1024 -> "${size / (1024 * 1024)} MB"
+            size >= 1024 -> "${size / 1024} KB"
+            else -> "$size B"
+        }
+    }
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+        shape = RoundedCornerShape(12.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.ExtraSmall)
+    ) {
+        Box(
+            modifier = Modifier
+                .clickable { url?.let { openUrl(it) } }
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(Spacing.Small)
+            ) {
+                val icon = fileIconForExtension(fileExt)
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = stringResource(R.string.chat_cd_file),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(Spacing.Small))
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = fileName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = listOfNotNull(fileSizeStr, fileMimeType.takeIf { it.isNotBlank() }).joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = contentColor.copy(alpha = 0.7f)
+                    )
+                }
+                Spacer(modifier = Modifier.width(Spacing.Small))
+                IconButton(
+                    onClick = { url?.let { downloadFile(url, fileName) } },
+                    modifier = Modifier.size(36.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Download,
+                        contentDescription = "Download File",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun filenameForFile(message: ChatMessage, attachment: MessageAttachment?): Triple<String, String, String> {
+    val url = attachment?.url ?: message.mediaUrl ?: ""
+    val content = message.content
+
+    if (content.isNotBlank()) {
+        val ext = content.substringAfterLast('.', "")
+        val mimeType = if (ext.isNotBlank()) {
+            android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+        } else {
+            null
+        }
+        return Triple(content, if (ext.isNotBlank()) ".$ext" else "", mimeType ?: "")
+    }
+
+    if (url.isNotBlank()) {
+        val path = url.substringBeforeLast('?')
+        val fileName = path.substringAfterLast('/')
+        if (fileName.isNotBlank()) {
+            val ext = fileName.substringAfterLast('.', "")
+            val mimeType = if (ext.isNotBlank()) {
+                android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+            } else {
+                null
+            }
+            return Triple(fileName, if (ext.isNotBlank()) ".$ext" else "", mimeType ?: "")
+        }
+    }
+
+    return Triple(stringResource(R.string.chat_media_attachment), "", "")
+}
+
+private fun fileIconForExtension(extension: String): ImageVector {
+    return when (extension.lowercase()) {
+        ".pdf" -> Icons.Default.PictureAsPdf
+        ".doc", ".docx" -> Icons.Default.Description
+        ".xls", ".xlsx" -> Icons.Default.TableChart
+        ".ppt", ".pptx" -> Icons.Default.Slideshow
+        ".txt" -> Icons.Default.TextFields
+        ".zip", ".rar", ".7z", ".tar", ".gz" -> Icons.Default.Archive
+        ".mp3", ".wav", ".ogg", ".flac", ".aac" -> Icons.Default.Audiotrack
+        ".mp4", ".avi", ".mov", ".mkv", ".webm" -> Icons.Default.VideoLibrary
+        ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp" -> Icons.Default.Image
+        else -> Icons.AutoMirrored.Filled.InsertDriveFile
     }
 }

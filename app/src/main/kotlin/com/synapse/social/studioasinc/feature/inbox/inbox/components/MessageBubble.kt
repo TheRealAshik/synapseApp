@@ -43,6 +43,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
+import android.net.Uri
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLayoutResult
@@ -64,6 +65,7 @@ import androidx.compose.material.icons.filled.Download
 import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewCard
 import com.synapse.social.studioasinc.feature.shared.theme.*
 import com.synapse.social.studioasinc.feature.shared.utils.UrlUtils
+import com.synapse.social.studioasinc.feature.inbox.inbox.components.FileMessageBubble
 import com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
@@ -784,84 +786,38 @@ fun MessageBubble(
                                             }
 
                                             MessageType.FILE -> {
-                                                Column {
-                                                    val attachment = message.attachments.firstOrNull()
-                                                    val fileName = message.content.ifEmpty { attachment?.url?.substringAfterLast("/") ?: stringResource(R.string.chat_media_attachment) }
-                                                    val sizeBytes = attachment?.size
-                                                    val sizeStr = sizeBytes?.let {
-                                                        when {
-                                                            it >= 1024 * 1024 -> "${it / (1024 * 1024)} MB"
-                                                            it >= 1024 -> "${it / 1024} KB"
-                                                            else -> "$it B"
-                                                        }
-                                                    } ?: "File Document"
+                                                FileMessageBubble(
+                                                    message = message,
+                                                    contentColor = contentColor,
+                                                    downloadFile = { url, fileName ->
+                                                        DownloadManager.downloadFile(
+                                                            context,
+                                                            url,
+                                                            fileName,
+                                                            object : DownloadManager.DownloadCallback {
+                                                                override fun onSuccess(savedUri: Uri, fileName: String) {
+                                                                    // File saved successfully
+                                                                }
 
-                                                    Surface(
-                                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                                        shape = RoundedCornerShape(12.dp),
-                                                        modifier = Modifier
-                                                            .fillMaxWidth()
-                                                            .padding(vertical = Spacing.ExtraSmall)
-                                                            .clickable {
-                                                                message.mediaUrl?.let { uriHandler.openUri(it) }
+                                                                override fun onProgress(progress: Int) {
+                                                                    // Download progress
+                                                                }
+
+                                                                override fun onError(error: String) {
+                                                                    // Handle download error
+                                                                }
                                                             }
-                                                    ) {
-                                                        Row(
-                                                            verticalAlignment = Alignment.CenterVertically,
-                                                            modifier = Modifier.padding(Spacing.Small)
-                                                        ) {
-                                                            Box(
-                                                                modifier = Modifier
-                                                                    .size(42.dp)
-                                                                    .clip(CircleShape)
-                                                                    .background(MaterialTheme.colorScheme.primaryContainer),
-                                                                contentAlignment = Alignment.Center
-                                                            ) {
-                                                                Icon(
-                                                                    imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                                                                    contentDescription = stringResource(R.string.chat_cd_file),
-                                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                                    modifier = Modifier.size(22.dp)
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.width(Spacing.Small))
-                                                            Column(modifier = Modifier.weight(1f)) {
-                                                                Text(
-                                                                    text = fileName,
-                                                                    style = MaterialTheme.typography.titleSmall,
-                                                                    fontWeight = FontWeight.Bold,
-                                                                    color = contentColor,
-                                                                    maxLines = 1,
-                                                                    overflow = TextOverflow.Ellipsis
-                                                                )
-                                                                Text(
-                                                                    text = sizeStr,
-                                                                    style = MaterialTheme.typography.bodySmall,
-                                                                    color = contentColor.copy(alpha = 0.7f)
-                                                                )
-                                                            }
-                                                            Spacer(modifier = Modifier.width(Spacing.Small))
-                                                            IconButton(
-                                                                onClick = { message.mediaUrl?.let { uriHandler.openUri(it) } },
-                                                                modifier = Modifier.size(36.dp)
-                                                            ) {
-                                                                Icon(
-                                                                    imageVector = Icons.Default.Download,
-                                                                    contentDescription = "Download File",
-                                                                    tint = MaterialTheme.colorScheme.primary,
-                                                                    modifier = Modifier.size(20.dp)
-                                                                )
-                                                            }
-                                                        }
-                                                    }
-                                                    MessageMetadataRow(
-                                                        message = message,
-                                                        isFromMe = isFromMe,
-                                                        contentColor = contentColor,
-                                                        onRetryClick = onRetryClick,
-                                                        modifier = Modifier.align(Alignment.End)
-                                                    )
-                                                }
+                                                        )
+                                                    },
+                                                    openUrl = { url -> uriHandler.openUri(url) }
+                                                )
+                                                MessageMetadataRow(
+                                                    message = message,
+                                                    isFromMe = isFromMe,
+                                                    contentColor = contentColor,
+                                                    onRetryClick = onRetryClick,
+                                                    modifier = Modifier.align(Alignment.End)
+                                                )
                                             }
 
 

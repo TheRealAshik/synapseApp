@@ -107,6 +107,71 @@ object DownloadManager {
         }
     }
 
+    fun downloadFile(
+        context: Context?,
+        fileUrl: String?,
+        fileName: String?,
+        callback: DownloadCallback?
+    ) {
+        if (context == null || fileUrl.isNullOrEmpty()) {
+            callback?.onError("Invalid parameters")
+            return
+        }
+        val applicationContext = context.applicationContext
+        scope.launch {
+            try {
+                val fileInfo = FileUtils.detectFileInfoFromUrl(
+                    fileUrl,
+                    fileName ?: "file",
+                    "",
+                    "application/octet-stream",
+                    "",
+                    emptyMap()
+                )
+                val finalFileName = fileInfo.fileName
+                val mimeType = fileInfo.mimeType
+
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Downloads.DISPLAY_NAME, finalFileName)
+                    put(MediaStore.Downloads.MIME_TYPE, mimeType)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                        put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/Synapse")
+                        put(MediaStore.Downloads.IS_PENDING, 1)
+                    } else {
+                        val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString()
+                        @Suppress("DEPRECATION")
+                        put(MediaStore.Downloads.DATA, "$downloadsDir/Synapse/$finalFileName")
+                    }
+                }
+
+                val resolver = applicationContext.contentResolver
+                val downloadUri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, contentValues)
+                if (downloadUri == null) {
+                    callback?.onError("Failed to create download entry")
+                    return@launch
+                }
+
+                try {
+                    resolver.openOutputStream(downloadUri)?.use { outputStream ->
+                        downloadToStream(fileUrl, outputStream, callback)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                            contentValues.clear()
+                            contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
+                            resolver.update(downloadUri, contentValues, null, null)
+                        }
+                        callback?.onSuccess(downloadUri, fileName ?: "file")
+                    } ?: throw IOException("Failed to open output stream")
+                } catch (e: Exception) {
+                    resolver.delete(downloadUri, null, null)
+                    throw e
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error downloading file: " + e.message, e)
+                callback?.onError("Download failed: " + e.message)
+            }
+        }
+    }
+
     fun downloadVideo(context: Context?, videoUrl: String?, fileName: String?, callback: DownloadCallback?) {
         if (context == null || videoUrl.isNullOrEmpty()) {
             callback?.onError("Invalid parameters")
