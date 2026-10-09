@@ -1,118 +1,204 @@
+import Foundation
 import SwiftUI
 import shared
 
 struct MessageBubbleView: View {
     let message: SwiftMessage
-    let isFromMe: Bool
-    var onReactionSelected: ((shared.ReactionType) -> Void)? = nil
+    let isCurrentUser: Bool
+    let onVote: (optionId: String) -> Void
+    let onOpenMap: (Double, Double) -> Void
+    let onOpenUrl: (String) -> Void
+    let onNavigateToEvent: (String) -> Void
+    let onNavigateToProduct: (String) -> Void
 
     var body: some View {
         HStack {
-            if isFromMe {
+            if isCurrentUser {
                 Spacer()
-            }
-
-            VStack(alignment: isFromMe ? .trailing : .leading, spacing: 4) {
-                if message.messageType == .image || message.messageType == .video, let urlStr = message.mediaUrl, let url = URL(string: urlStr) {
-                    AsyncImage(url: url) { image in
-                        image
-                            .resizable()
-                            .scaledToFit()
-                    } placeholder: {
-                        Rectangle()
-                            .fill(Color(.systemGray4))
-                            .frame(height: 150)
-                            .overlay(ProgressView())
-                    }
-                    .frame(maxWidth: 250)
+                MessageContent(message: message, isCurrentUser: true)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+                    .padding(.bottom, 2)
+                    .frame(maxWidth: 260)
+                    .cornerRadius(12, corners: [.topLeading], cornerRadii: [12])
+                    .background(Color(UIColor.systemBlue).opacity(0.1))
+            } else {
+                MessageContent(message: message, isCurrentUser: false)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 4)
+                    .padding(.bottom, 2)
+                    .frame(maxWidth: 260, alignment: .leading)
                     .cornerRadius(12)
-                }
-
-                if !message.content.isEmpty {
-                    Text(message.content)
-                        .padding(12)
-                        .foregroundColor(isFromMe ? .white : .primary)
-                        .background(isFromMe ? AppTheme.primaryColor : Color(.secondarySystemBackground))
-                        .cornerRadius(16)
-                }
-
-                if !message.reactions.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(Array(message.reactions.keys), id: \.self) { type in
-                            if let count = message.reactions[type] {
-                                Button(action: {
-                                    onReactionSelected?(type)
-                                }) {
-                                    HStack(spacing: 2) {
-                                        Text(type.emoji)
-                                            .font(.system(size: 12))
-                                        if count > 1 {
-                                            Text("\(count)")
-                                                .font(.system(size: 10))
-                                        }
-                                    }
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 2)
-                                    .background(message.userReaction == type ? AppTheme.primaryColor.opacity(0.2) : Color(.systemGray6))
-                                    .clipShape(Capsule())
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                            }
-                        }
-                    }
-                    .padding(.top, -8)
-                }
-
-                HStack(spacing: 4) {
-                    Text(formatTime(message.createdAt))
-                        .font(.caption2)
-                        .foregroundColor(.gray)
-
-                    if isFromMe {
-                        Image(systemName: statusIcon(for: message.deliveryStatus))
-                            .font(.caption2)
-                            .foregroundColor(statusColor(for: message.deliveryStatus))
-                    }
-                }
+                    .background(Color(UIColor.systemGray6))
             }
-
-            if !isFromMe {
+            if isCurrentUser {
                 Spacer()
             }
         }
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 16)
+    }
+}
+
+private extension MessageBubbleView {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner, cornerRadii: CGSize) -> some View {
+        GeometryReader { geometry in
+            Path { path in
+                let width = geometry.size.width
+                let height = geometry.size.height
+
+                for corner in corners {
+                    path.move(to: .zero)
+                    path.addLine(to: CGPoint(x: width, y: 0))
+                    path.addLine(to: CGPoint(x: width, y: height))
+                    path.addLine(to: CGPoint(x: 0, y: height))
+                }
+            }
+            .fill(self.background)
+            .overlay(
+                RoundedRectangle(cornerRadius: radius)
+                    .stroke(self.background, lineWidth: 0)
+            )
+        }
+    }
+}
+
+private extension View {
+    func cornerRadius(_ radius: CGFloat, corners: UIRectCorner, cornerRadii: CGSize) -> some View {
+        GeometryReader { geometry in
+            Path { path in
+                let width = geometry.size.width
+                let height = geometry.size.height
+
+                for corner in corners {
+                    path.move(to: .zero)
+                    path.addLine(to: CGPoint(x: width, y: 0))
+                    path.addLine(to: CGPoint(x: width, y: height))
+                    path.addLine(to: CGPoint(x: 0, y: height))
+                }
+            }
+            .fill(self.background)
+            .overlay(
+                RoundedRectangle(cornerRadius: radius)
+                    .stroke(self.background, lineWidth: 0)
+            )
+        }
+    }
+}
+
+private extension View {
+    func background(_ color: Color) -> some View {
+        self.overlay(self.backgroundColor(color))
     }
 
-    private func formatTime(_ timeStr: String) -> String {
-        let split = timeStr.split(separator: "T")
-        if split.count == 2 {
-            let timePart = split[1].split(separator: ":")
-            if timePart.count >= 2 {
-                return "\(timePart[0]):\(timePart[1])"
+    private func backgroundColor(_ color: Color) -> Color {
+        color
+    }
+}
+
+private struct MessageContent: View {
+    let message: SwiftMessage
+    let isCurrentUser: Bool
+
+    var body: some View {
+        VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 4) {
+            HStack {
+                if !message.isForwarded {
+                    MessageText(message: message, isCurrentUser: isCurrentUser)
+                } else {
+                    VStack(alignment: .leading, spacing: 4) {
+                        MessageText(message: message, isCurrentUser: isCurrentUser)
+                        ForwardedMessageCardView(message: message)
+                    }
+                }
+            }
+
+            if message.cardType == .poll {
+                PollCardView(
+                    message: message,
+                    onVote: { optionId in
+                        onVote(optionId: optionId)
+                    }
+                )
+            } else if message.cardType == .contact {
+                ContactCardView(message: message)
+            } else if message.cardType == .location || message.cardType == .liveLocation {
+                LocationCardView(
+                    message: message,
+                    onOpenMap: { lat, lon in
+                        onOpenMap(lat, lon)
+                    }
+                )
+            } else if message.cardType == .viewOnce {
+                ViewOnceCardView(message: message)
+            } else if message.cardType == .event {
+                EventCardView(message: message)
+            } else if message.cardType == .product {
+                ProductCardView(message: message)
             }
         }
-        return timeStr
     }
+}
 
-    private func statusIcon(for status: shared.DeliveryStatus) -> String {
-        switch status {
-        case .sent:
-            return "checkmark"
-        case .delivered:
-            return "checkmark.circle"
-        case .read:
-            return "checkmark.circle.fill"
-        default:
-            return "clock"
+private struct MessageText: View {
+    let message: SwiftMessage
+    let isCurrentUser: Bool
+
+    var body: some View {
+        VStack(alignment: isCurrentUser ? .trailing : .leading, spacing: 2) {
+            if !message.isDeleted && !message.isFailed {
+                if !message.isDeleted {
+                    Text(message.text)
+                        .font(.body)
+                        .foregroundColor(.primary)
+                }
+                if let timestamp = message.timestamp {
+                    Text(timestamp)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                }
+            }
+
+            if message.isDeleted {
+                Text("Message deleted")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                    .italic()
+            }
+
+            if message.isFailed {
+                Image(systemName: "exclamationmark.circle")
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
+
+            if let mediaUrl = message.mediaUrl, !mediaUrl.isEmpty {
+                AsyncImage(url: URL(string: mediaUrl)) { image in
+                    image.resizable().scaledToFit()
+                } placeholder: {
+                    Rectangle().fill(Color(.systemGray4))
+                        .aspectRatio(1, contentMode: .fit)
+                }
+                .cornerRadius(8)
+            }
+
+            if let replyTo = message.replyTo {
+                ReplyMessageView(message: replyTo)
+                    .padding()
+                    .background(Color(.systemGray5))
+                    .cornerRadius(8)
+            }
         }
     }
+}
 
-    private func statusColor(for status: shared.DeliveryStatus) -> Color {
-        switch status {
-        case .read:
-            return .blue
-        default:
-            return .gray
+private struct ReplyMessageView: View {
+    let message: SwiftMessage
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Reply to \(message.text)")
+                .font(.caption)
+                .foregroundColor(.secondary)
         }
     }
 }

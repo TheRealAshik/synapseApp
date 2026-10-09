@@ -67,6 +67,8 @@ class ChatViewModel @Inject constructor(
     private val getDisappearingModeUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.GetDisappearingModeUseCase,
     private val voiceUploadService: VoiceUploadService,
     private val getStorageConfigUseCase: GetStorageConfigUseCase,
+    private val voteInPollUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.VoteInPollUseCase,
+    private val markViewOnceConsumedUseCase: com.synapse.social.studioasinc.shared.domain.usecase.chat.MarkViewOnceConsumedUseCase,
     private val mediaCompressor: com.synapse.social.studioasinc.shared.domain.service.MediaCompressor? = null
 ) : ViewModel() {
 
@@ -372,30 +374,44 @@ class ChatViewModel @Inject constructor(
 
     fun voteInPoll(messageId: String, optionId: String) {
         val uid = currentUserId ?: return
-        messagingDelegate._messages.update { current ->
-            with(messagingDelegate) {
-                current.updateById(messageId) { msg ->
-                    val poll = msg.metadataContainer?.poll ?: return@updateById msg
-                    val updatedOptions = poll.options.map { option ->
-                        if (option.id == optionId) {
-                            val currentVoters = option.voterUserIds.toSet()
-                            val newVoters = if (uid in currentVoters) currentVoters - uid else currentVoters + uid
-                            option.copy(
-                                voteCount = newVoters.size,
-                                voterUserIds = newVoters.toList()
-                            )
-                        } else if (!poll.allowMultipleAnswers) {
-                            val currentVoters = option.voterUserIds.toSet() - uid
-                            option.copy(
-                                voteCount = currentVoters.size,
-                                voterUserIds = currentVoters.toList()
-                            )
-                        } else option
+        val currentMessage = messagingDelegate.messages.value.find { it.id == messageId } ?: return
+        val poll = currentMessage.metadataContainer?.poll ?: return
+        if (poll.isClosed) {
+            _error.value = "Poll is closed"
+            return
+        }
+
+        viewModelScope.launch {
+            val result = voteInPollUseCase(messageId, optionId, poll.pollId)
+            if (result.isSuccess) {
+                messagingDelegate._messages.update { current ->
+                    with(messagingDelegate) {
+                        current.updateById(messageId) { msg ->
+                            val updatedPoll = msg.metadataContainer?.poll ?: return@updateById msg
+                            val updatedOptions = updatedPoll.options.map { option ->
+                                if (option.id == optionId) {
+                                    val currentVoters = option.voterUserIds.toSet()
+                                    val newVoters = if (uid in currentVoters) currentVoters - uid else currentVoters + uid
+                                    option.copy(
+                                        voteCount = newVoters.size,
+                                        voterUserIds = newVoters.toList()
+                                    )
+                                } else if (!updatedPoll.allowMultipleAnswers) {
+                                    val currentVoters = option.voterUserIds.toSet() - uid
+                                    option.copy(
+                                        voteCount = currentVoters.size,
+                                        voterUserIds = currentVoters.toList()
+                                    )
+                                } else option
+                            }
+                            val container = msg.metadataContainer ?: return@updateById msg
+                            val updatedContainer = container.copy(poll = updatedPoll.copy(options = updatedOptions))
+                            msg.copy(metadataContainer = updatedContainer)
+                        }
                     }
-                    val container = msg.metadataContainer ?: return@updateById msg
-                    val updatedContainer = container.copy(poll = poll.copy(options = updatedOptions))
-                    msg.copy(metadataContainer = updatedContainer)
                 }
+            } else {
+                _error.value = result.exceptionOrNull()?.message ?: "Failed to vote"
             }
         }
     }
@@ -403,6 +419,22 @@ class ChatViewModel @Inject constructor(
     fun restartSubscriptions() {
         val chatId = currentChatId ?: return
         subscriptionDelegate.restartSubscriptions(chatId)
+    }
+
+    fun markViewOnceConsumed(messageId: String) {
+        viewModelScope.launch {
+            markViewOnceConsumedUseCase(messageId).onSuccess {
+                messagingDelegate._messages.update { current ->
+                    with(messagingDelegate) {
+                        current.updateById(messageId) { msg ->
+                            val container = msg.metadataContainer ?: return@updateById msg
+                            val updatedViewOnce = container.viewOnce?.copy(isConsumed = true, remainingViews = 0)
+                            msg.copy(metadataContainer = container.copy(viewOnce = updatedViewOnce))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun loadMoreMessages() {

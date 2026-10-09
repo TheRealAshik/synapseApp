@@ -452,6 +452,80 @@ class SupabaseChatRepository(
         }
     }
 
+    override suspend fun voteInPoll(messageId: String, optionId: String, pollId: String): Result<Unit> = withContext(AppDispatchers.IO) {
+        try {
+            val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
+            val dto = dataSource.getMessageById(messageId) ?: throw Exception("Poll message not found")
+            val domainMessage = dto.toDomain()
+            val poll = domainMessage.metadataContainer?.poll ?: throw Exception("Poll metadata not found")
+
+            if (poll.isClosed) {
+                throw Exception("Poll is closed")
+            }
+
+            val updatedOptions = poll.options.map { option ->
+                if (option.id == optionId) {
+                    val currentVoters = option.voterUserIds.toSet()
+                    val newVoters = if (currentUserId in currentVoters) currentVoters - currentUserId else currentVoters + currentUserId
+                    option.copy(
+                        voteCount = newVoters.size,
+                        voterUserIds = newVoters.toList()
+                    )
+                } else if (!poll.allowMultipleAnswers) {
+                    val currentVoters = option.voterUserIds.toSet() - currentUserId
+                    option.copy(
+                        voteCount = currentVoters.size,
+                        voterUserIds = currentVoters.toList()
+                    )
+                } else option
+            }
+
+            val updatedContainer = domainMessage.metadataContainer?.copy(poll = poll.copy(options = updatedOptions))
+            val serializedMetadata = updatedContainer?.let {
+                try {
+                    Json.encodeToString(MessageMetadataContainer.serializer(), it)
+                } catch (e: Exception) { null }
+            }
+
+            dataSource.editMessageMetadata(messageId, serializedMetadata)
+
+            val cachedMsg = domainMessage.copy(metadataContainer = updatedContainer)
+            cachedMessageDao?.upsert(cachedMsg)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Logger.e("Error voting in poll", throwable = e)
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun markViewOnceConsumed(messageId: String): Result<Unit> = withContext(AppDispatchers.IO) {
+        try {
+            val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
+            val dto = dataSource.getMessageById(messageId) ?: throw Exception("Message not found")
+            val domainMessage = dto.toDomain()
+            val viewOnce = domainMessage.metadataContainer?.viewOnce ?: throw Exception("View-once metadata not found")
+
+            val updatedViewOnce = viewOnce.copy(isConsumed = true, remainingViews = 0)
+            val updatedContainer = domainMessage.metadataContainer?.copy(viewOnce = updatedViewOnce)
+            val serializedMetadata = updatedContainer?.let {
+                try {
+                    Json.encodeToString(MessageMetadataContainer.serializer(), it)
+                } catch (e: Exception) { null }
+            }
+
+            dataSource.editMessageMetadata(messageId, serializedMetadata)
+
+            val cachedMsg = domainMessage.copy(metadataContainer = updatedContainer)
+            cachedMessageDao?.upsert(cachedMsg)
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Logger.e("Error marking view-once consumed", throwable = e)
+            Result.failure(e)
+        }
+    }
+
     override suspend fun deleteMessageForMe(messageId: String): Result<Unit> = withContext(AppDispatchers.IO) {
         try {
             dataSource.deleteMessageForMe(messageId)

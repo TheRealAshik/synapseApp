@@ -81,9 +81,11 @@ import com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToMess
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToTypingStatusUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.UploadMediaUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.ToggleMessageReactionUseCase
-import com.synapse.social.studioasinc.shared.domain.usecase.chat.GetMessageReactionsUseCase
-import com.synapse.social.studioasinc.shared.domain.usecase.chat.PopulateMessageReactionsUseCase
-import com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToMessageReactionsUseCase
+    import com.synapse.social.studioasinc.shared.domain.usecase.chat.GetMessageReactionsUseCase
+    import com.synapse.social.studioasinc.shared.domain.usecase.chat.PopulateMessageReactionsUseCase
+    import com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToMessageReactionsUseCase
+    import com.synapse.social.studioasinc.shared.domain.usecase.chat.VoteInPollUseCase
+    import com.synapse.social.studioasinc.shared.domain.usecase.chat.MarkViewOnceConsumedUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.follow.GetFollowersUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.follow.GetFollowingUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.notification.GetNotificationsUseCase
@@ -335,6 +337,20 @@ object ChatModule {
         chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
     ): com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToMessageReactionsUseCase {
         return SubscribeToMessageReactionsUseCase(chatRepository)
+    }
+    @Provides
+    @Singleton
+    fun provideVoteInPollUseCase(
+        chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
+    ): com.synapse.social.studioasinc.shared.domain.usecase.chat.VoteInPollUseCase {
+        return VoteInPollUseCase(chatRepository)
+    }
+    @Provides
+    @Singleton
+    fun provideMarkViewOnceConsumedUseCase(
+        chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
+    ): com.synapse.social.studioasinc.shared.domain.usecase.chat.MarkViewOnceConsumedUseCase {
+        return MarkViewOnceConsumedUseCase(chatRepository)
     }
     @Provides
     @Singleton

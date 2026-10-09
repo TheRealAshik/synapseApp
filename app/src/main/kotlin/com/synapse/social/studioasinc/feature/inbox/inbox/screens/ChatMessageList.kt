@@ -182,7 +182,7 @@ internal fun ChatMessageList(
                         showAvatar = !chatAvatarDisabled,
                         senderName = participantProfile?.displayName ?: participantProfile?.name ?: initialParticipantName,
                         senderAvatarUrl = participantAvatarUrl,
-                        onVoteOption = { pollId, optionId -> message.id?.let { onVoteOption(it, optionId) } },
+                        onVoteOption = { messageId, optionId -> onVoteOption(messageId, optionId) },
                         onOpenPost = onOpenPost,
                         onOpenStory = onOpenStory,
                         onOpenEvent = onOpenEvent,

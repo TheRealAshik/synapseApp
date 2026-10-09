@@ -113,6 +113,37 @@ internal class ChatMessageDataSource(private val client: SupabaseClientLib) {
         }
     }
 
+    suspend fun editMessageMetadata(messageId: String, metadata: String?) = withContext(AppDispatchers.IO) {
+        try {
+            client.postgrest.from("messages").update({
+                set("metadata", metadata)
+            }) {
+                filter { eq("id", messageId) }
+            }
+        } catch (e: Exception) {
+            Napier.e("Error editing message metadata", e)
+            throw e
+        }
+    }
+
+    suspend fun markViewOnceConsumed(messageId: String) = withContext(AppDispatchers.IO) {
+        try {
+            val metadataJson = buildJsonObject {
+                put("viewOnce", buildJsonObject {
+                    put("isConsumed", true)
+                })
+            }
+            client.postgrest.from("messages").update({
+                set("metadata", metadataJson)
+            }) {
+                filter { eq("id", messageId) }
+            }
+        } catch (e: Exception) {
+            Napier.e("Error marking view-once consumed", e)
+            throw e
+        }
+    }
+
     suspend fun deleteMessage(messageId: String): Unit =
         withContext(AppDispatchers.IO) {
             try {

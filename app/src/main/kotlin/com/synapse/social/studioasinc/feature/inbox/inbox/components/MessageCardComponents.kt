@@ -256,8 +256,9 @@ fun LiveLocationCardBubble(
 @Composable
 fun PollCardBubble(
     metadata: PollMetadata?,
+    messageId: String,
     contentColor: Color,
-    onVoteOption: (pollId: String, optionId: String) -> Unit = { _, _ -> }
+    onVoteOption: (messageId: String, optionId: String) -> Unit = { _, _ -> }
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
@@ -291,7 +292,7 @@ fun PollCardBubble(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
-                        .clickable { metadata.pollId.let { onVoteOption(it, option.id) } }
+                        .clickable { onVoteOption(messageId, option.id) }
                 ) {
                     Box(modifier = Modifier.fillMaxWidth()) {
                         Box(

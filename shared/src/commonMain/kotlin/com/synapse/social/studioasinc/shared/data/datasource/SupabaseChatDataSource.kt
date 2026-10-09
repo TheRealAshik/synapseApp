@@ -115,6 +115,10 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         newContent: String
     ) = messages.editMessage(messageId, newContent)
 
+    suspend fun editMessageMetadata(messageId: String, metadata: String?) = messages.editMessageMetadata(messageId, metadata)
+
+    suspend fun markViewOnceConsumed(messageId: String) = messages.markViewOnceConsumed(messageId)
+
     suspend fun deleteMessage(messageId: String): Unit = 
         messages.deleteMessage(messageId)
 

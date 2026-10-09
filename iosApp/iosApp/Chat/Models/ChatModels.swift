@@ -39,6 +39,8 @@ struct SwiftMessage: Identifiable {
     let deliveryStatus: shared.DeliveryStatus
     let isDeleted: Bool
     var isEdited: Bool
+    let isForwarded: Bool
+    let forwardedFromMessageId: String?
     let replyToId: String?
     let createdAt: String
     let updatedAt: String?
@@ -46,6 +48,7 @@ struct SwiftMessage: Identifiable {
     let expiresAt: String?
     let reactions: [shared.ReactionType: Int]
     let userReaction: shared.ReactionType?
+    let metadataContainer: shared.MessageMetadataContainer?
 
     init(from kmpMessage: shared.Message) {
         self.id = kmpMessage.id
@@ -57,6 +60,8 @@ struct SwiftMessage: Identifiable {
         self.deliveryStatus = kmpMessage.deliveryStatus
         self.isDeleted = kmpMessage.isDeleted
         self.isEdited = kmpMessage.isEdited
+        self.isForwarded = kmpMessage.isForwarded
+        self.forwardedFromMessageId = kmpMessage.forwardedFromMessageId
         self.replyToId = kmpMessage.replyToId
         self.createdAt = kmpMessage.createdAt
         self.updatedAt = kmpMessage.updatedAt
@@ -64,5 +69,6 @@ struct SwiftMessage: Identifiable {
         self.expiresAt = kmpMessage.expiresAt
         self.reactions = kmpMessage.reactions as? [shared.ReactionType: Int] ?? [:]
         self.userReaction = kmpMessage.userReaction
+        self.metadataContainer = kmpMessage.metadataContainer
     }
 }

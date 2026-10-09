@@ -895,7 +895,7 @@ fun MessageBubble(
 
                                             MessageType.POLL -> {
                                                 Column {
-                                                    PollCardBubble(metadata = message.metadataContainer?.poll, contentColor = contentColor, onVoteOption = onVoteOption)
+                                                    PollCardBubble(metadata = message.metadataContainer?.poll, messageId = message.id, contentColor = contentColor, onVoteOption = onVoteOption)
                                                     MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
                                                 }
                                             }

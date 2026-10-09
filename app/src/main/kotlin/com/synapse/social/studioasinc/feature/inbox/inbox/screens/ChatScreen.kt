@@ -50,19 +50,21 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ChatScreen(
-    linkPreviewViewModel: LinkPreviewViewModel = hiltViewModel(),
-    chatId: String,
-    participantId: String? = null,
-    initialParticipantName: String? = null,
-    initialParticipantAvatar: String? = null,
-    onNavigateBack: () -> Unit,
-    onNavigateToGroupInfo: (String, String) -> Unit = { _, _ -> },
-    onNavigateToChatInfo: (String, String) -> Unit = { _, _ -> },
-    onNavigateToProfile: (String) -> Unit = {},
-    viewModel: ChatViewModel = hiltViewModel()
-) {
+    @Composable
+    fun ChatScreen(
+        linkPreviewViewModel: LinkPreviewViewModel = hiltViewModel(),
+        chatId: String,
+        participantId: String? = null,
+        initialParticipantName: String? = null,
+        initialParticipantAvatar: String? = null,
+        onNavigateBack: () -> Unit,
+        onNavigateToGroupInfo: (String, String) -> Unit = { _, _ -> },
+        onNavigateToChatInfo: (String, String) -> Unit = { _, _ -> },
+        onNavigateToProfile: (String) -> Unit = {},
+        onNavigateToEvent: (String) -> Unit = {},
+        onNavigateToProduct: (String) -> Unit = {},
+        viewModel: ChatViewModel = hiltViewModel()
+    ) {
     // Initialize the ViewModel with the chat ID
     LaunchedEffect(chatId, participantId) {
         viewModel.initialize(chatId, participantId)
@@ -345,7 +347,14 @@ fun ChatScreen(
                         onVoteOption = { messageId, optionId -> viewModel.voteInPoll(messageId, optionId) },
                         onOpenPost = { postId -> try { uriHandler.openUri("synapse://post/$postId") } catch (_: Exception) {} },
                         onOpenStory = { storyId -> try { uriHandler.openUri("synapse://story/$storyId") } catch (_: Exception) {} },
-                        onOpenEphemeralMedia = { mediaUrl -> try { uriHandler.openUri(mediaUrl) } catch (_: Exception) {} },
+                        onOpenEphemeralMedia = { mediaUrl -> 
+                        try { 
+                            uriHandler.openUri(mediaUrl)
+                            messages.find { it.mediaUrl == mediaUrl && it.metadataContainer?.viewOnce?.isConsumed != true }?.id?.let { viewModel.markViewOnceConsumed(it) }
+                        } catch (_: Exception) {} 
+                    },
+                        onOpenEvent = { eventId -> try { uriHandler.openUri("synapse://event/$eventId") } catch (_: Exception) {} },
+                        onOpenProduct = { productId -> try { uriHandler.openUri("synapse://product/$productId") } catch (_: Exception) {} },
                         onOpenMap = { lat, lon -> try { uriHandler.openUri("https://maps.google.com/?q=$lat,$lon") } catch (_: Exception) {} },
                         onContactAction = { phone -> try { uriHandler.openUri("tel:$phone") } catch (_: Exception) {} }
                     )
