@@ -1,13 +1,6 @@
 package com.synapse.social.studioasinc.feature.inbox.inbox.components
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -30,6 +23,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -345,14 +339,11 @@ fun VideoPlayerBox(
             .clip(RoundedCornerShape(Sizes.CornerMedium))
             .background(MaterialTheme.colorScheme.surfaceVariant)
     ) {
-        // Thumbnail background (always present as fallback)
-        AsyncImage(
+        // Thumbnail background (always present as fallback)        AsyncImage(
             model = mediaUrl,
             contentDescription = stringResource(R.string.cd_media_attachment),
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            placeholder = MaterialTheme.colorScheme.surfaceVariant,
-            error = MaterialTheme.colorScheme.surfaceVariant
         )
 
         // Player view on top of thumbnail
@@ -379,7 +370,7 @@ fun VideoPlayerBox(
                 contentAlignment = Alignment.Center
             ) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(Sizes.IconXLarge),
+                    modifier = Modifier.size(Sizes.IconExtraLarge),
                     color = MaterialTheme.colorScheme.primary
                 )
             }
@@ -399,7 +390,7 @@ fun VideoPlayerBox(
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                val size = Sizes.IconXLarge
+                val size = Sizes.IconLarge
                 Box(
                     modifier = Modifier
                         .size(size)

@@ -620,9 +620,7 @@ fun MessageBubble(
                                         message = message,
                                         isFromMe = isFromMe,
                                         contentColor = contentColor,
-                                        onRetryClick = onRetryClick,
-                                        modifier = Modifier.align(Alignment.End)
-                                    )
+                                        onRetryClick = onRetryClick)
                                 }
                             }
                         } else if (isMedia) {
@@ -730,9 +728,7 @@ fun MessageBubble(
                                         message = message,
                                         isFromMe = isFromMe,
                                         contentColor = contentColor,
-                                        onRetryClick = onRetryClick,
-                                        modifier = Modifier.align(Alignment.End)
-                                    )
+                                        onRetryClick = onRetryClick)
                                 }
                             }
                         } else {
@@ -780,9 +776,7 @@ fun MessageBubble(
                                                         message = message,
                                                         isFromMe = isFromMe,
                                                         contentColor = contentColor,
-                                                        onRetryClick = onRetryClick,
-                                                        modifier = Modifier.align(Alignment.End)
-                                                    )
+                                                        onRetryClick = onRetryClick)
                                                 }
                                             }
 
@@ -816,107 +810,105 @@ fun MessageBubble(
                                                     message = message,
                                                     isFromMe = isFromMe,
                                                     contentColor = contentColor,
-                                                    onRetryClick = onRetryClick,
-                                                    modifier = Modifier.align(Alignment.End)
-                                                )
+                                                    onRetryClick = onRetryClick)
                                             }
 
 
                                             MessageType.CONTACT -> {
                                                 Column {
                                                     ContactCardBubble(metadata = message.metadataContainer?.contact, contentColor = contentColor, onContactAction = onContactAction)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.LOCATION -> {
                                                 Column {
                                                     LocationCardBubble(metadata = message.metadataContainer?.location, contentColor = contentColor, onOpenMap = onOpenMap)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.MAP -> {
                                                 Column {
                                                     MapCardBubble(metadata = message.metadataContainer?.map, contentColor = contentColor, onOpenMap = onOpenMap)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.LIVE_LOCATION -> {
                                                 Column {
                                                     LiveLocationCardBubble(metadata = message.metadataContainer?.liveLocation, contentColor = contentColor)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.POLL -> {
                                                 Column {
                                                     PollCardBubble(metadata = message.metadataContainer?.poll, messageId = message.id, contentColor = contentColor, onVoteOption = onVoteOption)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.MUSIC -> {
                                                 Column {
                                                     MusicCardBubble(metadata = message.metadataContainer?.music, contentColor = contentColor)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.SHARED_POST -> {
                                                 Column {
                                                     SharedPostCardBubble(metadata = message.metadataContainer?.sharedPost, contentColor = contentColor, onOpenPost = onOpenPost)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.STORY_SHARE -> {
                                                 Column {
                                                     SharedStoryCardBubble(metadata = message.metadataContainer?.sharedStory, contentColor = contentColor, onOpenStory = onOpenStory)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.EVENT -> {
                                                 Column {
                                                     EventCardBubble(metadata = message.metadataContainer?.event, contentColor = contentColor, onOpenEvent = onOpenEvent)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.PRODUCT -> {
                                                 Column {
                                                     ProductCardBubble(metadata = message.metadataContainer?.product, contentColor = contentColor, onOpenProduct = onOpenProduct)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.PAYMENT -> {
                                                 Column {
                                                     PaymentCardBubble(metadata = message.metadataContainer?.payment, contentColor = contentColor)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.CODE_SNIPPET -> {
                                                 Column {
                                                     CodeSnippetCardBubble(metadata = message.metadataContainer?.codeSnippet, contentColor = contentColor)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.CALL -> {
                                                 Column {
                                                     CallLogCardBubble(metadata = message.metadataContainer?.call, contentColor = contentColor)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
                                             MessageType.EPHEMERAL_MEDIA -> {
                                                 Column {
                                                     ViewOnceCardBubble(metadata = message.metadataContainer?.viewOnce, mediaUrl = message.mediaUrl, contentColor = contentColor, onOpenEphemeralMedia = onOpenEphemeralMedia)
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
 
@@ -929,7 +921,7 @@ fun MessageBubble(
                                                             modifier = Modifier.size(150.dp).padding(4.dp)
                                                         )
                                                     }
-                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick)
                                                 }
                                             }
                             else -> {
@@ -998,9 +990,7 @@ fun MessageBubble(
                                                         message = message,
                                                         isFromMe = isFromMe,
                                                         contentColor = contentColor,
-                                                        onRetryClick = onRetryClick,
-                                                        modifier = Modifier.align(Alignment.End)
-                                                    )
+                                                        onRetryClick = onRetryClick)
                                                 }
                                             }
                                         }
