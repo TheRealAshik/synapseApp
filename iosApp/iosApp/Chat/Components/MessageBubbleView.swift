@@ -10,6 +10,7 @@ struct MessageBubbleView: View {
     let onOpenUrl: (String) -> Void
     let onNavigateToEvent: (String) -> Void
     let onNavigateToProduct: (String) -> Void
+    let onOpenEphemeralMedia: (String) -> Void
 
     var body: some View {
         HStack {
@@ -129,11 +130,25 @@ private struct MessageContent: View {
                     }
                 )
             } else if message.cardType == .viewOnce {
-                ViewOnceCardView(message: message)
+                ViewOnceCardView(
+                    message: message,
+                    isConsumed: message.metadataContainer?.viewOnce?.isConsumed ?? false,
+                    onOpen: {
+                        if let url = message.mediaUrl {
+                            onOpenEphemeralMedia(url)
+                        }
+                    }
+                )
             } else if message.cardType == .event {
-                EventCardView(message: message)
+                EventCardView(
+                    message: message,
+                    onNavigateToEvent: onNavigateToEvent
+                )
             } else if message.cardType == .product {
-                ProductCardView(message: message)
+                ProductCardView(
+                    message: message,
+                    onNavigateToProduct: onNavigateToProduct
+                )
             }
         }
     }

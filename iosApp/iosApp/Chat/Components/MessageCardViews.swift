@@ -153,29 +153,35 @@ struct LocationCardView: View {
 
 struct ViewOnceCardView: View {
     let message: SwiftMessage
+    let isConsumed: Bool
+    let onOpen: () -> Void
 
     var body: some View {
         VStack(spacing: 8) {
             HStack {
-                Image(systemName: message.metadataContainer?.viewOnce?.isConsumed == true ? "eye.slash" : "eye")
-                    .foregroundColor(message.metadataContainer?.viewOnce?.isConsumed == true ? .secondary : .primary)
+                Image(systemName: isConsumed ? "eye.slash" : "eye")
+                    .foregroundColor(isConsumed ? .secondary : .primary)
                 VStack(alignment: .leading) {
                     Text(message.metadataContainer?.viewOnce?.mode == "VIEW_TWICE" ? "View Twice" : "View Once")
                         .font(.headline)
-                    Text(message.metadataContainer?.viewOnce?.isConsumed == true ? "Opened" : "Tap to view")
+                    Text(isConsumed ? "Opened" : "Tap to view")
                         .font(.caption)
-                        .foregroundColor(message.metadataContainer?.viewOnce?.isConsumed == true ? .secondary : .primary)
+                        .foregroundColor(isConsumed ? .secondary : .primary)
                 }
             }
         }
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+        .onTapGesture {
+            onOpen()
+        }
     }
 }
 
 struct EventCardView: View {
     let message: SwiftMessage
+    let onNavigateToEvent: (String) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -196,11 +202,17 @@ struct EventCardView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+        .onTapGesture {
+            if let eventId = message.metadataContainer?.event?.eventId {
+                onNavigateToEvent(eventId)
+            }
+        }
     }
 }
 
 struct ProductCardView: View {
     let message: SwiftMessage
+    let onNavigateToProduct: (String) -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -223,6 +235,11 @@ struct ProductCardView: View {
         .padding()
         .background(Color(.secondarySystemBackground))
         .cornerRadius(12)
+        .onTapGesture {
+            if let productId = message.metadataContainer?.product?.productId {
+                onNavigateToProduct(productId)
+            }
+        }
     }
 }
 

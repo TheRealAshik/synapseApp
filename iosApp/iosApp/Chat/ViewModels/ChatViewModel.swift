@@ -25,6 +25,8 @@ class ChatViewModel: ObservableObject {
     private let generateSmartRepliesUseCase: shared.GenerateSmartRepliesUseCase?
     private let setDisappearingModeUseCase: shared.SetDisappearingModeUseCase?
     private let getDisappearingModeUseCase: shared.GetDisappearingModeUseCase?
+    private let markViewOnceConsumedUseCase: shared.MarkViewOnceConsumedUseCase?
+    private let voteInPollUseCase: shared.VoteInPollUseCase?
 
     private var chatId: String? = nil
     private var subscriptionTask: Task<Void, Never>? = nil
@@ -33,7 +35,7 @@ class ChatViewModel: ObservableObject {
     private var smartRepliesTask: Task<Void, Never>? = nil
     private let typingSubject = PassthroughSubject<Bool, Never>()
     private var typingCancellable: AnyCancellable? = nil
-    
+     
     private let currentUserId = "my_user_id" 
     private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.synapse.social", category: "ChatViewModel")
 
@@ -49,7 +51,9 @@ class ChatViewModel: ObservableObject {
         populateMessageReactionsUseCase: shared.PopulateMessageReactionsUseCase? = KMPHelper.sharedHelper.populateMessageReactionsUseCase,
         generateSmartRepliesUseCase: shared.GenerateSmartRepliesUseCase? = KMPHelper.sharedHelper.generateSmartRepliesUseCase,
         setDisappearingModeUseCase: shared.SetDisappearingModeUseCase? = KMPHelper.sharedHelper.setDisappearingModeUseCase,
-        getDisappearingModeUseCase: shared.GetDisappearingModeUseCase? = KMPHelper.sharedHelper.getDisappearingModeUseCase
+        getDisappearingModeUseCase: shared.GetDisappearingModeUseCase? = KMPHelper.sharedHelper.getDisappearingModeUseCase,
+        markViewOnceConsumedUseCase: shared.MarkViewOnceConsumedUseCase? = KMPHelper.sharedHelper.markViewOnceConsumedUseCase,
+        voteInPollUseCase: shared.VoteInPollUseCase? = KMPHelper.sharedHelper.voteInPollUseCase
     ) {
         self.getMessagesUseCase = getMessagesUseCase
         self.subscribeToMessagesUseCase = subscribeToMessagesUseCase
@@ -63,6 +67,8 @@ class ChatViewModel: ObservableObject {
         self.generateSmartRepliesUseCase = generateSmartRepliesUseCase
         self.setDisappearingModeUseCase = setDisappearingModeUseCase
         self.getDisappearingModeUseCase = getDisappearingModeUseCase
+        self.markViewOnceConsumedUseCase = markViewOnceConsumedUseCase
+        self.voteInPollUseCase = voteInPollUseCase
     }
 
     func setup(chatId: String) {
@@ -304,6 +310,24 @@ class ChatViewModel: ObservableObject {
             if let replies = result?.getOrNull() as? [String] {
                 self.smartReplies = replies
             }
+        }
+    }
+
+    func markViewOnceConsumed(messageId: String) {
+        guard let useCase = markViewOnceConsumedUseCase else { return }
+        Task {
+            let _ = try? await useCase.invoke(messageId: messageId)
+            if let index = messages.firstIndex(where: { $0.id == messageId }) {
+                messages[index].metadataContainer?.viewOnce?.isConsumed = true
+                messages[index].metadataContainer?.viewOnce?.isConsumed = true
+            }
+        }
+    }
+
+    func voteInPoll(messageId: String, optionId: String) {
+        guard let useCase = voteInPollUseCase else { return }
+        Task {
+            let _ = try? await useCase.invoke(messageId: messageId, optionId: optionId)
         }
     }
 

@@ -25,6 +25,41 @@ struct ChatDetailView: View {
                                     isFromMe: message.senderId == currentUserId,
                                     onReactionSelected: { type in
                                         viewModel.toggleReaction(messageId: message.id, emoji: type.emoji)
+                                    },
+                                    onVote: { optionId in
+                                        viewModel.voteInPoll(messageId: message.id, optionId: optionId)
+                                    },
+                                    onOpenMap: { lat, lon in
+                                        if let url = URL(string: "https://maps.google.com/?q=\(lat),\(lon)") {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    },
+                                    onOpenUrl: { urlStr in
+                                        if let url = URL(string: urlStr) {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    },
+                                    onNavigateToEvent: { eventId in
+                                        if let url = URL(string: "synapse://event/\(eventId)") {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    },
+                                     onNavigateToProduct: { productId in
+                                        if let url = URL(string: "synapse://product/\(productId)") {
+                                            UIApplication.shared.open(url)
+                                        }
+                                    },
+                                    onOpenEphemeralMedia: { mediaUrl in
+                                        if let url = URL(string: mediaUrl) {
+                                            UIApplication.shared.open(url)
+                                        }
+                                        // Mark as consumed only if not already consumed
+                                        if let index = self.viewModel.messages.firstIndex(where: { $0.id == message.id }) {
+                                            let msg = self.viewModel.messages[index]
+                                            if msg.metadataContainer?.viewOnce?.isConsumed != true {
+                                                self.viewModel.markViewOnceConsumed(messageId: message.id)
+                                            }
+                                        }
                                     }
                                 )
                                 .id(message.id)
