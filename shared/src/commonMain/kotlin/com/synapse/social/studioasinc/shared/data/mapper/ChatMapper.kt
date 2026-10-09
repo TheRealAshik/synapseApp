@@ -115,6 +115,9 @@ object ChatMapper {
             }
         }
 
+        val isForwarded = parsedMetadata?.forwarded != null
+        val forwardedFromMessageId = parsedMetadata?.forwarded?.originalMessageId
+
         return Message(
             id = id ?: "",
             chatId = chatId,
@@ -126,7 +129,9 @@ object ChatMapper {
             contentStatus = mappedContentStatus,
             isDeleted = mappedContentStatus == ContentStatus.DELETED,
             isEdited = mappedContentStatus == ContentStatus.EDITED,
+            isForwarded = isForwarded,
             replyToId = replyToId,
+            forwardedFromMessageId = forwardedFromMessageId,
             sentAt = sentAt ?: createdAt,
             deliveredAt = deliveredAt,
             readAt = readAt,

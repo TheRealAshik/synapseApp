@@ -232,6 +232,9 @@ class SqlDelightCachedMessageDao(
             }
         }
 
+        val isForwarded = parsedMetadata?.forwarded != null
+        val forwardedFromMessageId = parsedMetadata?.forwarded?.originalMessageId
+
         return Message(
             id = cached.id,
             chatId = cached.chat_id,
@@ -243,7 +246,9 @@ class SqlDelightCachedMessageDao(
             contentStatus = contentStatus,
             isDeleted = cached.is_deleted == 1L || contentStatus == ContentStatus.DELETED,
             isEdited = cached.is_edited == 1L || contentStatus == ContentStatus.EDITED,
+            isForwarded = isForwarded,
             replyToId = cached.reply_to_id,
+            forwardedFromMessageId = forwardedFromMessageId,
             sentAt = cached.sent_at ?: cached.created_at,
             deliveredAt = cached.delivered_at,
             readAt = cached.read_at,

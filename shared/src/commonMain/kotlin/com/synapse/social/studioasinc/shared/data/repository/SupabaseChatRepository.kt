@@ -259,11 +259,19 @@ class SupabaseChatRepository(
             val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
             val dtoAttachments = attachments?.map { it.toDto() }
 
+            val serializedMetadata = metadataContainer?.let {
+                try {
+                    Json.encodeToString(MessageMetadataContainer.serializer(), it)
+                } catch (e: Exception) {
+                    null
+                }
+            }
+
             val messageDto = try {
-                dataSource.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId, dtoAttachments)
+                dataSource.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId, dtoAttachments, serializedMetadata)
             } catch (e: Exception) {
                 if (offlineActionRepository != null) {
-                    queueMessageOffline(chatId, content, mediaUrl, messageType, expiresAt, replyToId, currentUserId, attachments)
+                    queueMessageOffline(chatId, content, mediaUrl, messageType, expiresAt, replyToId, currentUserId, attachments, metadataContainer)
                 } else throw e
             }
 
@@ -273,13 +281,14 @@ class SupabaseChatRepository(
                     Json.parseToJsonElement(senderPlaintext).jsonObject["content"]?.jsonPrimitive?.content ?: senderPlaintext
                 } catch (_: Exception) { senderPlaintext }
 
-                val cachedMsg = domainMessage.copy(content = displayContent)
+                val cachedMsg = domainMessage.copy(content = displayContent, metadataContainer = metadataContainer)
                 cachedMessageDao?.upsert(cachedMsg)
                 encryptionHelper.decryptedMessageCache[messageDto.id ?: ""] = senderPlaintext
                 cachedMsg
             } else {
-                cachedMessageDao?.upsert(domainMessage)
-                domainMessage
+                val cachedMsg = domainMessage.copy(metadataContainer = metadataContainer)
+                cachedMessageDao?.upsert(cachedMsg)
+                cachedMsg
             }
             Result.success(finalMessage)
         } catch (e: Exception) {
@@ -303,6 +312,12 @@ class SupabaseChatRepository(
             )
         } else null
 
+        val serializedMetadata = metadataContainer?.let {
+            try {
+                Json.encodeToString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) { null }
+        }
+
         offlineActionRepository?.addAction(
             PendingAction(
                 id = actionId,
@@ -315,6 +330,7 @@ class SupabaseChatRepository(
                     put("expiresAt", expiresAt)
                     put("replyToId", replyToId)
                     if (attachmentsJson != null) put("attachments", attachmentsJson)
+                    if (serializedMetadata != null) put("metadata", serializedMetadata)
                 }.toString()
             )
         )
@@ -326,7 +342,8 @@ class SupabaseChatRepository(
             messageType = messageType,
             mediaUrl = mediaUrl,
             createdAt = TimeProvider.nowInstant().toString(),
-            attachments = dtoAttachments
+            attachments = dtoAttachments,
+            metadata = serializedMetadata
         )
     }
 

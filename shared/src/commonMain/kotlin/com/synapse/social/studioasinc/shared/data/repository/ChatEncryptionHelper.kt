@@ -46,16 +46,17 @@ internal class ChatEncryptionHelper(
     fun isPlaceholder(content: String): Boolean = content in placeholders
 
     /**
-     * Extracts content and mediaUrl from a decrypted JSON payload like {"content":"...","mediaUrl":"..."}.
+     * Extracts content, mediaUrl, and metadata from a decrypted JSON payload like {"content":"...","mediaUrl":"...","metadata":"..."}.
      */
-    private fun extractContent(jsonString: String): Pair<String, String?> {
+    private fun extractContent(jsonString: String): Triple<String, String?, String?> {
         return try {
             val jsonPayload = Json.parseToJsonElement(jsonString).jsonObject
             val content = jsonPayload["content"]?.jsonPrimitive?.content ?: jsonString
             val mediaUrl = jsonPayload["mediaUrl"]?.jsonPrimitive?.content
-            Pair(content, mediaUrl)
+            val metadata = jsonPayload["metadata"]?.jsonPrimitive?.content
+            Triple(content, mediaUrl, metadata)
         } catch (_: Exception) {
-            Pair(jsonString, null)
+            Triple(jsonString, null, null)
         }
     }
 
@@ -76,8 +77,8 @@ internal class ChatEncryptionHelper(
         // 1) Check in-memory cache first (fastest)
         decryptedMessageCache[messageId]?.let { cached ->
             Logger.d("E2EE_DECRYPT: Found message $messageId in memory cache", tag = "E2EE")
-            val (content, mediaUrl) = extractContent(cached)
-            return this.copy(content = content, mediaUrl = mediaUrl ?: this.mediaUrl)
+            val (content, mediaUrl, metadata) = extractContent(cached)
+            return this.copy(content = content, mediaUrl = mediaUrl ?: this.mediaUrl, metadata = metadata ?: this.metadata)
         }
 
         // 2) Check local DB for previously-decrypted content (survives app restart)
@@ -87,7 +88,9 @@ internal class ChatEncryptionHelper(
         if (dbCached != null && dbCached.content !in placeholders && dbCached.content.isNotBlank()) {
             Logger.d("E2EE_DECRYPT: Found message $messageId in local DB cache", tag = "E2EE")
             decryptedMessageCache[messageId] = dbCached.content
-            return this.copy(content = dbCached.content, mediaUrl = dbCached.mediaUrl ?: this.mediaUrl)
+            return this.copy(content = dbCached.content, mediaUrl = dbCached.mediaUrl ?: this.mediaUrl, metadata = dbCached.metadataContainer?.let {
+                try { Json.encodeToString(com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer.serializer(), it) } catch (_: Exception) { null }
+            } ?: this.metadata)
         }
 
         try {
@@ -111,9 +114,9 @@ internal class ChatEncryptionHelper(
                             val decryptedContent = decryptedBytes.decodeToString()
                             Logger.d("E2EE_DECRYPT: Successfully decrypted message $messageId", tag = "E2EE")
                             decryptedMessageCache[messageId] = decryptedContent
-                            val (content, mediaUrl) = extractContent(decryptedContent)
+                            val (content, mediaUrl, metadata) = extractContent(decryptedContent)
                             try { cachedMessageDao?.updateContent(messageId, content) } catch (_: Exception) {}
-                            return this.copy(content = content, mediaUrl = mediaUrl ?: this.mediaUrl)
+                            return this.copy(content = content, mediaUrl = mediaUrl ?: this.mediaUrl, metadata = metadata ?: this.metadata)
                         } catch (decryptError: Exception) {
                             Logger.e("E2EE_DECRYPT: Signal decryption failed for message $messageId.", tag = "E2EE", throwable = decryptError)
                         }
