@@ -238,7 +238,7 @@ class ChatMediaDelegate(
                     onOptimisticMessageUpdated(tempId, "Uploading... $progress%")
                 }
             ).onSuccess { mediaUrl ->
-                val finalContent = if (!caption.isNullOrBlank()) caption else if (messageType == "image" || messageType == "video") "Media message" else fileName
+                val finalContent = if (!caption.isNullOrBlank()) caption else fileName
                 sendMessageUseCase(
                     chatId = chatId,
                     content = finalContent,
