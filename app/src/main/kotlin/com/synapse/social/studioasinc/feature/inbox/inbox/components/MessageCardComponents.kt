@@ -808,6 +808,7 @@ fun FileMessageBubble(
     }
 }
 
+@Composable
 private fun filenameForFile(message: Message, attachment: MessageAttachment?): Triple<String, String, String> {
     val url = attachment?.url ?: message.mediaUrl ?: ""
     val content = message.content
