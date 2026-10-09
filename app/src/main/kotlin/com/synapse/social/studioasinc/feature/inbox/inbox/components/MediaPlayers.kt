@@ -338,8 +338,8 @@ fun VideoPlayerBox(
             .heightIn(max = Sizes.ChatMaxWidth)
             .clip(RoundedCornerShape(Sizes.CornerMedium))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        // Thumbnail background (always present as fallback)        AsyncImage(
+    ) {        // Thumbnail background (always present as fallback)
+        AsyncImage(
             model = mediaUrl,
             contentDescription = stringResource(R.string.cd_media_attachment),
             modifier = Modifier.fillMaxSize(),
