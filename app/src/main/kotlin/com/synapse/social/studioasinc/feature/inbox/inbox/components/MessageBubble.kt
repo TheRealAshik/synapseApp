@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.InsertDriveFile
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DoneAll
@@ -345,7 +346,15 @@ fun MessageBubble(
     reactions: List<Pair<String, Int>> = emptyList(),
     replyCount: Int = 0,
     onQuoteClick: (messageId: String) -> Unit = {},
-    onOpenBatchGallery: (Message) -> Unit = {},
+        onOpenBatchGallery: (Message) -> Unit = {},
+    onVoteOption: (pollId: String, optionId: String) -> Unit = { _, _ -> },
+    onOpenPost: (String) -> Unit = {},
+    onOpenStory: (String) -> Unit = {},
+    onOpenEvent: (String) -> Unit = {},
+    onOpenProduct: (String) -> Unit = {},
+    onOpenEphemeralMedia: (String) -> Unit = {},
+    onOpenMap: (Double, Double) -> Unit = { _, _ -> },
+    onContactAction: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val configuration = LocalConfiguration.current
@@ -506,6 +515,27 @@ fun MessageBubble(
                         modifier = Modifier.widthIn(max = bubbleMaxWidth),
                         horizontalAlignment = if (isFromMe) Alignment.End else Alignment.Start
                     ) {
+                        if ((message.isForwarded || message.forwardedFromMessageId != null) && !isDeletedMessage) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = "Forwarded",
+                                    tint = contentColor.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(Sizes.IconSemiSmall)
+                                )
+                                Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                                Text(
+                                    text = "Forwarded",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontStyle = FontStyle.Italic,
+                                    color = contentColor.copy(alpha = 0.7f)
+                                )
+                            }
+                        }
+
                         if (replyToMessage != null && !isDeletedMessage) {
                             val quoteCardColor = if (isFromMe) MaterialTheme.colorScheme.surface else MaterialTheme.colorScheme.surfaceContainerHigh
                             Surface(
@@ -712,7 +742,7 @@ fun MessageBubble(
                                 Column(modifier = Modifier.padding(horizontal = Spacing.Small, vertical = Spacing.Small)) {
                                     Box(modifier = Modifier.padding(horizontal = Spacing.Small)) {
                                         when (message.messageType) {
-                                            MessageType.AUDIO -> {
+                                            MessageType.VOICE, MessageType.AUDIO -> {
                                                 Column {
                                                     val audioUrl = message.mediaUrl
                                                     if (!audioUrl.isNullOrBlank()) {
@@ -755,25 +785,74 @@ fun MessageBubble(
 
                                             MessageType.FILE -> {
                                                 Column {
-                                                    Row(
-                                                        verticalAlignment = Alignment.CenterVertically,
-                                                        modifier = Modifier.padding(vertical = Spacing.ExtraSmall).clickable {
-                                                            message.mediaUrl?.let { uriHandler.openUri(it) }
+                                                    val attachment = message.attachments.firstOrNull()
+                                                    val fileName = message.content.ifEmpty { attachment?.url?.substringAfterLast("/") ?: stringResource(R.string.chat_media_attachment) }
+                                                    val sizeBytes = attachment?.size
+                                                    val sizeStr = sizeBytes?.let {
+                                                        when {
+                                                            it >= 1024 * 1024 -> "${it / (1024 * 1024)} MB"
+                                                            it >= 1024 -> "${it / 1024} KB"
+                                                            else -> "$it B"
                                                         }
+                                                    } ?: "File Document"
+
+                                                    Surface(
+                                                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(vertical = Spacing.ExtraSmall)
+                                                            .clickable {
+                                                                message.mediaUrl?.let { uriHandler.openUri(it) }
+                                                            }
                                                     ) {
-                                                        Icon(
-                                                            imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
-                                                            contentDescription = stringResource(R.string.chat_cd_file),
-                                                            tint = contentColor
-                                                        )
-                                                        Spacer(modifier = Modifier.width(Spacing.Small))
-                                                        Text(
-                                                            text = message.content.ifEmpty { stringResource(R.string.chat_media_attachment) },
-                                                            color = contentColor,
-                                                            fontSize = MaterialTheme.typography.bodyMedium.fontSize * fontScale,
-                                                            maxLines = 1,
-                                                            overflow = TextOverflow.Ellipsis
-                                                        )
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            modifier = Modifier.padding(Spacing.Small)
+                                                        ) {
+                                                            Box(
+                                                                modifier = Modifier
+                                                                    .size(42.dp)
+                                                                    .clip(CircleShape)
+                                                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                                                contentAlignment = Alignment.Center
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = Icons.AutoMirrored.Filled.InsertDriveFile,
+                                                                    contentDescription = stringResource(R.string.chat_cd_file),
+                                                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                                                    modifier = Modifier.size(22.dp)
+                                                                )
+                                                            }
+                                                            Spacer(modifier = Modifier.width(Spacing.Small))
+                                                            Column(modifier = Modifier.weight(1f)) {
+                                                                Text(
+                                                                    text = fileName,
+                                                                    style = MaterialTheme.typography.titleSmall,
+                                                                    fontWeight = FontWeight.Bold,
+                                                                    color = contentColor,
+                                                                    maxLines = 1,
+                                                                    overflow = TextOverflow.Ellipsis
+                                                                )
+                                                                Text(
+                                                                    text = sizeStr,
+                                                                    style = MaterialTheme.typography.bodySmall,
+                                                                    color = contentColor.copy(alpha = 0.7f)
+                                                                )
+                                                            }
+                                                            Spacer(modifier = Modifier.width(Spacing.Small))
+                                                            IconButton(
+                                                                onClick = { message.mediaUrl?.let { uriHandler.openUri(it) } },
+                                                                modifier = Modifier.size(36.dp)
+                                                            ) {
+                                                                Icon(
+                                                                    imageVector = Icons.Default.Download,
+                                                                    contentDescription = "Download File",
+                                                                    tint = MaterialTheme.colorScheme.primary,
+                                                                    modifier = Modifier.size(20.dp)
+                                                                )
+                                                            }
+                                                        }
                                                     }
                                                     MessageMetadataRow(
                                                         message = message,
@@ -785,7 +864,118 @@ fun MessageBubble(
                                                 }
                                             }
 
-                                            else -> {
+
+                                            MessageType.CONTACT -> {
+                                                Column {
+                                                    ContactCardBubble(metadata = message.metadataContainer?.contact, contentColor = contentColor, onContactAction = onContactAction)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.LOCATION -> {
+                                                Column {
+                                                    LocationCardBubble(metadata = message.metadataContainer?.location, contentColor = contentColor, onOpenMap = onOpenMap)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.MAP -> {
+                                                Column {
+                                                    MapCardBubble(metadata = message.metadataContainer?.map, contentColor = contentColor, onOpenMap = onOpenMap)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.LIVE_LOCATION -> {
+                                                Column {
+                                                    LiveLocationCardBubble(metadata = message.metadataContainer?.liveLocation, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.POLL -> {
+                                                Column {
+                                                    PollCardBubble(metadata = message.metadataContainer?.poll, contentColor = contentColor, onVoteOption = onVoteOption)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.MUSIC -> {
+                                                Column {
+                                                    MusicCardBubble(metadata = message.metadataContainer?.music, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.SHARED_POST -> {
+                                                Column {
+                                                    SharedPostCardBubble(metadata = message.metadataContainer?.sharedPost, contentColor = contentColor, onOpenPost = onOpenPost)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.STORY_SHARE -> {
+                                                Column {
+                                                    SharedStoryCardBubble(metadata = message.metadataContainer?.sharedStory, contentColor = contentColor, onOpenStory = onOpenStory)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.EVENT -> {
+                                                Column {
+                                                    EventCardBubble(metadata = message.metadataContainer?.event, contentColor = contentColor, onOpenEvent = onOpenEvent)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.PRODUCT -> {
+                                                Column {
+                                                    ProductCardBubble(metadata = message.metadataContainer?.product, contentColor = contentColor, onOpenProduct = onOpenProduct)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.PAYMENT -> {
+                                                Column {
+                                                    PaymentCardBubble(metadata = message.metadataContainer?.payment, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.CODE_SNIPPET -> {
+                                                Column {
+                                                    CodeSnippetCardBubble(metadata = message.metadataContainer?.codeSnippet, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.CALL -> {
+                                                Column {
+                                                    CallLogCardBubble(metadata = message.metadataContainer?.call, contentColor = contentColor)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.EPHEMERAL_MEDIA -> {
+                                                Column {
+                                                    ViewOnceCardBubble(metadata = message.metadataContainer?.viewOnce, mediaUrl = message.mediaUrl, contentColor = contentColor, onOpenEphemeralMedia = onOpenEphemeralMedia)
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+
+                                            MessageType.GIF, MessageType.STICKER -> {
+                                                Column {
+                                                    message.mediaUrl?.let { url ->
+                                                        AsyncImage(
+                                                            model = url,
+                                                            contentDescription = "Sticker or GIF",
+                                                            modifier = Modifier.size(150.dp).padding(4.dp)
+                                                        )
+                                                    }
+                                                    MessageMetadataRow(message = message, isFromMe = isFromMe, contentColor = contentColor, onRetryClick = onRetryClick, modifier = Modifier.align(Alignment.End))
+                                                }
+                                            }
+                            else -> {
                                                 Column {
                                                     val firstUrl = UrlUtils.extractFirstUrl(message.content)
                                                     if (firstUrl != null && getLinkMetadataUseCase != null) {

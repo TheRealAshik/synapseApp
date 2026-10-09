@@ -40,7 +40,8 @@ data class MessageDto(
     @SerialName("expires_at") val expiresAt: String? = null,
     @SerialName("failure_reason") val failureReason: String? = null,
     val encryptionFailureReason: String? = null,
-    val attachments: List<MessageAttachmentDto>? = null
+    val attachments: List<MessageAttachmentDto>? = null,
+    @SerialName("metadata") val metadata: String? = null
 )
 
 @OptIn(ExperimentalSerializationApi::class)
@@ -67,7 +68,8 @@ data class NewMessageDto(
     @SerialName("expires_at") val expiresAt: String? = null,
     @SerialName("reply_to_id") val replyToId: String? = null,
     @SerialName("delivery_status") val deliveryStatus: String = "sent",
-    val attachments: List<MessageAttachmentDto>? = null
+    val attachments: List<MessageAttachmentDto>? = null,
+    @SerialName("metadata") val metadata: String? = null
 )
 
 @Serializable

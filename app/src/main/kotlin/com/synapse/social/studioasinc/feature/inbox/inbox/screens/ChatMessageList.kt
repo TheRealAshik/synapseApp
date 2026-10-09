@@ -61,6 +61,14 @@ internal fun ChatMessageList(
     onReactionSelected: (String, SharedReactionType) -> Unit,
     onNavigateToProfile: (String) -> Unit,
     onOpenBatchGallery: (Message) -> Unit = {},
+    onVoteOption: (messageId: String, optionId: String) -> Unit = { _, _ -> },
+    onOpenPost: (String) -> Unit = {},
+    onOpenStory: (String) -> Unit = {},
+    onOpenEvent: (String) -> Unit = {},
+    onOpenProduct: (String) -> Unit = {},
+    onOpenEphemeralMedia: (String) -> Unit = {},
+    onOpenMap: (Double, Double) -> Unit = { _, _ -> },
+    onContactAction: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -173,7 +181,15 @@ internal fun ChatMessageList(
                         themePreset = chatThemePreset,
                         showAvatar = !chatAvatarDisabled,
                         senderName = participantProfile?.displayName ?: participantProfile?.name ?: initialParticipantName,
-                        senderAvatarUrl = participantAvatarUrl
+                        senderAvatarUrl = participantAvatarUrl,
+                        onVoteOption = { pollId, optionId -> message.id?.let { onVoteOption(it, optionId) } },
+                        onOpenPost = onOpenPost,
+                        onOpenStory = onOpenStory,
+                        onOpenEvent = onOpenEvent,
+                        onOpenProduct = onOpenProduct,
+                        onOpenEphemeralMedia = onOpenEphemeralMedia,
+                        onOpenMap = onOpenMap,
+                        onContactAction = onContactAction
                     )
                 }
             }

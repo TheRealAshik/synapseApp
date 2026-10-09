@@ -20,6 +20,7 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.Conversation
 import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageReaction
 import com.synapse.social.studioasinc.shared.domain.model.chat.TypingStatus
 import com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
@@ -251,7 +252,8 @@ class SupabaseChatRepository(
         expiresAt: String?,
         replyToId: String?,
         senderPlaintext: String?,
-        attachments: List<MessageAttachment>?
+        attachments: List<MessageAttachment>?,
+        metadataContainer: MessageMetadataContainer?
     ): Result<Message> = withContext(AppDispatchers.IO) {
         try {
             val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
@@ -289,7 +291,8 @@ class SupabaseChatRepository(
     private suspend fun queueMessageOffline(
         chatId: String, content: String, mediaUrl: String?,
         messageType: String, expiresAt: String?, replyToId: String?,
-        currentUserId: String, attachments: List<MessageAttachment>? = null
+        currentUserId: String, attachments: List<MessageAttachment>?,
+        metadataContainer: MessageMetadataContainer? = null
     ): MessageDto {
         val actionId = UUIDUtils.randomUUID()
         val dtoAttachments = attachments?.map { it.toDto() }

@@ -10,6 +10,7 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 import kotlinx.coroutines.withContext
@@ -19,6 +20,11 @@ import kotlinx.serialization.json.Json
 class SqlDelightCachedMessageDao(
     private val db: StorageDatabase
 ) : CachedMessageDao {
+
+    private val json = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     override suspend fun upsertAll(messages: List<Message>) {
         withContext(AppDispatchers.IO) {
@@ -134,7 +140,7 @@ class SqlDelightCachedMessageDao(
         val mediaUrlValue = if (domain.attachments.isNotEmpty()) {
             try {
                 val dtoList = domain.attachments.map { with(ChatMapper) { it.toDto() } }
-                Json.encodeToString(
+                json.encodeToString(
                     kotlinx.serialization.builtins.ListSerializer(MessageAttachmentDto.serializer()),
                     dtoList
                 )
@@ -143,6 +149,14 @@ class SqlDelightCachedMessageDao(
             }
         } else {
             domain.mediaUrl
+        }
+
+        val metadataString = domain.metadataContainer?.let {
+            try {
+                json.encodeToString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) {
+                null
+            }
         }
 
         return CachedMessage(
@@ -166,7 +180,8 @@ class SqlDelightCachedMessageDao(
             failure_reason = domain.failureReason,
             is_deleted = if (domain.isDeleted || domain.contentStatus == ContentStatus.DELETED) 1L else 0L,
             is_edited = if (domain.isEdited || domain.contentStatus == ContentStatus.EDITED) 1L else 0L,
-            cached_at = cachedAt
+            cached_at = cachedAt,
+            metadata = metadataString
         )
     }
 
@@ -196,7 +211,7 @@ class SqlDelightCachedMessageDao(
 
         if (cached.media_url?.trimStart()?.startsWith("[") == true) {
             try {
-                val dtos = Json.decodeFromString(
+                val dtos = json.decodeFromString(
                     kotlinx.serialization.builtins.ListSerializer(MessageAttachmentDto.serializer()),
                     cached.media_url
                 )
@@ -208,6 +223,14 @@ class SqlDelightCachedMessageDao(
         }
 
         val finalMessageType = if (attachmentsList.size >= 2 || messageType == MessageType.MEDIA_GROUP) MessageType.MEDIA_GROUP else messageType
+
+        val parsedMetadata = cached.metadata?.let {
+            try {
+                json.decodeFromString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) {
+                null
+            }
+        }
 
         return Message(
             id = cached.id,
@@ -233,7 +256,8 @@ class SqlDelightCachedMessageDao(
             reactions = emptyMap(),
             userReaction = null,
             attachments = attachmentsList,
-            mediaGroupId = attachmentsList.firstOrNull()?.mediaGroupId
+            mediaGroupId = attachmentsList.firstOrNull()?.mediaGroupId,
+            metadataContainer = parsedMetadata
         )
     }
 }

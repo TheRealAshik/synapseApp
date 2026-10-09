@@ -9,9 +9,13 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageAttachment
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
+import kotlinx.serialization.json.Json
 
 object ChatMapper {
+    private val json = Json { ignoreUnknownKeys = true }
+
     fun ChatDto.toDomain(): ChatInfo = ChatInfo(
         id = id,
         name = name,
@@ -54,12 +58,38 @@ object ChatMapper {
     fun MessageDto.toDomain(): Message {
         val domainAttachments = attachments?.map { it.toDomain() } ?: emptyList()
         val derivedGroupId = domainAttachments.firstOrNull()?.mediaGroupId
-        val baseType = when (messageType) {
-            "image" -> MessageType.IMAGE
-            "video" -> MessageType.VIDEO
-            "audio" -> MessageType.AUDIO
-            "media_group" -> MessageType.MEDIA_GROUP
-            else -> MessageType.TEXT
+
+        val baseType = try {
+            MessageType.valueOf(messageType.uppercase())
+        } catch (e: Exception) {
+            when (messageType.lowercase()) {
+                "text" -> MessageType.TEXT
+                "voice" -> MessageType.VOICE
+                "audio" -> MessageType.AUDIO
+                "image" -> MessageType.IMAGE
+                "video" -> MessageType.VIDEO
+                "media_group" -> MessageType.MEDIA_GROUP
+                "file" -> MessageType.FILE
+                "contact" -> MessageType.CONTACT
+                "location" -> MessageType.LOCATION
+                "live_location" -> MessageType.LIVE_LOCATION
+                "gif" -> MessageType.GIF
+                "sticker" -> MessageType.STICKER
+                "link_preview" -> MessageType.LINK_PREVIEW
+                "poll" -> MessageType.POLL
+                "music" -> MessageType.MUSIC
+                "shared_post" -> MessageType.SHARED_POST
+                "story_share" -> MessageType.STORY_SHARE
+                "event" -> MessageType.EVENT
+                "product" -> MessageType.PRODUCT
+                "payment" -> MessageType.PAYMENT
+                "map" -> MessageType.MAP
+                "code_snippet" -> MessageType.CODE_SNIPPET
+                "call" -> MessageType.CALL
+                "system" -> MessageType.SYSTEM
+                "ephemeral_media" -> MessageType.EPHEMERAL_MEDIA
+                else -> MessageType.TEXT
+            }
         }
         val finalType = if (domainAttachments.size >= 2 || baseType == MessageType.MEDIA_GROUP) MessageType.MEDIA_GROUP else baseType
 
@@ -75,6 +105,14 @@ object ChatMapper {
             isDeleted || deletedAt != null || contentState.equals("deleted", ignoreCase = true) -> ContentStatus.DELETED
             isEdited || editedAt != null || contentState.equals("edited", ignoreCase = true) -> ContentStatus.EDITED
             else -> ContentStatus.ACTIVE
+        }
+
+        val parsedMetadata = metadata?.let {
+            try {
+                json.decodeFromString(MessageMetadataContainer.serializer(), it)
+            } catch (e: Exception) {
+                null
+            }
         }
 
         return Message(
@@ -101,7 +139,8 @@ object ChatMapper {
             expiresAt = expiresAt,
             encryptionFailureReason = encryptionFailureReason,
             attachments = domainAttachments,
-            mediaGroupId = derivedGroupId
+            mediaGroupId = derivedGroupId,
+            metadataContainer = parsedMetadata
         )
     }
 
