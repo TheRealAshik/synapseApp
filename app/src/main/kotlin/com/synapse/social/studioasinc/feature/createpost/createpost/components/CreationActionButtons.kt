@@ -142,6 +142,7 @@ fun AddToPostSheet(
             )
 
             val actions = listOf(
+                Triple("Photo / Video", Icons.Filled.PhotoLibrary, MaterialTheme.colorScheme.primary) to onMediaClick,
                 Triple("Tag People", Icons.Filled.Person, MaterialTheme.colorScheme.secondary) to onTagClick,
                 Triple("Check In", Icons.Filled.Place, MaterialTheme.colorScheme.error) to onLocationClick,
                 Triple("Poll", Icons.Default.Poll, MaterialTheme.colorScheme.tertiary) to onPollClick,
@@ -222,6 +223,9 @@ fun StickyBottomActionArea(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
+            IconButton(onClick = onMediaClick) {
+                Icon(Icons.Filled.PhotoLibrary, contentDescription = "Add Media", tint = MaterialTheme.colorScheme.primary)
+            }
             IconButton(onClick = onTagClick) {
                 Icon(Icons.Filled.Person, contentDescription = "Tag People", tint = MaterialTheme.colorScheme.secondary)
             }

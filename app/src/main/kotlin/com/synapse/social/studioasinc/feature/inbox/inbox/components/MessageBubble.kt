@@ -55,8 +55,16 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.lerp
 import coil.compose.AsyncImage
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.os.Build
 import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.core.util.AutoDownloadManager
 import com.synapse.social.studioasinc.core.util.IntentUtils
+import com.synapse.social.studioasinc.ui.settings.MediaType
+import androidx.compose.material.icons.filled.Download
 import com.synapse.social.studioasinc.feature.shared.components.LinkPreviewCard
 import com.synapse.social.studioasinc.feature.shared.theme.*
 import com.synapse.social.studioasinc.feature.shared.utils.UrlUtils
@@ -208,6 +216,43 @@ fun UnreadDividerRow(count: Int) {
         )
         WavyDivider(modifier = Modifier.weight(1f).height(Spacing.ExtraSmallMedium), color = MaterialTheme.colorScheme.primary)
     }
+}
+
+@Composable
+fun rememberNetworkType(): State<AutoDownloadManager.NetworkType> {
+    val context = LocalContext.current
+    val networkState = remember { mutableStateOf(AutoDownloadManager.getActiveNetworkType(context)) }
+
+    DisposableEffect(context) {
+        val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        val callback = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                networkState.value = AutoDownloadManager.getActiveNetworkType(context)
+            }
+            override fun onLost(network: Network) {
+                networkState.value = AutoDownloadManager.getActiveNetworkType(context)
+            }
+            override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                networkState.value = AutoDownloadManager.getActiveNetworkType(context)
+            }
+        }
+
+        if (cm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            try {
+                cm.registerDefaultNetworkCallback(callback)
+            } catch (_: Exception) {}
+        }
+
+        onDispose {
+            if (cm != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                try {
+                    cm.unregisterNetworkCallback(callback)
+                } catch (_: Exception) {}
+            }
+        }
+    }
+
+    return networkState
 }
 
 enum class GroupPosition {
@@ -590,34 +635,88 @@ fun MessageBubble(
                                 }
                             }
                         } else if (isMedia) {
+                            val mediaType = when (message.messageType) {
+                                MessageType.VIDEO -> MediaType.VIDEO
+                                MessageType.AUDIO -> MediaType.AUDIO
+                                else -> MediaType.PHOTO
+                            }
+
+                            val currentNetworkTypeState = rememberNetworkType()
+                            val currentNetworkType = currentNetworkTypeState.value
+
+                            val settingsRepo = remember(context) {
+                                com.synapse.social.studioasinc.data.repository.SettingsRepositoryImpl.getInstance(context.applicationContext)
+                            }
+                            val rulesState = settingsRepo.autoDownloadRules.collectAsState(initial = null)
+
+                            var userRequestedDownload by remember(message.id) { mutableStateOf(false) }
+
+                            val isAutoDownloadAllowed = remember(currentNetworkType, rulesState.value, mediaType) {
+                                rulesState.value?.let { rules ->
+                                    AutoDownloadManager.isAutoDownloadAllowedForNetwork(currentNetworkType, rules, mediaType)
+                                }
+                            }
+
+                            val shouldShowMedia = isFromMe || (isAutoDownloadAllowed == true) || userRequestedDownload
+
                             Box(modifier = Modifier.fillMaxWidth()) {
-                                when {
-                                    message.messageType == MessageType.MEDIA_GROUP || message.attachments.size >= 2 -> {
-                                        StackedMediaCard(
-                                            attachments = message.attachments,
-                                            onClick = { onOpenBatchGallery(message) }
-                                        )
+                                if (!shouldShowMedia) {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.surfaceVariant,
+                                        shape = RoundedCornerShape(Sizes.CornerMedium),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(Sizes.HeightMediaSingle)
+                                            .clickable { userRequestedDownload = true }
+                                    ) {
+                                        Column(
+                                            horizontalAlignment = Alignment.CenterHorizontally,
+                                            verticalArrangement = Arrangement.Center,
+                                            modifier = Modifier.padding(Spacing.Medium)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Download,
+                                                contentDescription = "Tap to download media",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(Sizes.IconLarge)
+                                            )
+                                            Spacer(modifier = Modifier.height(Spacing.Small))
+                                            Text(
+                                                text = "Tap to load media",
+                                                style = MaterialTheme.typography.labelLarge,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     }
-                                    message.messageType == MessageType.IMAGE -> {
-                                        AsyncImage(
-                                            model = coil.request.ImageRequest.Builder(LocalContext.current)
-                                                .data(message.mediaUrl)
-                                                .crossfade(true)
-                                                .build(),
-                                            contentDescription = stringResource(R.string.cd_post_image),
-                                            contentScale = ContentScale.Crop,
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .heightIn(max = Sizes.HeightExtraLarge)
-                                                .clip(RoundedCornerShape(Sizes.CornerMedium))
-                                                .clickable {
-                                                    message.mediaUrl?.let { uriHandler.openUri(it) }
-                                                }
-                                        )
-                                    }
-                                    message.messageType == MessageType.VIDEO -> {
-                                        message.mediaUrl?.let {
-                                            VideoPlayerBox(mediaUrl = it)
+                                } else {
+                                    when {
+                                        message.messageType == MessageType.MEDIA_GROUP || message.attachments.size >= 2 -> {
+                                            StackedMediaCard(
+                                                attachments = message.attachments,
+                                                onClick = { onOpenBatchGallery(message) }
+                                            )
+                                        }
+                                        message.messageType == MessageType.IMAGE -> {
+                                            AsyncImage(
+                                                model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                                    .data(message.mediaUrl)
+                                                    .crossfade(true)
+                                                    .build(),
+                                                contentDescription = stringResource(R.string.cd_post_image),
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .heightIn(max = Sizes.HeightExtraLarge)
+                                                    .clip(RoundedCornerShape(Sizes.CornerMedium))
+                                                    .clickable {
+                                                        message.mediaUrl?.let { uriHandler.openUri(it) }
+                                                    }
+                                            )
+                                        }
+                                        message.messageType == MessageType.VIDEO -> {
+                                            message.mediaUrl?.let {
+                                                VideoPlayerBox(mediaUrl = it)
+                                            }
                                         }
                                     }
                                 }

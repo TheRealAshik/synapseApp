@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.work.*
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
@@ -70,16 +71,23 @@ class MediaCacheCleanupWorker(
         Log.i(TAG, "Starting media cache cleanup work")
 
         return@withContext try {
+            val settingsRepo = com.synapse.social.studioasinc.data.repository.SettingsRepositoryImpl.getInstance(applicationContext)
+            val keepDays = try {
+                settingsRepo.keepMediaDays.first()
+            } catch (e: Exception) { 7 }
+            val maxCacheGB = try {
+                settingsRepo.maxCacheSizeGB.first()
+            } catch (e: Exception) { 5 }
+
+            val maxSizeBytes = maxCacheGB * 1024 * 1024 * 1024L
             val mediaCache = MediaCache(applicationContext)
             val initialStats = mediaCache.getCacheStats()
 
             Log.d(TAG, "Cache stats before cleanup: ${initialStats.fileCount} files, ${initialStats.totalSize}B")
 
+            mediaCache.evictExpired(expirationDays = keepDays.toLong())
 
-            mediaCache.evictExpired()
-
-
-            mediaCache.evictLRU()
+            mediaCache.evictLRU(maxSizeBytes = maxSizeBytes)
 
             val finalStats = mediaCache.getCacheStats()
             val filesRemoved = initialStats.fileCount - finalStats.fileCount

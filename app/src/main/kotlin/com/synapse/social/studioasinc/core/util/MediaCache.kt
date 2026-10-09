@@ -147,14 +147,15 @@ class MediaCache(private val context: Context) {
 
 
 
-    suspend fun evictExpired() = withContext(Dispatchers.IO) {
+    suspend fun evictExpired(expirationDays: Long = CACHE_EXPIRATION_DAYS) = withContext(Dispatchers.IO) {
         val currentTime = System.currentTimeMillis()
+        val expirationMs = expirationDays * 24 * 60 * 60 * 1000L
         val expiredFiles = mutableListOf<String>()
 
         cacheDir.listFiles()?.forEach { file ->
             if (file.isFile && !file.name.endsWith(METADATA_FILE_SUFFIX)) {
                 val fileAge = currentTime - file.lastModified()
-                if (fileAge > CACHE_EXPIRATION_MS) {
+                if (fileAge > expirationMs) {
                     val cacheKey = file.nameWithoutExtension
                     expiredFiles.add(cacheKey)
                 }
@@ -172,8 +173,8 @@ class MediaCache(private val context: Context) {
 
 
 
-    suspend fun evictLRU() = withContext(Dispatchers.IO) {
-        if (currentCacheSize.get() <= MAX_CACHE_SIZE_BYTES) {
+    suspend fun evictLRU(maxSizeBytes: Long = MAX_CACHE_SIZE_BYTES) = withContext(Dispatchers.IO) {
+        if (currentCacheSize.get() <= maxSizeBytes) {
             return@withContext
         }
 
@@ -181,7 +182,7 @@ class MediaCache(private val context: Context) {
         var filesEvicted = 0
         val batchSize = 50
 
-        while (currentCacheSize.get() > MAX_CACHE_SIZE_BYTES * 0.8) {
+        while (currentCacheSize.get() > maxSizeBytes * 0.8) {
 
             // OPTIMIZATION: Process in batches to reduce lock contention
             val keysToEvict = synchronized(accessTimes) {

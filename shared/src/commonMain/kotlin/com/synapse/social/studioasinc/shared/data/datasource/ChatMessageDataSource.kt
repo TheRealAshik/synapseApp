@@ -20,7 +20,9 @@ import kotlinx.serialization.json.putJsonObject
 
 internal class ChatMessageDataSource(private val client: SupabaseClientLib) {
 
-    private fun getCurrentUserId(): String? = client.auth.currentUserOrNull()?.id
+    private fun getCurrentUserId(): String? = runCatching {
+        client.pluginManager.getPluginOrNull(io.github.jan.supabase.auth.Auth)?.currentUserOrNull()?.id
+    }.getOrNull()
 
     suspend fun getMessages(chatId: String, limit: Int = 50, before: String? = null, beforeId: String? = null): List<MessageDto> =
         withContext(AppDispatchers.IO) {
@@ -181,19 +183,35 @@ internal class ChatMessageDataSource(private val client: SupabaseClientLib) {
     }
 
     suspend fun markMessagesAsDelivered(chatId: String) = withContext(AppDispatchers.IO) {
+        val currentUserId = getCurrentUserId() ?: throw NotAuthenticatedException("User not authenticated")
+        val now = com.synapse.social.studioasinc.shared.util.TimeProvider.nowInstant().toString()
+
         try {
-            val currentUserId = getCurrentUserId() ?: return@withContext
-            client.postgrest.from("messages").update({
-                set("delivery_status", "delivered")
-            }) {
-                filter {
-                    eq("chat_id", chatId)
-                    neq("sender_id", currentUserId)
-                    eq("delivery_status", "sent")
-                }
-            }
+            client.postgrest.rpc(
+                function = "mark_messages_as_delivered",
+                parameters = mapOf(
+                    "p_chat_id" to chatId
+                )
+            )
         } catch (e: Exception) {
-            Napier.e("Error marking messages as delivered", e)
+            Napier.w("RPC mark_messages_as_delivered failed, attempting fallback update", e)
+            try {
+                client.postgrest.from("messages").update({
+                    set("delivery_status", "delivered")
+                    set("message_state", "delivered")
+                    set("delivered_at", now)
+                    set("updated_at", now)
+                }) {
+                    filter {
+                        eq("chat_id", chatId)
+                        neq("sender_id", currentUserId)
+                        eq("delivery_status", "sent")
+                    }
+                }
+            } catch (fallbackEx: Exception) {
+                Napier.e("Fallback mark_messages_as_delivered update failed", fallbackEx)
+                throw fallbackEx
+            }
         }
     }
 }

@@ -169,11 +169,76 @@ class SupabaseChatRepository(
         }
     }
 
+    private fun parseInstantEpochOrNull(timestamp: String?): Long? {
+        if (timestamp.isNullOrBlank()) return null
+        return try {
+            kotlinx.datetime.Instant.parse(timestamp).toEpochMilliseconds()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    data class ReconcileResult(
+        val toMarkDeleted: List<String>,
+        val toPurgeExpired: List<String>
+    )
+
+    internal fun reconcileServerMessagesWithCache(
+        cached: List<Message>,
+        fresh: List<Message>,
+        nowEpoch: Long = TimeProvider.nowInstant().toEpochMilliseconds()
+    ): ReconcileResult {
+        val deletedIds = mutableListOf<String>()
+        val expiredIds = mutableListOf<String>()
+
+        fresh.filter { it.isDeleted || it.contentStatus == com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus.DELETED }
+            .forEach { deletedIds.add(it.id) }
+
+        val freshInstants = fresh.mapNotNull { parseInstantEpochOrNull(it.sentAt ?: it.createdAt) }
+        val oldestFreshEpoch = freshInstants.minOrNull()
+
+        cached.forEach { cachedMsg ->
+            val expiresEpoch = parseInstantEpochOrNull(cachedMsg.expiresAt)
+            if (expiresEpoch != null && expiresEpoch <= nowEpoch) {
+                expiredIds.add(cachedMsg.id)
+            }
+        }
+
+        if (oldestFreshEpoch != null) {
+            val freshIds = fresh.map { it.id }.toSet()
+            val deletedInWindow = cached.filter { cachedMsg ->
+                val cachedEpoch = parseInstantEpochOrNull(cachedMsg.sentAt ?: cachedMsg.createdAt)
+                val expiresEpoch = parseInstantEpochOrNull(cachedMsg.expiresAt)
+                val isExpired = expiresEpoch != null && expiresEpoch <= nowEpoch
+
+                cachedMsg.id !in freshIds &&
+                !isExpired &&
+                cachedMsg.deliveryStatus != com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.SENDING &&
+                cachedMsg.deliveryStatus != com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.FAILED &&
+                cachedEpoch != null && cachedEpoch >= oldestFreshEpoch
+            }
+            deletedIds.addAll(deletedInWindow.map { it.id })
+        }
+
+        return ReconcileResult(
+            toMarkDeleted = deletedIds.distinct(),
+            toPurgeExpired = expiredIds.distinct()
+        )
+    }
+
     private fun syncMessagesInBackground(chatId: String, limit: Int, currentUserId: String, cached: List<Message>) {
         externalScope.launch {
             try {
                 val fresh = dataSource.getMessages(chatId, limit, null, null)
                 val decrypted = fresh.map { encryptionHelper.run { it.decryptIfNecessary(currentUserId).toDomain() } }
+
+                val reconciliation = reconcileServerMessagesWithCache(cached, decrypted)
+                if (reconciliation.toMarkDeleted.isNotEmpty()) {
+                    cachedMessageDao?.markDeleted(reconciliation.toMarkDeleted)
+                }
+                if (reconciliation.toPurgeExpired.isNotEmpty()) {
+                    cachedMessageDao?.deleteByIds(reconciliation.toPurgeExpired)
+                }
 
                 val mergedMessages = decrypted.map { freshMsg ->
                     if (freshMsg.content.startsWith("{") || encryptionHelper.isPlaceholder(freshMsg.content)) {

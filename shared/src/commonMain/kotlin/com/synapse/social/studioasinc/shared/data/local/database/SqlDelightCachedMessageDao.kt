@@ -31,6 +31,22 @@ class SqlDelightCachedMessageDao(
         }
     }
 
+    override suspend fun deleteById(id: String) {
+        withContext(AppDispatchers.IO) {
+            db.cachedMessageQueries.deleteById(id)
+        }
+    }
+
+    override suspend fun deleteByIds(ids: List<String>) {
+        withContext(AppDispatchers.IO) {
+            db.transaction {
+                ids.forEach { id ->
+                    db.cachedMessageQueries.deleteById(id)
+                }
+            }
+        }
+    }
+
     override suspend fun getMessages(chatId: String, limit: Int): List<Message> = withContext(AppDispatchers.IO) {
         db.cachedMessageQueries.selectByChatId(
             chatId = chatId,
