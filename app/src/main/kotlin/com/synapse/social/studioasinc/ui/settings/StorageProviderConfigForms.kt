@@ -49,19 +49,24 @@ import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 import kotlinx.coroutines.delay
 
+import com.synapse.social.studioasinc.shared.core.config.SynapseConfig
+
 @Composable
 internal fun ImgBBConfigContent(
     apiKey: String,
     onApiKeyChange: (String) -> Unit
 ) {
-    var localApiKey by remember(apiKey) { mutableStateOf(apiKey) }
+    val fallbackKey = SynapseConfig.IMGBB_API_KEY
+    val isUsingFallback = apiKey.isNotBlank() && apiKey == fallbackKey
+    var localApiKey by remember(apiKey) { mutableStateOf(if (isUsingFallback) "" else apiKey) }
     var isSaving by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
         StorageSecureTextField(
             value = localApiKey,
             onValueChange = { localApiKey = it },
-            label = stringResource(R.string.label_api_key_simple)
+            label = stringResource(R.string.label_api_key_simple),
+            placeholder = if (localApiKey.isBlank()) "Using default system API key" else null
         )
         HelpText(text = stringResource(R.string.settings_help_imgbb))
 
@@ -380,7 +385,8 @@ internal fun HelpText(text: String) {
 internal fun StorageSecureTextField(
     value: String,
     onValueChange: (String) -> Unit,
-    label: String
+    label: String,
+    placeholder: String? = null
 ) {
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -388,6 +394,7 @@ internal fun StorageSecureTextField(
         value = value,
         onValueChange = onValueChange,
         label = { Text(label) },
+        placeholder = placeholder?.let { { Text(it) } },
         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
         trailingIcon = {

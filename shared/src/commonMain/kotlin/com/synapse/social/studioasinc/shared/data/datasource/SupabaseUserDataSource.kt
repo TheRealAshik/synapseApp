@@ -28,11 +28,30 @@ class SupabaseUserDataSource(
 
     override suspend fun getUserProfile(uid: String): Result<User?> = withContext(AppDispatchers.IO) {
         runCatching {
-            client.postgrest["users"].select {
+            val user = client.postgrest["users"].select {
                 filter {
                     eq("uid", uid)
                 }
-            }.decodeSingleOrNull<User>()
+            }.decodeSingleOrNull<User>() ?: return@runCatching null
+
+            val followersCount = try {
+                client.postgrest["follows"].select {
+                    filter { eq("following_id", uid) }
+                    count(Count.EXACT)
+                }.countOrNull()?.toInt() ?: user.followersCount
+            } catch (e: Exception) { user.followersCount }
+
+            val followingCount = try {
+                client.postgrest["follows"].select {
+                    filter { eq("follower_id", uid) }
+                    count(Count.EXACT)
+                }.countOrNull()?.toInt() ?: user.followingCount
+            } catch (e: Exception) { user.followingCount }
+
+            user.copy(
+                followersCount = followersCount,
+                followingCount = followingCount
+            )
         }
     }
 

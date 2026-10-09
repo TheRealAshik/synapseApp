@@ -221,6 +221,7 @@ class ChatMediaDelegate(
                 chatId = chatId,
                 senderId = currentUserIdProvider() ?: "",
                 content = "Uploading...",
+                mediaUrl = filePath,
                 messageType = type,
                 deliveryStatus = DeliveryStatus.SENDING,
                 createdAt = Instant.now().toString()

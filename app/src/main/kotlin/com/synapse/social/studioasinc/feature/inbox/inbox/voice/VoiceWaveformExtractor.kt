@@ -104,21 +104,24 @@ object VoiceWaveformExtractor {
 
             val info = MediaCodec.BufferInfo()
             val samples = ArrayList<Short>()
-            var isEOS = false
+            var sawInputEOS = false
+            var sawOutputEOS = false
 
-            while (!isEOS && samples.size < 1_000_000) {
-                val inIndex = codec.dequeueInputBuffer(10000L)
-                if (inIndex >= 0) {
-                    val buffer = codec.getInputBuffer(inIndex)
-                    if (buffer != null) {
-                        val sampleSize = extractor.readSampleData(buffer, 0)
-                        if (sampleSize < 0) {
-                            codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                            isEOS = true
-                        } else {
-                            val presentationTimeUs = extractor.sampleTime
-                            codec.queueInputBuffer(inIndex, 0, sampleSize, presentationTimeUs, 0)
-                            extractor.advance()
+            while (!sawOutputEOS && samples.size < 1_000_000) {
+                if (!sawInputEOS) {
+                    val inIndex = codec.dequeueInputBuffer(10000L)
+                    if (inIndex >= 0) {
+                        val buffer = codec.getInputBuffer(inIndex)
+                        if (buffer != null) {
+                            val sampleSize = extractor.readSampleData(buffer, 0)
+                            if (sampleSize < 0) {
+                                codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                                sawInputEOS = true
+                            } else {
+                                val presentationTimeUs = extractor.sampleTime
+                                codec.queueInputBuffer(inIndex, 0, sampleSize, presentationTimeUs, 0)
+                                extractor.advance()
+                            }
                         }
                     }
                 }
@@ -136,7 +139,7 @@ object VoiceWaveformExtractor {
                     }
                     codec.releaseOutputBuffer(outIndex, false)
                     if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
-                        isEOS = true
+                        sawOutputEOS = true
                         break
                     }
                     outIndex = codec.dequeueOutputBuffer(info, 0L)

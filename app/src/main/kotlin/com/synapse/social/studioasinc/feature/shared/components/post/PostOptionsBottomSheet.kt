@@ -223,7 +223,6 @@ private fun buildOptions(
     val options = mutableListOf<PostOption>()
 
     if (isOwner) {
-        options.add(PostOption("Add to thread", Icons.AutoMirrored.Filled.Reply, action = onAddToThread))
         options.add(PostOption(stringResource(R.string.edit), Icons.Filled.EditNote, action = onEdit))
         options.add(PostOption(
             if (commentsDisabled) stringResource(R.string.turn_on_commenting) else stringResource(R.string.turn_off_commenting),
@@ -240,7 +239,9 @@ private fun buildOptions(
         options.add(PostOption(stringResource(R.string.revoke_vote), Icons.Filled.Delete, action = onRevokeVote))
     }
 
-    options.add(PostOption(stringResource(R.string.action_ai_summary), Icons.Filled.AutoAwesome, action = onSummarize))
+    if ((post.postText?.length ?: 0) >= 120) {
+        options.add(PostOption(stringResource(R.string.action_ai_summary), Icons.Filled.AutoAwesome, action = onSummarize))
+    }
     options.add(PostOption(stringResource(R.string.share_via), Icons.AutoMirrored.Filled.Send, action = onShare))
 
     return options

@@ -156,6 +156,7 @@ private fun AssignProvidersTab(
                             title = stringResource(R.string.storage_provider_photos),
                             icon = Icons.Default.Image,
                             selectedProvider = storageConfig.photoProvider,
+                            isPhotos = true,
                             onProviderSelect = { viewModel.updatePhotoProvider(it) }
                         )
                         SettingsDivider()
@@ -163,6 +164,7 @@ private fun AssignProvidersTab(
                             title = stringResource(R.string.storage_provider_videos),
                             icon = Icons.Default.Videocam,
                             selectedProvider = storageConfig.videoProvider,
+                            isPhotos = false,
                             onProviderSelect = { viewModel.updateVideoProvider(it) }
                         )
                         SettingsDivider()
@@ -170,6 +172,7 @@ private fun AssignProvidersTab(
                             title = stringResource(R.string.storage_provider_other_files),
                             icon = Icons.Default.CloudUpload,
                             selectedProvider = storageConfig.otherProvider,
+                            isPhotos = false,
                             onProviderSelect = { viewModel.updateOtherProvider(it) }
                         )
                     }
@@ -196,6 +199,7 @@ private fun MediaAssignmentRow(
     title: String,
     icon: ImageVector,
     selectedProvider: StorageProvider,
+    isPhotos: Boolean = true,
     onProviderSelect: (String) -> Unit
 ) {
     var showSheet by remember { mutableStateOf(false) }
@@ -248,6 +252,7 @@ private fun MediaAssignmentRow(
             ProviderSelectionList(
                 title = title,
                 selectedProvider = selectedProvider,
+                isPhotos = isPhotos,
                 onProviderSelect = {
                     onProviderSelect(it)
                     showSheet = false
@@ -261,15 +266,25 @@ private fun MediaAssignmentRow(
 private fun ProviderSelectionList(
     title: String,
     selectedProvider: StorageProvider,
+    isPhotos: Boolean = true,
     onProviderSelect: (String) -> Unit
 ) {
-    val providers = listOf(
-        StorageProvider.DEFAULT,
-        StorageProvider.IMGBB,
-        StorageProvider.CLOUDINARY,
-        StorageProvider.SUPABASE,
-        StorageProvider.CLOUDFLARE_R2
-    )
+    val providers = if (isPhotos) {
+        listOf(
+            StorageProvider.DEFAULT,
+            StorageProvider.IMGBB,
+            StorageProvider.CLOUDINARY,
+            StorageProvider.SUPABASE,
+            StorageProvider.CLOUDFLARE_R2
+        )
+    } else {
+        listOf(
+            StorageProvider.DEFAULT,
+            StorageProvider.CLOUDINARY,
+            StorageProvider.SUPABASE,
+            StorageProvider.CLOUDFLARE_R2
+        )
+    }
 
     Column(
         modifier = Modifier

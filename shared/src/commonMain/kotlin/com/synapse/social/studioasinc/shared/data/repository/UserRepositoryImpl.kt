@@ -43,20 +43,13 @@ class UserRepositoryImpl(
      */
     override suspend fun getUserProfile(uid: String): Result<User?> = withContext(AppDispatchers.IO) {
         runCatching {
-            // Check local cache first to minimize network overhead and support offline viewing
             val localUser = database.userQueries.selectById(uid).executeAsOneOrNull()?.let { mapDbUser(it) }
-            if (localUser != null) return@runCatching localUser
+            val networkUser = userDataSource.getUserProfile(uid).getOrNull()
+            val user = networkUser ?: localUser ?: return@runCatching null
 
-            // Fetch from network if local cache is empty
-            val user = userDataSource.getUserProfile(uid).getOrThrow()
+            val mappedUser = user.copy(avatar = user.avatar?.let { avatar -> SupabaseClient.constructAvatarUrl(avatar) })
 
-            // Construct full avatar URLs as the backend only stores the path/filename
-            val mappedUser = user?.let { it.copy(avatar = it.avatar?.let { avatar -> SupabaseClient.constructAvatarUrl(avatar) }) }
-
-            // Persist to local database for future offline access
-            if (mappedUser != null) {
-                database.userQueries.insertUser(mapDomainUser(mappedUser))
-            }
+            database.userQueries.insertUser(mapDomainUser(mappedUser))
             mappedUser
         }
     }

@@ -178,7 +178,7 @@ class UserRepositoryImpl @Inject constructor(
             }
 
             val users = client.from(SharedSupabaseClient.TABLE_USERS)
-                .select() {
+                .select(Columns.raw("uid, username, display_name, avatar, verify, bio, followers_count, following_count, posts_count, status, account_type, is_private")) {
                     filter {
                         or {
                             ilike("username", "%$sanitizedQuery%")

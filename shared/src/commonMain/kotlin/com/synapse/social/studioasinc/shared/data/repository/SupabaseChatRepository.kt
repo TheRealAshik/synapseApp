@@ -169,11 +169,52 @@ class SupabaseChatRepository(
         }
     }
 
+    private fun parseInstantEpochOrNull(timestamp: String?): Long? {
+        if (timestamp.isNullOrBlank()) return null
+        return try {
+            kotlinx.datetime.Instant.parse(timestamp).toEpochMilliseconds()
+        } catch (_: Exception) {
+            null
+        }
+    }
+
+    internal fun reconcileServerMessagesWithCache(
+        cached: List<Message>,
+        fresh: List<Message>
+    ): List<String> {
+        val deletedIds = mutableListOf<String>()
+
+        fresh.filter { it.isDeleted || it.contentStatus == com.synapse.social.studioasinc.shared.domain.model.chat.ContentStatus.DELETED }
+            .forEach { deletedIds.add(it.id) }
+
+        val freshInstants = fresh.mapNotNull { parseInstantEpochOrNull(it.sentAt ?: it.createdAt) }
+        val oldestFreshEpoch = freshInstants.minOrNull()
+
+        if (oldestFreshEpoch != null) {
+            val freshIds = fresh.map { it.id }.toSet()
+            val deletedInWindow = cached.filter { cachedMsg ->
+                val cachedEpoch = parseInstantEpochOrNull(cachedMsg.sentAt ?: cachedMsg.createdAt)
+                cachedMsg.id !in freshIds &&
+                cachedMsg.deliveryStatus != com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.SENDING &&
+                cachedMsg.deliveryStatus != com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus.FAILED &&
+                cachedEpoch != null && cachedEpoch >= oldestFreshEpoch
+            }
+            deletedIds.addAll(deletedInWindow.map { it.id })
+        }
+
+        return deletedIds.distinct()
+    }
+
     private fun syncMessagesInBackground(chatId: String, limit: Int, currentUserId: String, cached: List<Message>) {
         externalScope.launch {
             try {
                 val fresh = dataSource.getMessages(chatId, limit, null, null)
                 val decrypted = fresh.map { encryptionHelper.run { it.decryptIfNecessary(currentUserId).toDomain() } }
+
+                val toDelete = reconcileServerMessagesWithCache(cached, decrypted)
+                if (toDelete.isNotEmpty()) {
+                    cachedMessageDao?.markDeleted(toDelete)
+                }
 
                 val mergedMessages = decrypted.map { freshMsg ->
                     if (freshMsg.content.startsWith("{") || encryptionHelper.isPlaceholder(freshMsg.content)) {

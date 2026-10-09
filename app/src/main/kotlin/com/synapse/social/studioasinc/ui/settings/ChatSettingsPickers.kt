@@ -29,6 +29,9 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.shared.theme.*
+import androidx.compose.material.icons.filled.ColorLens
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import com.synapse.social.studioasinc.shared.domain.model.settings.ChatListLayout
 import com.synapse.social.studioasinc.shared.domain.model.settings.ChatSwipeGesture
 import com.synapse.social.studioasinc.shared.domain.model.settings.ChatThemePreset
@@ -237,7 +240,9 @@ internal fun SolidColorSelector(
     selectedColor: String?,
     onColorSelected: (String?) -> Unit
 ) {
-    val colors = listOf(
+    var showColorPickerPicker by remember { mutableStateOf(false) }
+
+    val presetColors = listOf(
         "#E0E0E0", "#FFCDD2", "#F8BBD0", "#E1BEE7", "#D1C4E9",
         "#C5CAE9", "#BBDEFB", "#B3E5FC", "#B2EBF2", "#B2DFDB",
         "#C8E6C9", "#DCEDC8", "#F0F4C3", "#FFF9C4", "#FFECB3",
@@ -249,12 +254,31 @@ internal fun SolidColorSelector(
             .fillMaxWidth()
             .padding(vertical = SettingsSpacing.itemVerticalPadding)
     ) {
-        Text(
-            text = stringResource(R.string.settings_select_color),
-            style = SettingsTypography.itemTitle,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
-        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = SettingsSpacing.itemHorizontalPadding),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.settings_select_color),
+                style = SettingsTypography.itemTitle,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
+            TextButton(
+                onClick = { showColorPickerPicker = true }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ColorLens,
+                    contentDescription = null,
+                    modifier = Modifier.size(Spacing.MediumLarge)
+                )
+                Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                Text("Custom Color")
+            }
+        }
 
         Spacer(modifier = Modifier.height(Spacing.SmallMedium))
 
@@ -265,9 +289,46 @@ internal fun SolidColorSelector(
                 .padding(horizontal = SettingsSpacing.itemHorizontalPadding),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
         ) {
-            colors.forEach { colorHex ->
-                val isSelected = colorHex == selectedColor
-                val color = Color(android.graphics.Color.parseColor(colorHex))
+            // Custom Color Wheel Swatch
+            val isCustomSelected = selectedColor != null && selectedColor !in presetColors
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isCustomSelected) safeParseColorHex(selectedColor, MaterialTheme.colorScheme.primary)
+                        else MaterialTheme.colorScheme.primaryContainer
+                    )
+                    .clickable { showColorPickerPicker = true }
+                    .border(
+                        width = if (isCustomSelected) 3.dp else 1.dp,
+                        color = if (isCustomSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isCustomSelected) {
+                    val color = safeParseColorHex(selectedColor, MaterialTheme.colorScheme.primary)
+                    val iconTint = if (color.luminance() > 0.5f) Color.Black else Color.White
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Custom Selected",
+                        tint = iconTint,
+                        modifier = Modifier.size(Spacing.Large)
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.ColorLens,
+                        contentDescription = "Custom Color",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(Spacing.MediumLarge)
+                    )
+                }
+            }
+
+            presetColors.forEach { colorHex ->
+                val isSelected = colorHex.equals(selectedColor, ignoreCase = true)
+                val color = safeParseColorHex(colorHex, Color.Gray)
                 Box(
                     modifier = Modifier
                         .size(44.dp)
@@ -297,6 +358,147 @@ internal fun SolidColorSelector(
             }
         }
     }
+
+    if (showColorPickerPicker) {
+        ExpressiveColorPickerDialog(
+            initialColorHex = selectedColor ?: "#BBDEFB",
+            onDismiss = { showColorPickerPicker = false },
+            onColorConfirmed = { hex ->
+                onColorSelected(hex)
+                showColorPickerPicker = false
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpressiveColorPickerDialog(
+    initialColorHex: String,
+    onDismiss: () -> Unit,
+    onColorConfirmed: (String) -> Unit
+) {
+    var hexInput by remember(initialColorHex) {
+        mutableStateOf(if (initialColorHex.startsWith("#")) initialColorHex else "#$initialColorHex")
+    }
+    val parsedColor = remember(hexInput) { safeParseColorHex(hexInput, Color.Gray) }
+
+    val extendedSwatches = listOf(
+        "#F44336", "#E91E63", "#9C27B0", "#673AB7",
+        "#3F51B5", "#2196F3", "#03A9F4", "#00BCD4",
+        "#009688", "#4CAF50", "#8BC34A", "#CDDC39",
+        "#FFEB3B", "#FFC107", "#FF9800", "#FF5722",
+        "#795548", "#9E9E9E", "#607D8B", "#1976D2"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ColorLens,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Choose Chat Color",
+                    style = MaterialTheme.typography.titleLarge
+                )
+            }
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            ) {
+                // Preview Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .clip(SettingsShapes.cardShape)
+                        .background(parsedColor)
+                        .border(1.dp, MaterialTheme.colorScheme.outlineVariant, SettingsShapes.cardShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = hexInput.uppercase(),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = if (parsedColor.luminance() > 0.5f) Color.Black else Color.White
+                    )
+                }
+
+                // Swatch Grid
+                Text(
+                    text = "Color Palette",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                ) {
+                    extendedSwatches.forEach { swatchHex ->
+                        val swatchColor = safeParseColorHex(swatchHex, Color.Gray)
+                        val isSelected = hexInput.equals(swatchHex, ignoreCase = true)
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(swatchColor)
+                                .clickable { hexInput = swatchHex }
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                                    shape = CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isSelected) {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = if (swatchColor.luminance() > 0.5f) Color.Black else Color.White,
+                                    modifier = Modifier.size(Spacing.Medium)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // HEX Input Field
+                OutlinedTextField(
+                    value = hexInput,
+                    onValueChange = { input ->
+                        val filtered = input.filter { it.isLetterOrDigit() || it == '#' }
+                        hexInput = if (!filtered.startsWith("#")) "#$filtered" else filtered
+                    },
+                    label = { Text("HEX Code (e.g. #1976D2)") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                    shape = SettingsShapes.inputShape,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onColorConfirmed(hexInput) }
+            ) {
+                Text("Apply Color")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 @Composable

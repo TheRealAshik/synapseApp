@@ -65,7 +65,7 @@ object ChatMapper {
 
         val mappedDeliveryStatus = when {
             deliveryStatus.equals("failed", ignoreCase = true) -> DeliveryStatus.FAILED
-            readAt != null || readBy?.isNotEmpty() == true || deliveryStatus.equals("read", ignoreCase = true) -> DeliveryStatus.READ
+            readAt != null || (readBy?.any { it != senderId } == true) || deliveryStatus.equals("read", ignoreCase = true) -> DeliveryStatus.READ
             deliveredAt != null || deliveryStatus.equals("delivered", ignoreCase = true) -> DeliveryStatus.DELIVERED
             deliveryStatus.equals("sending", ignoreCase = true) -> DeliveryStatus.SENDING
             else -> DeliveryStatus.SENT

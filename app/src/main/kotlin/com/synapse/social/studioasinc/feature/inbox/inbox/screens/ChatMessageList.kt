@@ -25,6 +25,9 @@ import com.synapse.social.studioasinc.feature.inbox.inbox.components.UnreadDivid
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.isWithinTimeThreshold
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.TypingIndicator
 import com.synapse.social.studioasinc.feature.inbox.inbox.models.ChatListItem
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import com.synapse.social.studioasinc.feature.auth.ui.util.AnimationUtil
 import com.synapse.social.studioasinc.feature.shared.theme.Sizes
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
@@ -77,6 +80,7 @@ internal fun ChatMessageList(
         if (shouldLoadMore.value && !isLoadingMore) onLoadMore()
     }
 
+    val reducedMotion = AnimationUtil.rememberReducedMotion()
     val reversedItems = remember(chatItems) { chatItems.reversed() }
 
     LazyColumn(
@@ -122,8 +126,16 @@ internal fun ChatMessageList(
                     }
                     val isSelected = message.id in selectedMessageIds
                     val bottomGap = if (position == GroupPosition.LAST || position == GroupPosition.SINGLE) Spacing.Small else Spacing.Tiny
+                    val animateModifier = if (!reducedMotion) {
+                        Modifier.animateItem(
+                            fadeInSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                            placementSpec = spring(dampingRatio = Spring.DampingRatioNoBouncy, stiffness = Spring.StiffnessMedium)
+                        )
+                    } else {
+                        Modifier
+                    }
                     MessageBubble(
-                        modifier = Modifier.padding(bottom = bottomGap),
+                        modifier = animateModifier.padding(bottom = bottomGap),
                         message = message,
                         isFromMe = message.isFromMe(currentUserId),
                         position = position,
