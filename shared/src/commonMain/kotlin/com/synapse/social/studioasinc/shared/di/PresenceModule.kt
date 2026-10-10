@@ -1,0 +1,23 @@
+package com.synapse.social.studioasinc.shared.di
+
+import com.synapse.social.studioasinc.shared.data.repository.SupabasePresenceRepository
+import com.synapse.social.studioasinc.shared.domain.repository.PresenceRepository
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserActiveStatusUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserPresenceDetailUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.ObserveUserPresenceUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.StartPresenceTrackingUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.StopPresenceTrackingUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.UpdateCurrentChatUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.UpdatePresenceUseCase
+import org.koin.dsl.module
+
+val presenceModule = module {
+    single<PresenceRepository> { SupabasePresenceRepository() }
+    single { UpdatePresenceUseCase(get()) }
+    single { StartPresenceTrackingUseCase(get()) }
+    single { StopPresenceTrackingUseCase(get()) }
+    single { ObserveUserPresenceUseCase(get()) }
+    single { ObserveUserActiveStatusUseCase(get()) }
+    single { ObserveUserPresenceDetailUseCase(get()) }
+    single { UpdateCurrentChatUseCase(get()) }
+}

@@ -1,0 +1,255 @@
+package com.synapse.social.studioasinc.feature.shared.components.post
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayCircle
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.dp
+import coil3.asDrawable
+import coil3.compose.AsyncImage
+import coil3.request.CachePolicy
+import com.synapse.social.studioasinc.core.ui.util.AmbientColorExtractor
+import com.synapse.social.studioasinc.domain.model.Post
+import com.synapse.social.studioasinc.feature.shared.theme.LocalUiAtmosphere
+import com.synapse.social.studioasinc.feature.shared.theme.Sizes
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
+import com.synapse.social.studioasinc.feature.shared.theme.UiAtmosphereColors
+import com.synapse.social.studioasinc.ui.settings.PostViewStyle
+
+@Composable
+fun MediaContent(
+    mediaUrls: List<String>,
+    isVideo: Boolean,
+    onMediaClick: (Post, Int) -> Unit,
+    modifier: Modifier = Modifier,
+    postViewStyle: PostViewStyle = PostViewStyle.SWIPE,
+    post: Post? = null
+) {
+    val safePost = post
+    if (mediaUrls.isEmpty()) {
+        return
+    }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val atmosphereState = LocalUiAtmosphere.current
+    val extractedColors = remember { mutableStateMapOf<Int, UiAtmosphereColors>() }
+
+    if (mediaUrls.size == 1) {
+        val url = mediaUrls.first()
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .padding(vertical = Spacing.space8)
+                .clickable { safePost?.let { onMediaClick(it, 0) } }
+        ) {
+            AsyncImage(
+                model = coil3.request.ImageRequest.Builder(context)
+                    .data(url)
+                    .memoryCachePolicy(CachePolicy.ENABLED)
+                    .diskCachePolicy(CachePolicy.ENABLED)
+                    .build(),
+                contentDescription = "Post Image",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = Sizes.HeightMediaSingle)
+                    .clip(RoundedCornerShape(Sizes.CornerMedium)),
+                contentScale = ContentScale.Crop,
+                onSuccess = { result ->
+                    AmbientColorExtractor.extractColorsFromDrawable(result.result.image.asDrawable(context.resources)) { colors ->
+                        extractedColors[0] = colors
+                        atmosphereState.updateColors(colors)
+                    }
+                },
+                onError = { state -> android.util.Log.e("MediaDebug", "Coil single fail url=$url err=${state.result.throwable}") }
+            )
+            if (isVideo) {
+                Icon(
+                    imageVector = Icons.Default.PlayCircle,
+                    contentDescription = "Play Video",
+                    modifier = Modifier
+                        .align(Alignment.Center)
+                        .padding(Spacing.space16),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    } else if (postViewStyle == PostViewStyle.GRID) {
+        PostMediaGrid(mediaUrls, onMediaClick, modifier, safePost)
+    } else {
+        val pagerState = androidx.compose.foundation.pager.rememberPagerState(pageCount = { mediaUrls.size })
+
+        LaunchedEffect(pagerState.currentPage) {
+            extractedColors[pagerState.currentPage]?.let { colors ->
+                atmosphereState.updateColors(colors)
+            }
+        }
+
+        Box(modifier = modifier.fillMaxWidth()) {
+            androidx.compose.foundation.pager.HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxWidth()
+            ) { page ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onMediaClick(safePost!!, page) }
+                        .padding(vertical = Spacing.space8)
+                ) {
+                    AsyncImage(
+                        model = coil3.request.ImageRequest.Builder(context)
+                            .data(mediaUrls[page])
+                            .memoryCachePolicy(CachePolicy.ENABLED)
+                            .diskCachePolicy(CachePolicy.ENABLED)
+                            .build(),
+                        contentDescription = "Post Image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = Sizes.HeightMediaSingle)
+                            .clip(RoundedCornerShape(Sizes.CornerMedium)),
+                        contentScale = ContentScale.Crop,
+                        onSuccess = { result ->
+                            AmbientColorExtractor.extractColorsFromDrawable(result.result.image.asDrawable(context.resources)) { colors ->
+                                extractedColors[page] = colors
+                                if (page == pagerState.currentPage) {
+                                    atmosphereState.updateColors(colors)
+                                }
+                            }
+                        },
+                        onError = { state -> android.util.Log.e("MediaDebug", "Coil pager fail url=${mediaUrls[page]} err=${state.result.throwable}") }
+                    )
+                }
+            }
+
+            if (mediaUrls.size > 1) {
+                androidx.compose.material3.Text(
+                    text = "${pagerState.currentPage + 1}/${mediaUrls.size}",
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(Spacing.space16)
+                        .background(
+                            color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(Sizes.CornerDefault)
+                        )
+                        .padding(horizontal = Spacing.space8, vertical = Spacing.space4),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.labelSmall
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun PostMediaGrid(
+    mediaUrls: List<String>,
+    onMediaClick: (Post, Int) -> Unit,
+    modifier: Modifier = Modifier,
+    post: Post? = null
+) {
+    val count = mediaUrls.size
+    val spacing = Sizes.BorderDefault
+    val safePost = post!!
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = Spacing.space8)
+            .clip(RoundedCornerShape(Sizes.CornerMedium))
+    ) {
+        when (count) {
+            2 -> {
+                Row(modifier = Modifier.fillMaxWidth().heightIn(min = Sizes.HeightMediaGridMedium, max = Sizes.HeightMediaGrid2)) {
+                    MediaGridItem(url = mediaUrls[0], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 0) })
+                    Spacer(modifier = Modifier.width(spacing))
+                    MediaGridItem(url = mediaUrls[1], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 1) })
+                }
+            }
+            3 -> {
+                MediaGridItem(url = mediaUrls[0], modifier = Modifier.fillMaxWidth().heightIn(min = Sizes.HeightMediaGridMedium, max = Sizes.HeightMediaGrid3Top), onClick = { onMediaClick(safePost, 0) })
+                Spacer(modifier = Modifier.height(spacing))
+                Row(modifier = Modifier.fillMaxWidth().heightIn(min = Sizes.HeightMediaGridSmall, max = Sizes.HeightMediaGridMedium)) {
+                    MediaGridItem(url = mediaUrls[1], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 1) })
+                    Spacer(modifier = Modifier.width(spacing))
+                    MediaGridItem(url = mediaUrls[2], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 2) })
+                }
+            }
+            else -> {
+                Row(modifier = Modifier.fillMaxWidth().heightIn(min = Sizes.HeightMediaGridSmall, max = Sizes.HeightMediaGridLarge)) {
+                    MediaGridItem(url = mediaUrls[0], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 0) })
+                    Spacer(modifier = Modifier.width(spacing))
+                    MediaGridItem(url = mediaUrls[1], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 1) })
+                }
+                Spacer(modifier = Modifier.height(spacing))
+                Row(modifier = Modifier.fillMaxWidth().heightIn(min = Sizes.HeightMediaGridSmall, max = Sizes.HeightMediaGridLarge)) {
+                    MediaGridItem(url = mediaUrls[2], modifier = Modifier.weight(1f).fillMaxSize(), onClick = { onMediaClick(safePost, 2) })
+                    Spacer(modifier = Modifier.width(spacing))
+
+                    Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+                        MediaGridItem(url = mediaUrls[3], modifier = Modifier.fillMaxSize(), onClick = { onMediaClick(safePost, 3) })
+                        if (count > 4) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f))
+                                    .clickable { onMediaClick(safePost, 3) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "+${count - 3}",
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    style = MaterialTheme.typography.titleLarge
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MediaGridItem(
+    url: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    AsyncImage(
+        model = coil3.request.ImageRequest.Builder(context)
+            .data(url)
+            .memoryCachePolicy(CachePolicy.ENABLED)
+            .diskCachePolicy(CachePolicy.ENABLED)
+            .build(),
+        contentDescription = "Post Image",
+        modifier = modifier
+            .clip(RoundedCornerShape(Sizes.CornerMedium))
+            .clickable(onClick = onClick),
+        contentScale = ContentScale.Crop,
+        onError = { state -> android.util.Log.e("MediaDebug", "Coil grid fail url=$url err=${state.result.throwable}") }
+    )
+}

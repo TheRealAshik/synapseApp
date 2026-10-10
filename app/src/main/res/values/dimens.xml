@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Text sizes -->
+    <dimen name="text_size_small">12sp</dimen>
+    <dimen name="text_size_normal">14sp</dimen>
+    <dimen name="text_size_medium">16sp</dimen>
+    <dimen name="text_size_large">18sp</dimen>
+
+    <!-- Message bubble dimensions -->
+    <dimen name="message_bubble_max_width">280dp</dimen>
+
+    <!-- Common dimensions -->
+    <dimen name="corner_radius_small">4dp</dimen>
+    <dimen name="corner_radius_medium">8dp</dimen>
+    <dimen name="corner_radius_large">16dp</dimen>
+
+
+    <!-- Chat dimensions -->
+    <dimen name="chat_carousel_image_size">120dp</dimen>
+    <dimen name="message_bubble_corner_radius">16dp</dimen>
+    <dimen name="gallery_image_corner_radius">8dp</dimen>
+    <dimen name="active_status_indicator_size">12dp</dimen>
+</resources>
