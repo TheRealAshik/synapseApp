@@ -34,10 +34,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toPx
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
@@ -229,18 +229,19 @@ fun VoiceMessagePlayer(
                             }
                         }
                 ) {
+                    val density = LocalDensity.current
                     Canvas(modifier = Modifier.fillMaxSize()) {
                         val canvasWidth = size.width
                         val canvasHeight = size.height
                         val bars = if (amplitudes.isNotEmpty()) amplitudes else List(36) { 0.3f }
                         val barCount = bars.size
-                        val spacingPx = Spacing.ExtraSmall.toPx()
+                        val spacingPx = with(density) { Spacing.ExtraSmall.toPx() }
                         val totalSpacing = spacingPx * (barCount - 1)
-                        val barWidth = ((canvasWidth - totalSpacing) / barCount).coerceAtLeast(Sizes.BorderDefault.toPx())
+                        val barWidth = ((canvasWidth - totalSpacing) / barCount).coerceAtLeast(with(density) { Sizes.BorderDefault.toPx() })
 
                         bars.forEachIndexed { index, amp ->
                             val x = index * (barWidth + spacingPx) + (barWidth / 2f)
-                            val barHeight = (canvasHeight * amp.coerceIn(0.15f, 1.0f)).coerceAtLeast(Sizes.BorderThin.toPx() * 4)
+                            val barHeight = (canvasHeight * amp.coerceIn(0.15f, 1.0f)).coerceAtLeast(with(density) { Sizes.BorderThin.toPx() } * 4)
                             val startY = (canvasHeight - barHeight) / 2f
                             val endY = startY + barHeight
 
