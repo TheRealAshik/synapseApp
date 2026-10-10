@@ -31,6 +31,7 @@ import com.synapse.social.studioasinc.shared.util.Logger
 import com.synapse.social.studioasinc.shared.util.TimeProvider
 import com.synapse.social.studioasinc.shared.util.UUIDUtils
 import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -160,6 +161,8 @@ class SupabaseChatRepository(
                 cachedMessageDao?.trimToLimit(chatId, limit)
             }
             Result.success(decrypted)
+        } catch (e: CancellationException) {
+            throw e
         } catch (t: Throwable) {
             val cached = cachedMessageDao?.getMessages(chatId, limit) ?: emptyList()
             if (cached.isNotEmpty()) Result.success(cached)
@@ -458,6 +461,13 @@ class SupabaseChatRepository(
             val dto = dataSource.getMessageById(messageId) ?: throw Exception("Poll message not found")
             val domainMessage = dto.toDomain()
             val poll = domainMessage.metadataContainer?.poll ?: throw Exception("Poll metadata not found")
+
+            if (poll.pollId != pollId) {
+                throw IllegalArgumentException("Poll ID does not match message poll")
+            }
+            if (poll.options.none { it.id == optionId }) {
+                throw IllegalArgumentException("Poll option not found")
+            }
 
             if (poll.isClosed) {
                 throw Exception("Poll is closed")

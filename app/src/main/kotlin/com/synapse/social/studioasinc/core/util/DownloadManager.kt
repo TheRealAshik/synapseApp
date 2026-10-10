@@ -74,8 +74,12 @@ object DownloadManager {
                         put(MediaStore.Images.Media.IS_PENDING, 1)
                     } else {
                         val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).toString()
+                        val synapseDir = java.io.File(picturesDir, "Synapse")
+                        if (!synapseDir.exists() && !synapseDir.mkdirs()) {
+                            throw IOException("Failed to create image directory")
+                        }
                         @Suppress("DEPRECATION")
-                        put(MediaStore.Images.Media.DATA, "$picturesDir/Synapse/$fileName")
+                        put(MediaStore.Images.Media.DATA, "${synapseDir.absolutePath}/$finalFileName")
                     }
                 }
 
@@ -94,7 +98,7 @@ object DownloadManager {
                             contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
                             resolver.update(imageUri, contentValues, null, null)
                         }
-                        callback?.onSuccess(imageUri, fileName ?: "image")
+                        callback?.onSuccess(imageUri, finalFileName)
                     } ?: throw IOException("Failed to open output stream")
                 } catch (e: Exception) {
                     resolver.delete(imageUri, null, null)
@@ -139,8 +143,12 @@ object DownloadManager {
                         put(MediaStore.Downloads.IS_PENDING, 1)
                     } else {
                         val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString()
+                        val synapseDir = java.io.File(downloadsDir, "Synapse")
+                        if (!synapseDir.exists() && !synapseDir.mkdirs()) {
+                            throw IOException("Failed to create downloads directory")
+                        }
                         @Suppress("DEPRECATION")
-                        put(MediaStore.Downloads.DATA, "$downloadsDir/Synapse/$finalFileName")
+                        put(MediaStore.Downloads.DATA, "${synapseDir.absolutePath}/$finalFileName")
                     }
                 }
 
@@ -159,7 +167,7 @@ object DownloadManager {
                             contentValues.put(MediaStore.Downloads.IS_PENDING, 0)
                             resolver.update(downloadUri, contentValues, null, null)
                         }
-                        callback?.onSuccess(downloadUri, fileName ?: "file")
+                        callback?.onSuccess(downloadUri, finalFileName)
                     } ?: throw IOException("Failed to open output stream")
                 } catch (e: Exception) {
                     resolver.delete(downloadUri, null, null)
@@ -199,8 +207,12 @@ object DownloadManager {
                         put(MediaStore.Video.Media.IS_PENDING, 1)
                     } else {
                         val moviesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES).toString()
+                        val synapseDir = java.io.File(moviesDir, "Synapse")
+                        if (!synapseDir.exists() && !synapseDir.mkdirs()) {
+                            throw IOException("Failed to create video directory")
+                        }
                         @Suppress("DEPRECATION")
-                        put(MediaStore.Video.Media.DATA, "$moviesDir/Synapse/$fileName")
+                        put(MediaStore.Video.Media.DATA, "${synapseDir.absolutePath}/$finalFileName")
                     }
                 }
 
@@ -219,7 +231,7 @@ object DownloadManager {
                             contentValues.put(MediaStore.Video.Media.IS_PENDING, 0)
                             resolver.update(videoUri, contentValues, null, null)
                         }
-                        callback?.onSuccess(videoUri, fileName ?: "video")
+                        callback?.onSuccess(videoUri, finalFileName)
                     } ?: throw IOException("Failed to open output stream")
                 } catch (e: Exception) {
                     resolver.delete(videoUri, null, null)
