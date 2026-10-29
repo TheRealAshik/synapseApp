@@ -1,8 +1,8 @@
 package com.synapse.social.studioasinc.shared.data.sync
 
+import com.synapse.social.studioasinc.shared.core.util.AppDispatchers
 import io.github.aakira.napier.Napier
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -28,7 +28,7 @@ class NetworkMonitor(
         private const val TAG = "NetworkMonitor"
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.IO)
 
     private val _isOnline = MutableStateFlow(true)
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()

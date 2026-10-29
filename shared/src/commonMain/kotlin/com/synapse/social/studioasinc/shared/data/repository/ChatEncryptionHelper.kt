@@ -9,7 +9,6 @@ import com.synapse.social.studioasinc.shared.data.local.database.CachedMessageDa
 import com.synapse.social.studioasinc.shared.domain.util.EncryptedPayloadDetector
 import com.synapse.social.studioasinc.shared.util.Logger
 import kotlinx.coroutines.CancellationException
-import java.util.concurrent.ConcurrentHashMap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
@@ -39,15 +38,19 @@ internal class ChatEncryptionHelper(
      * where certain messages (like those consuming a one-time pre-key) can only
      * be decrypted once by the protocol's state machine.
      */
-    private val decryptedMessageCache = ConcurrentHashMap<String, String>()
-    private val decryptionMutexes = ConcurrentHashMap<String, Mutex>()
+    private val decryptedMessageCache = mutableMapOf<String, String>()
+    private val decryptionMutexes = mutableMapOf<String, Mutex>()
+    private val cacheLock = Mutex()
 
-    fun cacheDecrypted(messageId: String, content: String) {
-        if (messageId.isNotBlank()) decryptedMessageCache[messageId] = content
+    suspend fun cacheDecrypted(messageId: String, content: String) {
+        if (messageId.isBlank()) return
+        cacheLock.withLock { decryptedMessageCache[messageId] = content }
     }
-    private val mutexLock = Any()
 
-    private fun mutexFor(senderId: String): Mutex = synchronized(mutexLock) {
+    private suspend fun decryptedOrNull(messageId: String): String? =
+        cacheLock.withLock { decryptedMessageCache[messageId] }
+
+    private suspend fun mutexFor(senderId: String): Mutex = cacheLock.withLock {
         decryptionMutexes.getOrPut(senderId.ifBlank { "__global__" }) { Mutex() }
     }
 
@@ -84,7 +87,7 @@ internal class ChatEncryptionHelper(
 
         return mutexFor(this.senderId).withLock {
             // 1) Check in-memory cache first (fastest)
-            decryptedMessageCache[messageId]?.let { cached ->
+            decryptedOrNull(messageId)?.let { cached ->
                 Logger.d("E2EE_DECRYPT: Found message $messageId in memory cache", tag = "E2EE")
                 val (content, mediaUrl, metadata) = extractContent(cached)
                 return@withLock this.copy(content = content, mediaUrl = mediaUrl ?: this.mediaUrl, metadata = metadata ?: this.metadata)
@@ -100,7 +103,7 @@ internal class ChatEncryptionHelper(
                 !EncryptedPayloadDetector.isEncryptedPayload(dbCached.content)
             ) {
                 Logger.d("E2EE_DECRYPT: Found message $messageId in local DB cache", tag = "E2EE")
-                decryptedMessageCache[messageId] = dbCached.content
+                cacheDecrypted(messageId, dbCached.content)
                 return@withLock this.copy(content = dbCached.content, mediaUrl = dbCached.mediaUrl ?: this.mediaUrl, metadata = dbCached.metadataContainer?.let {
                     try { Json.encodeToString(com.synapse.social.studioasinc.shared.domain.model.chat.MessageMetadataContainer.serializer(), it) } catch (_: Exception) { null }
                 } ?: this.metadata)
@@ -119,7 +122,7 @@ internal class ChatEncryptionHelper(
                     if (myPayloadElement is JsonPrimitive && myPayloadElement.isString) {
                         val plaintextPayload = myPayloadElement.content
                         val (content, mediaUrl, metadata) = extractContent(plaintextPayload)
-                        decryptedMessageCache[messageId] = plaintextPayload
+                        cacheDecrypted(messageId, plaintextPayload)
                         try { cachedMessageDao?.updateContent(messageId, content) } catch (_: Exception) {}
                         return@withLock this.copy(
                             content = content,
@@ -143,7 +146,7 @@ internal class ChatEncryptionHelper(
                             val decryptedBytes = signalProtocolManager.decryptMessage(senderId = senderId, message = myPayload)
                             val decryptedContent = decryptedBytes.decodeToString()
                             Logger.d("E2EE_DECRYPT: Successfully decrypted message $messageId", tag = "E2EE")
-                            decryptedMessageCache[messageId] = decryptedContent
+                            cacheDecrypted(messageId, decryptedContent)
                             val (content, mediaUrl, metadata) = extractContent(decryptedContent)
                             try { cachedMessageDao?.updateContent(messageId, content) } catch (_: Exception) {}
                             return@withLock this.copy(content = content, mediaUrl = mediaUrl ?: this.mediaUrl, metadata = metadata ?: this.metadata, encryptionFailureReason = null)

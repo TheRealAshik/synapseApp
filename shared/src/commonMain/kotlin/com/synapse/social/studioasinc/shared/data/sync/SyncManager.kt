@@ -1,5 +1,6 @@
 package com.synapse.social.studioasinc.shared.data.sync
 
+import com.synapse.social.studioasinc.shared.core.util.AppDispatchers
 import com.synapse.social.studioasinc.shared.data.local.SyncStateStorage
 import com.synapse.social.studioasinc.shared.domain.model.PendingAction
 import com.synapse.social.studioasinc.shared.domain.repository.OfflineActionRepository
@@ -13,7 +14,6 @@ import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.Volatile
 
 /**
  * Central coordinator for synchronizing the local SQLDelight database with Supabase.
@@ -50,7 +51,7 @@ class SyncManager(
         private const val MAX_RETRY_ATTEMPTS = 3
     }
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val scope = CoroutineScope(SupervisorJob() + AppDispatchers.IO)
 
     private val entitySyncers = mutableMapOf<String, EntitySyncer<*>>()
     private val realtimeChannels = mutableMapOf<String, RealtimeChannel>()
@@ -85,7 +86,7 @@ class SyncManager(
     suspend fun <T : SyncableEntity> syncEntity(
         entityType: String,
         forceFullSync: Boolean = false
-    ): SyncResult<T> = withContext(Dispatchers.IO) {
+    ): SyncResult<T> = withContext(AppDispatchers.IO) {
         val syncer = entitySyncers[entityType] as? EntitySyncer<T>
             ?: return@withContext SyncResult.Error("No syncer for $entityType")
 
