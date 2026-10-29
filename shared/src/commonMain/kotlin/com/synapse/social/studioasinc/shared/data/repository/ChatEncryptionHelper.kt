@@ -14,6 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -62,9 +63,9 @@ internal class ChatEncryptionHelper(
     private fun extractContent(jsonString: String): Triple<String, String?, String?> {
         return try {
             val jsonPayload = Json.parseToJsonElement(jsonString).jsonObject
-            val content = jsonPayload["content"]?.jsonPrimitive?.content ?: jsonString
-            val mediaUrl = jsonPayload["mediaUrl"]?.jsonPrimitive?.content
-            val metadata = jsonPayload["metadata"]?.jsonPrimitive?.content
+            val content = jsonPayload["content"]?.jsonPrimitive?.contentOrNull ?: jsonString
+            val mediaUrl = jsonPayload["mediaUrl"]?.jsonPrimitive?.contentOrNull
+            val metadata = jsonPayload["metadata"]?.jsonPrimitive?.contentOrNull
             Triple(content, mediaUrl, metadata)
         } catch (_: Exception) {
             Triple(jsonString, null, null)
@@ -275,7 +276,7 @@ internal class ChatEncryptionHelper(
                         Logger.d("E2EE_INIT: Fresh E2EE setup — no local or remote keys", tag = "E2EE")
                     }
 
-val identity = signalProtocolManager!!.generateIdentityAndKeys()
+                    val identity = signalProtocolManager.generateIdentityAndKeys()
                     Logger.d("E2EE_INIT: Generated identity with regId: ${identity.registrationId}", tag = "E2EE")
 
                     val preKeys = signalProtocolManager.generateOneTimePreKeys(startId = 1, count = 100)
