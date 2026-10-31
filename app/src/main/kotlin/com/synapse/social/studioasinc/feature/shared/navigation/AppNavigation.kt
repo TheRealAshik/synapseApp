@@ -381,17 +381,11 @@ fun NavGraphBuilder.inboxGraph(
                     onNavigateToProfile = { userId ->
                         navController.navigate(AppDestination.Profile(userId))
                     },
-                    onNavigateToNewGroup = {
-                        navController.navigate(AppDestination.CreateGroup)
-                    },
                     onNavigateToSharedContent = { chatId, tab ->
                         navController.navigate(AppDestination.SharedContent(chatId, tab))
                     },
                     onNavigateToChatSettings = { chatId ->
                         navController.navigate(AppDestination.ChatSettings(chatId))
-                    },
-                    onNavigateToChatSearch = { chatId ->
-                        navController.navigate(AppDestination.ChatSearch(chatId))
                     },
                     onStartCall = { request -> navController.navigate(request.toDestination()) }
                 )
@@ -458,16 +452,9 @@ fun NavGraphBuilder.inboxGraph(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
-    composable<AppDestination.ChatSettings> { backStackEntry ->
-                val args = backStackEntry.toRoute<AppDestination.ChatSettings>()
-                navController.navigate(AppDestination.Settings) {
-                    popUpTo(AppDestination.Settings) { inclusive = true }
-                }
-    }
-    composable<AppDestination.ChatSearch> { backStackEntry ->
-                val args = backStackEntry.toRoute<AppDestination.ChatSearch>()
-                com.synapse.social.studioasinc.feature.inbox.inbox.screens.ChatSearchScreen(
-                    chatId = args.chatId,
+    composable<AppDestination.ChatSettings> {
+                com.synapse.social.studioasinc.ui.settings.ChatSettingsScreen(
+                    viewModel = androidx.hilt.navigation.compose.hiltViewModel(),
                     onNavigateBack = { navController.popBackStack() }
                 )
     }

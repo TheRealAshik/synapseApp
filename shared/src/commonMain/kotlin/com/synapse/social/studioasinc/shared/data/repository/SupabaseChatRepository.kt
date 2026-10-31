@@ -1028,6 +1028,7 @@ class SupabaseChatRepository(
     override fun getCurrentUserId(): String? = dataSource.getCurrentUserId()
 
     override suspend fun createGroupChat(name: String, participantIds: List<String>, avatarUrl: String?) = withContext(AppDispatchers.IO) { groupRepository.createGroupChat(name, participantIds, avatarUrl) }
+    override suspend fun reportChat(chatId: String, reason: String): Result<Unit> = withContext(AppDispatchers.IO) { groupRepository.reportChat(chatId, reason) }
     override suspend fun getParticipantIds(chatId: String) = withContext(AppDispatchers.IO) { groupRepository.getParticipantIds(chatId) }
     override suspend fun getGroupMembers(chatId: String) = withContext(AppDispatchers.IO) { groupRepository.getGroupMembers(chatId) }
     override suspend fun addGroupMembers(chatId: String, userIds: List<String>) = withContext(AppDispatchers.IO) { groupRepository.addGroupMembers(chatId, userIds) }
